@@ -1,37 +1,26 @@
 import { motion } from "framer-motion";
-import type { ItemDef } from "@treasure-trap/shared";
+import type { Rarity } from "@treasure-trap/shared";
 import { CannonBlast } from "../effects/CannonBlast";
 import { EmojiBurst } from "../fx";
 import { RARITY_STYLES } from "../../lib/rarityStyles";
 
 type UseVariant = "projectile" | "aura" | "swap" | "sneak";
 
-const VARIANTS: Record<string, UseVariant> = {
-  copycat: "sneak",
-  spyglass: "aura",
-  luckyDoubloon: "aura",
-  fearShot: "projectile",
-  rumRush: "aura",
-  sabotage: "projectile",
-  sneaksMap: "sneak",
-  treasureSwitch: "swap",
-  backstab: "projectile",
-  doubleAgent: "sneak",
-  shipwreck: "projectile",
-  crownHeist: "projectile",
-  broadsideDuel: "projectile",
-  blackSpot: "projectile",
-  captainsCurse: "aura",
+export type UseOverlayDef = {
+  icon: string;
+  name: string;
+  rarity: Rarity;
+  animation?: UseVariant;
 };
 
 /**
- * Full-screen flourish when YOU play an item: attacks launch as projectiles
+ * Full-screen flourish when YOU play a power-up: attacks launch as projectiles
  * with a cannon impact, buffs bloom as auras, swaps whirl, sneaky items slide
  * in from the shadows. Self-dismissing; mount with a key.
  */
-export function ItemUseOverlay({ def }: { def: ItemDef }) {
+export function ItemUseOverlay({ def }: { def: UseOverlayDef }) {
   const style = RARITY_STYLES[def.rarity];
-  const variant = VARIANTS[def.id] ?? "aura";
+  const variant = def.animation ?? "aura";
 
   return (
     <div

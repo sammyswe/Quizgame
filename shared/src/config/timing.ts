@@ -1,6 +1,15 @@
 /** All phase timers in milliseconds. Tune here, not inline. */
 export const TIMING = {
   ROUND_INTRO_MS: 7_000,
+  // --- Arcade mode (v2) ---
+  ARCADE_QUESTION_MS: 20_000,
+  ARCADE_EVENT_MS: 40_000, // Million Pound Drop allocation
+  ARCADE_INTRO_MS: 5_000,
+  ARCADE_REVEAL_STEP_MS: 2_800,
+  ARCADE_REVEAL_MIN_MS: 4_500,
+  ARCADE_LEADERBOARD_MS: 9_000,
+  RESULT_OVERLAY_MS: 2_600,
+  PLANK_MS: 5_000,
   QUESTION_MS: 45_000,
   LOOT_DROP_MS: 55_000,
   AUCTION_MS: 25_000,

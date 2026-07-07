@@ -1,45 +1,36 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
-import { SCORING } from "@treasure-trap/shared";
+import { useEffect, useRef, useState } from "react";
+import { ARCADE, POWERUPS, SPECIAL_EVENTS, potAt } from "@treasure-trap/shared";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { Screen, TimerBar } from "../components/ui";
-import { MissionCard } from "../components/MissionCard";
-import { EmojiBurst, LockStamp } from "../components/fx";
+import { EmojiBurst, LockStamp, Shaker } from "../components/fx";
+import { CannonBlast } from "../components/effects/CannonBlast";
 import { PirateAvatar } from "../components/players/PirateAvatar";
 import { sfx } from "../lib/sfx";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
-const ISLAND_ICONS = ["🏝️", "🌋", "🗿", "🪸"];
 
 export function QuestionScreen() {
   const game = useGameStore((s) => s.game);
   const me = useGameStore((s) => s.me());
-  if (!game?.question || !me) return null;
-  const isLootDrop = game.currentRound === "lootDrop";
+  if (!game?.question || !game.arcade || !me) return null;
+  const arcade = game.arcade;
+
+  if (me.marooned) return <MaroonedScreen />;
 
   return (
     <Screen className="gap-3">
-      <div className="flex items-center justify-between text-xs text-slate-400">
-        <span className="font-bold uppercase tracking-wider">
-          {game.currentRound && `Q${game.questionNumber}`}
-          {game.currentRound === "captainsChase" && game.chase
-            ? ` of ${game.chase.totalQuestions}`
-            : game.totalQuestionsInRound > 1
-              ? ` of ${game.totalQuestionsInRound}`
-              : ""}
-        </span>
-        <span className="rounded-full border border-white/10 px-2 py-0.5 capitalize">
-          {game.question.category} · {game.question.difficulty}
-        </span>
+      <RoundHeader />
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <TimerBar endsAt={game.timerEndsAt} />
+        </div>
+        {!arcade.isEventRound && <DecayingPot />}
       </div>
 
-      <TimerBar endsAt={game.timerEndsAt} />
-
-      {game.currentRound === "captainsChase" && <ChaseTrack />}
-      {game.currentRound === "falseMap" && <FalseMapBanner />}
-      <PrivateClueBanner />
-      <MissionCard />
+      <PlankBanner />
+      <HorizonBanner />
 
       <motion.h1
         key={game.question.id}
@@ -51,40 +42,140 @@ export function QuestionScreen() {
         {game.question.prompt}
       </motion.h1>
 
-      {isLootDrop ? <LootAllocator /> : <ChoiceGrid />}
+      {arcade.isEventRound ? <TrapdoorAllocator /> : <ChoiceGrid />}
 
-      <AnswerStatusRow />
-      {game.currentRound === "falseMap" && <AccusePanel />}
-      {isLootDrop && <PactPanel />}
+      <PlayerTargetRow />
+      {!arcade.isEventRound && <MutinyPanel />}
     </Screen>
   );
 }
 
 // ---------------------------------------------------------------------------
+// Header: round progress + first-5 jackpot pips
+// ---------------------------------------------------------------------------
+
+function RoundHeader() {
+  const game = useGameStore((s) => s.game);
+  const playerId = useGameStore((s) => s.playerId);
+  const arcade = game?.arcade;
+  if (!game || !arcade) return null;
+  const inFirstFive = arcade.roundNumber <= ARCADE.FIRST_ITEM_WINDOW;
+  const iEarned = playerId ? arcade.firstFiveEarned.includes(playerId) : false;
+
+  return (
+    <div className="flex items-center justify-between text-xs text-slate-400">
+      <span className="font-bold uppercase tracking-wider">
+        Round {arcade.roundNumber}
+        <span className="text-slate-600"> / {arcade.totalRounds}</span>
+        {arcade.isEventRound && (
+          <span className="ml-1.5 rounded-full bg-neon-gold/20 px-2 py-0.5 text-neon-gold">
+            ⚡ {SPECIAL_EVENTS[arcade.eventId ?? "millionPoundDrop"].name}
+          </span>
+        )}
+      </span>
+      {inFirstFive && !arcade.isEventRound && (
+        <span
+          className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${
+            iEarned ? "border-neon-green/50 text-neon-green" : "border-neon-gold/40 text-neon-gold"
+          }`}
+          title="Get 1 correct answer in the first 5 rounds to win an item"
+        >
+          {iEarned ? "🎁 item won!" : "1 right = 🎁"}
+          <span className="flex gap-0.5" aria-hidden>
+            {Array.from({ length: ARCADE.FIRST_ITEM_WINDOW }, (_, i) => (
+              <span
+                key={i}
+                className={`h-1.5 w-1.5 rounded-full ${
+                  i + 1 < arcade.roundNumber
+                    ? "bg-slate-600"
+                    : i + 1 === arcade.roundNumber
+                      ? "bg-neon-gold"
+                      : "bg-white/20"
+                }`}
+              />
+            ))}
+          </span>
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The decaying pot — answer fast, earn more
+// ---------------------------------------------------------------------------
+
+function DecayingPot() {
+  const game = useGameStore((s) => s.game);
+  const me = useGameStore((s) => s.me());
+  const [pot, setPot] = useState<number>(ARCADE.POT_MAX);
+  const arcade = game?.arcade;
+  const locked = Boolean(me?.hasAnswered);
+
+  useEffect(() => {
+    if (!arcade || locked) return;
+    const tick = () => {
+      setPot(potAt(Date.now(), arcade.questionStartedAt, arcade.questionDurationMs));
+    };
+    tick();
+    const iv = setInterval(tick, 250);
+    return () => clearInterval(iv);
+  }, [arcade?.questionStartedAt, arcade?.questionDurationMs, locked]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!arcade) return null;
+  const pct = (pot - arcade.potMin) / Math.max(1, arcade.potMax - arcade.potMin);
+  const color = locked
+    ? "text-neon-cyan border-neon-cyan/60"
+    : pct > 0.6
+      ? "text-neon-gold border-neon-gold/60"
+      : pct > 0.3
+        ? "text-amber-500 border-amber-500/60"
+        : "text-neon-red border-neon-red/60 animate-pulse";
+
+  return (
+    <motion.div
+      key={pot}
+      initial={{ scale: 1.12 }}
+      animate={{ scale: 1 }}
+      className={`flex min-w-[76px] flex-col items-center rounded-2xl border-2 bg-black/40 px-3 py-1 ${color}`}
+      aria-label={locked ? "Pot locked" : `Pot draining: ${pot} gold`}
+    >
+      <span className="font-display text-2xl tabular-nums leading-none">🪙{pot}</span>
+      <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
+        {locked ? "locked" : "draining"}
+      </span>
+    </motion.div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Answers
+// ---------------------------------------------------------------------------
 
 const ANSWER_STYLES = [
-  { border: "border-neon-cyan/70", glow: "shadow-neon-cyan", text: "text-neon-cyan", island: "🏝️" },
-  { border: "border-neon-gold/70", glow: "shadow-neon-gold", text: "text-neon-gold", island: "🌋" },
-  { border: "border-neon-pink/70", glow: "shadow-neon-pink", text: "text-neon-pink", island: "🗿" },
-  {
-    border: "border-neon-green/70",
-    glow: "shadow-neon-green",
-    text: "text-neon-green",
-    island: "🪸",
-  },
-  {
-    border: "border-neon-purple/70",
-    glow: "shadow-neon-purple",
-    text: "text-neon-purple",
-    island: "⚓",
-  },
-  { border: "border-white/50", glow: "", text: "text-white", island: "🌊" },
+  { border: "border-neon-cyan/70", glow: "shadow-neon-cyan", text: "text-neon-cyan" },
+  { border: "border-neon-gold/70", glow: "shadow-neon-gold", text: "text-neon-gold" },
+  { border: "border-neon-pink/70", glow: "shadow-neon-pink", text: "text-neon-pink" },
+  { border: "border-neon-green/70", glow: "shadow-neon-green", text: "text-neon-green" },
+  { border: "border-neon-purple/70", glow: "shadow-neon-purple", text: "text-neon-purple" },
+  { border: "border-white/50", glow: "", text: "text-white" },
 ];
+
+/** Cannonball: blow a hole through the middle of every word. */
+function holeWords(text: string): string {
+  return text
+    .split(" ")
+    .map((w) => {
+      if (w.length <= 2) return w;
+      if (w.length === 3) return `${w[0]}●${w[2]}`;
+      return `${w[0]}${"●".repeat(w.length - 2)}${w[w.length - 1]}`;
+    })
+    .join(" ");
+}
 
 function ChoiceGrid() {
   const game = useGameStore((s) => s.game);
   const priv = useGameStore((s) => s.priv);
-  const me = useGameStore((s) => s.me());
   const [choice, setChoice] = useState<number | undefined>();
   const [burstAt, setBurstAt] = useState<number | undefined>();
 
@@ -95,11 +186,14 @@ function ChoiceGrid() {
 
   if (!game?.question) return null;
   const disabled = new Set(priv?.disabledOptions ?? []);
-  const hardLocked = Boolean(priv?.answerLocked) && Boolean(me?.hasAnswered);
+  const revealed = priv?.revealedAnswerIndex;
+  const holed = Boolean(priv?.cannonballed);
+  const parroting = priv?.parrotTargetId
+    ? game.players.find((p) => p.id === priv.parrotTargetId)
+    : undefined;
   const twoCol = game.question.options.length > 4;
 
   const submit = (i: number) => {
-    if (hardLocked) return;
     const changing = choice !== undefined;
     setChoice(i);
     setBurstAt(i);
@@ -114,10 +208,16 @@ function ChoiceGrid() {
 
   return (
     <div className={`grid gap-3 ${twoCol ? "grid-cols-2" : "grid-cols-1"}`}>
+      {parroting && (
+        <p className="col-span-full -mb-1 text-center text-xs font-bold text-neon-green">
+          🦜 Your parrot copies {parroting.avatar} {parroting.nickname} — your pick won't count!
+        </p>
+      )}
       {game.question.options.map((opt, i) => {
         const style = ANSWER_STYLES[i % ANSWER_STYLES.length] ?? ANSWER_STYLES[0]!;
         const isMine = choice === i;
         const isDisabled = disabled.has(i);
+        const isRevealed = revealed === i;
         const dimmed = choice !== undefined && !isMine;
         return (
           <motion.button
@@ -130,21 +230,19 @@ function ChoiceGrid() {
               scale: isMine ? 1.03 : 1,
             }}
             transition={{ type: "spring", stiffness: 260, damping: 20, delay: i * 0.08 }}
-            whileHover={{
-              scale: isMine ? 1.03 : 1.02,
-              rotate: isMine ? 0 : i % 2 === 0 ? -0.5 : 0.5,
-            }}
+            whileHover={{ scale: isMine ? 1.03 : 1.02 }}
             whileTap={{ scale: 0.94, rotate: 0 }}
-            disabled={isDisabled || hardLocked}
+            disabled={isDisabled}
             onClick={() => submit(i)}
             className={`neon-card relative flex min-h-[64px] items-center gap-3 overflow-visible border-2 px-4 py-3.5 text-left transition-colors ${style.border} ${
               isMine
                 ? `bg-white/10 ${style.glow} animate-ring-pulse`
                 : `hover:bg-white/5 ${dimmed ? "" : style.glow.replace("shadow", "hover:shadow")}`
-            } ${isDisabled ? "opacity-20" : ""}`}
+            } ${isDisabled ? "opacity-20" : ""} ${
+              isRevealed ? "!border-neon-gold ring-2 ring-neon-gold shadow-neon-gold" : ""
+            }`}
             aria-pressed={isMine}
           >
-            {/* Letter coin */}
             <motion.span
               animate={isMine ? { rotate: [0, -12, 12, 0], scale: [1, 1.25, 1] } : {}}
               transition={{ duration: 0.45 }}
@@ -153,23 +251,28 @@ function ChoiceGrid() {
             >
               {isMine ? "✓" : LETTERS[i]}
             </motion.span>
-            <span
-              className={`flex-1 text-base font-black leading-snug ${isDisabled ? "line-through" : ""}`}
-            >
-              {opt}
+            <span className="flex-1 text-base font-black leading-snug">
+              {holed ? holeWords(opt) : opt}
             </span>
-            <span className="text-xl opacity-70" aria-hidden>
-              {style.island}
-            </span>
+            {isRevealed && (
+              <motion.span
+                className="text-2xl"
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ repeat: Infinity, duration: 0.8 }}
+                aria-label="Secret X: this is the correct answer"
+              >
+                ❌
+              </motion.span>
+            )}
             {isDisabled && (
               <span
                 className="absolute -right-1 -top-2 rounded-full bg-black/80 px-1.5 py-0.5 text-xs"
-                aria-label="Removed by spyglass"
+                aria-label="Removed by eyepatch"
               >
-                🔭💨
+                🏴‍☠️💨
               </span>
             )}
-            {isMine && <LockStamp text={hardLocked ? "SABOTAGED" : "LOCKED IN"} />}
+            {isMine && <LockStamp text="LOCKED IN" />}
             {burstAt === i && <EmojiBurst emoji="🪙" count={8} distance={70} />}
           </motion.button>
         );
@@ -178,9 +281,9 @@ function ChoiceGrid() {
         <motion.p
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center text-xs font-bold text-neon-cyan"
+          className="col-span-full text-center text-xs font-bold text-neon-cyan"
         >
-          {hardLocked ? "🪢 Sabotaged — answer locked!" : "Tap another answer to switch"}
+          Tap another answer to switch (the pot keeps draining)
         </motion.p>
       )}
     </div>
@@ -188,23 +291,23 @@ function ChoiceGrid() {
 }
 
 // ---------------------------------------------------------------------------
+// Million Pound Drop trapdoor allocator
+// ---------------------------------------------------------------------------
 
-function LootAllocator() {
+function TrapdoorAllocator() {
   const game = useGameStore((s) => s.game);
   const [alloc, setAlloc] = useState<number[]>([0, 0, 0, 0]);
-  const [confident, setConfident] = useState(false);
   const [sent, setSent] = useState(false);
   const [burst, setBurst] = useState(false);
 
   useEffect(() => {
     setAlloc([0, 0, 0, 0]);
-    setConfident(false);
     setSent(false);
     setBurst(false);
   }, [game?.question?.id]);
 
   const total = alloc.reduce((a, b) => a + b, 0);
-  const remaining = SCORING.LOOT_POOL - total;
+  const remaining = ARCADE.MPD_POOL - total;
   if (!game?.question) return null;
 
   const bump = (i: number, delta: number) => {
@@ -229,14 +332,14 @@ function LootAllocator() {
     sfx.lock();
     setBurst(true);
     setTimeout(() => setBurst(false), 900);
-    socket.emit("answer:submit", { lootAllocation: alloc, confident });
+    socket.emit("answer:submit", { lootAllocation: alloc });
     setSent(true);
   };
 
   return (
     <div className="relative flex flex-col gap-2.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-bold text-slate-300">Bet your gold on the islands</span>
+        <span className="font-bold text-slate-300">💷 Stack gold on the trapdoors</span>
         <motion.span
           key={remaining}
           initial={{ scale: 1.4 }}
@@ -259,13 +362,14 @@ function LootAllocator() {
               amount > 0 ? "border-neon-gold/60 shadow-neon-gold bg-amber-400/5" : "border-white/10"
             }`}
           >
+            {/* Trapdoor hatch */}
             <motion.span
               className="text-2xl"
               animate={amount > 0 ? { y: [0, -3, 0] } : {}}
               transition={{ repeat: Infinity, duration: 1.8 }}
               aria-hidden
             >
-              {ISLAND_ICONS[i]}
+              🚪
             </motion.span>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-black">{opt}</div>
@@ -287,7 +391,7 @@ function LootAllocator() {
                 whileTap={{ scale: 0.8 }}
                 className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/20 text-xl font-black"
                 onClick={() => bump(i, -10)}
-                aria-label={`Remove 10 loot from ${opt}`}
+                aria-label={`Remove 10 gold from ${opt}`}
               >
                 −
               </motion.button>
@@ -303,7 +407,7 @@ function LootAllocator() {
                 whileTap={{ scale: 0.8 }}
                 className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-neon-gold/60 text-xl font-black text-neon-gold shadow-neon-gold"
                 onClick={() => bump(i, 10)}
-                aria-label={`Add 10 loot to ${opt}`}
+                aria-label={`Add 10 gold to ${opt}`}
               >
                 +
               </motion.button>
@@ -311,31 +415,6 @@ function LootAllocator() {
           </motion.div>
         );
       })}
-      <motion.label
-        whileTap={{ scale: 0.98 }}
-        className={`flex items-center justify-between gap-2 rounded-2xl border-2 px-4 py-2.5 transition-colors ${
-          confident
-            ? "border-neon-pink bg-pink-500/20 shadow-neon-pink"
-            : "border-neon-pink/40 bg-pink-950/30"
-        }`}
-      >
-        <span className="text-sm font-bold">
-          😤 Double or nothing{" "}
-          <span className="text-slate-400">
-            (+{SCORING.CONFIDENCE_BONUS} / −{SCORING.CONFIDENCE_PENALTY})
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          checked={confident}
-          onChange={(e) => {
-            setConfident(e.target.checked);
-            if (e.target.checked) sfx.alarm();
-            setSent(false);
-          }}
-          className="h-6 w-6 accent-pink-400"
-        />
-      </motion.label>
       <div className="relative">
         <motion.button
           whileTap={{ scale: 0.95 }}
@@ -343,241 +422,337 @@ function LootAllocator() {
           disabled={total === 0 || sent}
           onClick={lockIn}
         >
-          {sent ? "⚓ Bet placed!" : `💰 Place Bet (${total})`}
+          {sent ? "🚪 Gold placed!" : `💷 Drop it! (${total} placed)`}
         </motion.button>
         {burst && <EmojiBurst emoji="🪙" count={14} distance={110} />}
       </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-
-function AnswerStatusRow() {
-  const game = useGameStore((s) => s.game);
-  if (!game) return null;
-  return (
-    <div className="flex flex-wrap items-end justify-center gap-3 pt-1">
-      {game.players.map((p, i) => (
-        <motion.div
-          key={p.id}
-          layout
-          className="flex flex-col items-center gap-0.5"
-          animate={p.hasAnswered ? { scale: [1, 1.15, 1] } : {}}
-          transition={{ duration: 0.35 }}
-        >
-          <PirateAvatar
-            playerId={p.id}
-            emoji={p.avatar}
-            size={38}
-            bobDelay={i * 0.25}
-            mood={p.hasAnswered ? "answered" : "nervous"}
-          />
-          <span
-            className={`max-w-[9ch] truncate text-[10px] font-bold ${p.connected ? "text-slate-300" : "text-slate-600"}`}
-          >
-            {p.nickname}
-          </span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-
-function FalseMapBanner() {
-  const game = useGameStore((s) => s.game);
-  if (!game?.falseMap) return null;
-  const captains = game.players.filter((p) => game.falseMap?.captainIds.includes(p.id));
-  return (
-    <div className="rounded-2xl border border-neon-pink/50 bg-pink-950/30 px-4 py-3 text-center text-sm shadow-neon-pink">
-      <span className="font-display text-neon-pink">🗺️ ONE MAP IS FALSE</span>
-      <p className="mt-1">
-        {captains.map((c) => `${c.avatar} ${c.nickname}`).join(" and ")} have clues — one is lying.
+      <p className="text-center text-[11px] text-slate-500">
+        Wrong trapdoors open. That gold is gone forever.
       </p>
     </div>
   );
 }
 
-function PrivateClueBanner() {
+// ---------------------------------------------------------------------------
+// Player row: live status + ATTACK TARGETING
+// ---------------------------------------------------------------------------
+
+function PlayerTargetRow() {
+  const game = useGameStore((s) => s.game);
+  const playerId = useGameStore((s) => s.playerId);
+  const targeting = useGameStore((s) => s.targeting);
+  const setTargeting = useGameStore((s) => s.setTargeting);
+  const firedFx = useGameStore((s) => s.firedFx);
+  const [impactAt, setImpactAt] = useState<string | undefined>();
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // When an attack lands, flash an impact on the victims.
+  useEffect(() => {
+    if (!firedFx) return;
+    sfx.cannonIncoming();
+    const t = setTimeout(() => setImpactAt(firedFx.targetIds[0]), 500);
+    const t2 = setTimeout(() => setImpactAt(undefined), 1600);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(t2);
+    };
+  }, [firedFx?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!game) return null;
+  const armed = targeting ? POWERUPS[targeting.powerUpId] : undefined;
+
+  const fire = (targetId: string) => {
+    if (!targeting || targetId === playerId) return;
+    socket.emit("powerup:use", { uid: targeting.uid, targetId });
+    setTargeting(undefined);
+    sfx.boom();
+  };
+
+  return (
+    <div className="pt-1" ref={rowRef}>
+      <AnimatePresence>
+        {armed && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-2 flex items-center justify-between rounded-xl border border-neon-pink/60 bg-pink-950/40 px-3 py-1.5 text-xs font-bold text-neon-pink shadow-neon-pink"
+          >
+            <span>
+              {armed.icon} {armed.name} armed — tap a pirate!
+            </span>
+            <button className="underline underline-offset-2" onClick={() => setTargeting(undefined)}>
+              Cancel
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div
+        className="flex flex-wrap items-end justify-center gap-3"
+        role={armed ? "group" : undefined}
+        aria-label={armed ? "Pick a target" : "Crew status"}
+      >
+        {game.players.map((p, i) => {
+          const isMe = p.id === playerId;
+          const targetable = Boolean(armed) && !isMe && !p.marooned;
+          const isVictim = firedFx?.targetIds.includes(p.id);
+          return (
+            <Shaker key={p.id} trigger={impactAt === p.id ? firedFx?.key : undefined}>
+              <motion.button
+                layout
+                disabled={!targetable}
+                onClick={() => fire(p.id)}
+                className={`relative flex flex-col items-center gap-0.5 rounded-2xl p-1.5 transition ${
+                  targetable
+                    ? "cursor-crosshair border-2 border-neon-pink/70 bg-pink-500/10 shadow-neon-pink"
+                    : "border-2 border-transparent"
+                }`}
+                animate={
+                  targetable
+                    ? { scale: [1, 1.08, 1] }
+                    : p.hasAnswered
+                      ? { scale: [1, 1.12, 1] }
+                      : {}
+                }
+                transition={
+                  targetable ? { repeat: Infinity, duration: 0.9 } : { duration: 0.35 }
+                }
+                aria-label={
+                  targetable ? `Fire at ${p.nickname}` : `${p.nickname}${isMe ? " (you)" : ""}`
+                }
+              >
+                {targetable && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-sm" aria-hidden>
+                    🎯
+                  </span>
+                )}
+                <PirateAvatar
+                  playerId={p.id}
+                  emoji={p.avatar}
+                  size={40}
+                  bobDelay={i * 0.25}
+                  mood={
+                    p.marooned
+                      ? "nervous"
+                      : isVictim
+                        ? "attacked"
+                        : p.hasAnswered
+                          ? "answered"
+                          : "nervous"
+                  }
+                />
+                {p.marooned && (
+                  <span className="absolute -right-1 -top-1 text-sm" aria-label="Marooned">
+                    🏝️
+                  </span>
+                )}
+                {game.arcade?.leaderId === p.id && (
+                  <span className="absolute -left-1 -top-1 text-sm" aria-label="Captain">
+                    👑
+                  </span>
+                )}
+                <span
+                  className={`max-w-[9ch] truncate text-[10px] font-bold ${p.connected ? "text-slate-300" : "text-slate-600"}`}
+                >
+                  {isMe ? "you" : p.nickname}
+                </span>
+                {isVictim && impactAt === p.id && <CannonBlast small />}
+              </motion.button>
+            </Shaker>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mutiny — secret, simultaneous, ever-present
+// ---------------------------------------------------------------------------
+
+function MutinyPanel() {
+  const game = useGameStore((s) => s.game);
   const priv = useGameStore((s) => s.priv);
-  if (!priv?.privateClue || priv.privateClue === "__PENDING__") return null;
+  const playerId = useGameStore((s) => s.playerId);
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => setConfirming(false), [game?.question?.id]);
+
+  if (!game?.arcade) return null;
+  const leader = game.players.find((p) => p.id === game.arcade?.leaderId);
+  const iAmLeader = leader?.id === playerId;
+  const declared = Boolean(priv?.hasMutinied);
+
+  if (iAmLeader) {
+    return (
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center text-xs font-bold text-neon-gold/80"
+      >
+        👑 You're the captain. The crew may be plotting — get this RIGHT.
+      </motion.p>
+    );
+  }
+  if (!leader) return null;
+
+  if (declared) {
+    return (
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="rounded-xl border border-neon-red/50 bg-rose-950/40 px-3 py-2 text-center text-xs font-bold text-neon-red"
+      >
+        🏴 Mutiny declared against {leader.nickname} — nobody knows but you.
+        <br />
+        <span className="text-[10px] font-normal text-rose-200/70">
+          Captain wrong: +{ARCADE.MUTINY_REWARD}. Captain right: −{ARCADE.MUTINY_FAIL_PENALTY}.
+          Mutiny ALONE and you're marooned!
+        </span>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div>
+      {!confirming ? (
+        <button
+          className="btn-ghost w-full !min-h-0 !border-neon-red/40 !py-2 !text-sm !text-neon-red"
+          onClick={() => {
+            sfx.mutinyDrum();
+            setConfirming(true);
+          }}
+        >
+          🏴 MUTINY vs {leader.avatar} {leader.nickname} 👑
+        </button>
+      ) : (
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="neon-card border-neon-red/50 p-3 text-center"
+        >
+          <p className="text-xs font-bold">
+            If the captain answers wrong: <span className="text-neon-green">+{ARCADE.MUTINY_REWARD}</span>.
+            Right: <span className="text-neon-red">−{ARCADE.MUTINY_FAIL_PENALTY}</span>.
+            <br />
+            <span className="text-neon-gold">Sole mutineer gets MAROONED 🏝️</span>
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              className="btn-pink flex-1 !min-h-0 !py-2 !text-sm"
+              onClick={() => {
+                socket.emit("mutiny:declare");
+                sfx.alarm();
+                setConfirming(false);
+              }}
+            >
+              ⚔️ Do it
+            </button>
+            <button
+              className="btn-ghost flex-1 !min-h-0 !py-2 !text-sm"
+              onClick={() => setConfirming(false)}
+            >
+              Stand down
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Banners
+// ---------------------------------------------------------------------------
+
+/** Walk the Plank: urgent countdown when someone forces you to answer fast. */
+function PlankBanner() {
+  const priv = useGameStore((s) => s.priv);
+  const [left, setLeft] = useState(0);
+
+  useEffect(() => {
+    if (!priv?.plankUntil) return;
+    const iv = setInterval(() => {
+      setLeft(Math.max(0, Math.ceil(((priv.plankUntil ?? 0) - Date.now()) / 1000)));
+    }, 200);
+    return () => clearInterval(iv);
+  }, [priv?.plankUntil]);
+
+  if (!priv?.plankUntil || left <= 0) return null;
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="rounded-2xl border border-neon-purple/60 bg-purple-950/40 px-4 py-3 text-sm shadow-neon-purple"
+      initial={{ scale: 0.9 }}
+      animate={{ scale: [1, 1.04, 1] }}
+      transition={{ repeat: Infinity, duration: 0.5 }}
+      className="rounded-xl border-2 border-neon-red bg-rose-950/60 px-3 py-2 text-center font-display text-lg text-neon-red shadow-neon-pink"
+      role="alert"
     >
-      <span className="rounded-full bg-neon-purple/20 px-2 py-0.5 text-[10px] font-black uppercase text-neon-purple">
-        🔒 Only you see this
-      </span>
-      <p className="mt-1.5 font-bold">{priv.privateClue}</p>
+      🪵 WALK THE PLANK — answer in {left}s or get NOTHING!
+    </motion.div>
+  );
+}
+
+/** Telescope: events on the horizon. */
+function HorizonBanner() {
+  const priv = useGameStore((s) => s.priv);
+  if (!priv?.horizon) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-neon-cyan/50 bg-cyan-950/40 px-3 py-2 text-xs text-neon-cyan"
+    >
+      <span className="font-display">🔭 ON THE HORIZON</span>
+      {priv.horizon.split("\n").map((line, i) => (
+        <div key={i} className="mt-0.5 text-cyan-100/80">
+          {line}
+        </div>
+      ))}
     </motion.div>
   );
 }
 
 // ---------------------------------------------------------------------------
-
-function AccusePanel() {
-  const game = useGameStore((s) => s.game);
-  const me = useGameStore((s) => s.me());
-  const playerId = useGameStore((s) => s.playerId);
-  const [open, setOpen] = useState(false);
-  if (!game || !me) return null;
-  const tokens = me.mutinyTokens;
-
-  return (
-    <div className="pt-1">
-      {!open ? (
-        <button className="btn-pink w-full" disabled={tokens <= 0} onClick={() => setOpen(true)}>
-          ⚔️ Accuse a liar ({tokens} left)
-        </button>
-      ) : (
-        <div className="neon-card border-neon-pink/50 p-3">
-          <p className="mb-2 text-center text-sm font-bold">
-            Right: +{SCORING.ACCUSATION_CORRECT}. Wrong: they profit.
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {game.players
-              .filter((p) => p.id !== playerId)
-              .map((p) => (
-                <button
-                  key={p.id}
-                  className="btn-ghost justify-start !text-base"
-                  onClick={() => {
-                    socket.emit("mutiny:accuse", p.id);
-                    setOpen(false);
-                  }}
-                >
-                  {p.avatar} {p.nickname}
-                </button>
-              ))}
-            <button className="btn-ghost !text-sm" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
+// Marooned: you sit this one out
 // ---------------------------------------------------------------------------
 
-function PactPanel() {
+function MaroonedScreen() {
   const game = useGameStore((s) => s.game);
-  const playerId = useGameStore((s) => s.playerId);
-  const [open, setOpen] = useState(false);
-  const [offered, setOffered] = useState(false);
-
-  useEffect(() => {
-    setOffered(false);
-    setOpen(false);
-  }, [game?.question?.id]);
-
-  if (!game) return null;
   return (
-    <div>
-      {!open ? (
-        <button
-          className="btn-ghost w-full !text-sm"
-          disabled={offered}
-          onClick={() => setOpen(true)}
+    <Screen className="items-center justify-center gap-5 text-center">
+      <motion.div
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 16 }}
+        className="flex flex-col items-center gap-3"
+      >
+        <motion.span
+          className="text-8xl"
+          animate={{ y: [0, -8, 0], rotate: [0, 2, -2, 0] }}
+          transition={{ repeat: Infinity, duration: 4 }}
+          aria-hidden
         >
-          🤝 {offered ? "Pact offered..." : "Team up with someone"}
-        </button>
-      ) : (
-        <div className="neon-card p-3">
-          <p className="mb-2 text-center text-xs text-slate-300">
-            Both bet big on the right island: +{SCORING.PACT_BONUS} each. Pick a partner:
-          </p>
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {game.players
-              .filter((p) => p.id !== playerId)
-              .map((p) => (
-                <button
-                  key={p.id}
-                  className="rounded-full border border-neon-green/50 px-3 py-1.5 text-sm font-bold hover:bg-neon-green/10"
-                  onClick={() => {
-                    socket.emit("pact:offer", p.id);
-                    setOffered(true);
-                    setOpen(false);
-                  }}
-                >
-                  {p.avatar} {p.nickname}
-                </button>
-              ))}
-            <button
-              className="rounded-full border border-white/20 px-3 py-1.5 text-sm"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </button>
+          🏝️
+        </motion.span>
+        <h1 className="font-display text-4xl text-neon-gold title-glow">MAROONED</h1>
+        <p className="max-w-xs text-sm text-slate-300">
+          You sit this question out. Enjoy the coconuts — you're back next round.
+        </p>
+        {game && (
+          <div className="w-full max-w-xs">
+            <TimerBar endsAt={game.timerEndsAt} />
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-
-export function ChaseTrack() {
-  const game = useGameStore((s) => s.game);
-  const chase = game?.chase;
-  const trackLen = 10;
-  const ships = useMemo(() => {
-    if (!chase || !game) return [];
-    return Object.entries(chase.positions)
-      .map(([id, pos]) => {
-        const p = game.players.find((x) => x.id === id);
-        return {
-          id,
-          pos,
-          avatar: p?.avatar ?? "⛵",
-          name: p?.nickname ?? "?",
-          isCaptain: id === chase.captainId,
-        };
-      })
-      .sort((a, b) => (a.isCaptain ? -1 : b.isCaptain ? 1 : 0));
-  }, [chase, game]);
-
-  if (!chase) return null;
-  return (
-    <div className="neon-card border-neon-cyan/40 p-3">
-      <div className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-400">
-        <span>
-          🌊 Q{Math.min(chase.questionNumber, chase.totalQuestions)}/{chase.totalQuestions}
-        </span>
-        <span>Catch the Captain ⚓</span>
-      </div>
-      <div className="relative h-14 overflow-hidden rounded-xl bg-gradient-to-r from-cyan-950/60 to-blue-950/60">
-        <div className="absolute inset-x-2 top-1/2 h-0.5 -translate-y-1/2 bg-cyan-400/20" />
-        <AnimatePresence>
-          {ships.map((ship, i) => (
-            <motion.div
-              key={ship.id}
-              animate={{
-                left: `${6 + (Math.min(ship.pos, trackLen) / trackLen) * 82}%`,
-                top: ship.isCaptain ? "18%" : `${42 + (i % 3) * 18}%`,
-              }}
-              transition={{ type: "spring", stiffness: 80, damping: 14 }}
-              className="absolute -translate-x-1/2"
-            >
-              <span
-                className={`text-xl ${ship.isCaptain ? "drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]" : ""}`}
-                aria-label={`${ship.name} at position ${ship.pos}`}
-              >
-                {ship.isCaptain ? "🚢" : ship.avatar}
-              </span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        <span className="absolute right-1 top-1/2 -translate-y-1/2 text-2xl" aria-hidden>
-          🌅
-        </span>
-      </div>
-    </div>
+        )}
+        <motion.span
+          className="text-3xl"
+          animate={{ rotate: [0, 10, -10, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          aria-hidden
+        >
+          🥥
+        </motion.span>
+      </motion.div>
+    </Screen>
   );
 }

@@ -1,23 +1,14 @@
 import type {
-  Accusation,
-  ActiveEffect,
-  ActiveMission,
   Answer,
   Chest,
-  ChaseState,
-  FinalActionId,
   GameConfig,
-  ObscureQuestion,
-  OwnedItem,
-  Pact,
-  PairState,
+  OwnedPowerUp,
   Phase,
-  PlunderChoice,
+  PowerUpId,
   Question,
   RevealEvent,
-  RoundId,
+  SpecialEventId,
 } from "@treasure-trap/shared";
-import type { AuctionLot } from "@treasure-trap/shared";
 
 /** Full server-side player. Only sanitised slices ever leave the server. */
 export type ServerPlayer = {
@@ -28,31 +19,34 @@ export type ServerPlayer = {
   isHost: boolean;
   isBot: boolean;
   connected: boolean;
-  /** Banked score — safe from most attacks. */
   score: number;
-  /** Unbanked loot earned this round — vulnerable until the leaderboard banks it. */
-  roundLoot: number;
   streak: number;
-  mutinyTokens: number;
-  items: OwnedItem[];
+  powerUps: OwnedPowerUp[];
   chests: Chest[];
-  mission?: ActiveMission;
-  /** Double Agent: absorbs one accusation or Fear Shot. */
-  agentShield: boolean;
+  /** Secretly declared mutiny this question. */
+  mutinied: boolean;
+  /** Sitting this question out (was marooned last question). */
+  marooned: boolean;
+  /** Marooned NEXT question (set at reveal, applied at next question start). */
+  maroonPending: boolean;
+  /** Earned the first-5 jackpot item already. */
+  jackpotEarned: boolean;
   /** Rum Rush pending on next correct answer. */
   rumRush: boolean;
-  /** Auction: double reward if correct next question. */
-  doubleReward: boolean;
-  /** Auction: strongbox protects roundLoot from swaps/wrecks this round. */
-  lootProtected: boolean;
-  /** Spyglass / Spy the Deck: wrong options hidden for this player. */
+  /** Eyepatch / Secret X: wrong options hidden for this player. */
   disabledOptions: number[];
-  privateClue?: string;
-  /** Sabotage: answer is locked. */
-  answerLocked: boolean;
-  finalActionsOffered?: FinalActionId[];
-  finalChoice?: { actionId: FinalActionId; targetId?: string };
-  pairChoice?: PlunderChoice;
+  /** Secret X revealed answer index (private). */
+  revealedAnswerIndex?: number;
+  /** Parrot: copying this player's answer at the reveal. */
+  parrotTargetId?: string;
+  /** Telescope: horizon text (private). */
+  horizon?: string;
+  /** Cannonball: answers visually holed this question. */
+  cannonballed: boolean;
+  /** Walk the Plank: must answer before this epoch ms. */
+  plankUntil?: number;
+  /** Poseidon already blessed this player this game. */
+  poseidonUsed: boolean;
 };
 
 export type ServerRoom = {
@@ -61,24 +55,18 @@ export type ServerRoom = {
   players: Map<string, ServerPlayer>;
   phase: Phase;
   config: GameConfig;
-  roundPlan: RoundId[];
-  roundIndex: number;
-  /** 1-based question number within the round. */
-  questionNumber: number;
+  /** 1-based current round number; 0 before the game starts. */
+  roundNumber: number;
+  totalRounds: number;
+  isEventRound: boolean;
+  eventId?: SpecialEventId;
   currentQuestion?: Question;
-  currentObscure?: ObscureQuestion;
+  questionStartedAt: number;
+  questionDurationMs: number;
   usedQuestionIds: Set<string>;
   answers: Map<string, Answer>;
-  effects: ActiveEffect[];
-  accusations: Accusation[];
-  pacts: Pact[];
-  auction?: {
-    lot: AuctionLot;
-    bids: Map<string, { amount: number; at: number }>;
-  };
-  falseMap?: { captainIds: string[]; trueCaptainId: string };
-  pairs?: PairState[];
-  chase?: ChaseState;
+  /** Sword fights declared this question. */
+  swordFights: Array<{ byId: string; targetId: string }>;
   revealEvents: RevealEvent[];
   timer?: ReturnType<typeof setTimeout>;
   /** The continuation scheduled for the current phase — skipTimer runs it early. */
@@ -86,8 +74,6 @@ export type ServerRoom = {
   timerEndsAt: number;
   ticker: string[];
   winnerId?: string;
-  /** Underdog checkpoint chests already handed out (round indexes). */
-  underdogRounds: Set<number>;
   createdAt: number;
 };
 
@@ -111,17 +97,17 @@ export function createPlayer(
     isBot: false,
     connected: true,
     score: 0,
-    roundLoot: 0,
     streak: 0,
-    mutinyTokens: 1,
-    items: [],
+    powerUps: [],
     chests: [],
-    agentShield: false,
+    mutinied: false,
+    marooned: false,
+    maroonPending: false,
+    jackpotEarned: false,
     rumRush: false,
-    doubleReward: false,
-    lootProtected: false,
     disabledOptions: [],
-    answerLocked: false,
+    cannonballed: false,
+    poseidonUsed: false,
     ...opts,
   };
 }
@@ -132,19 +118,23 @@ export function createRoom(code: string, host: ServerPlayer): ServerRoom {
     hostId: host.id,
     players: new Map([[host.id, host]]),
     phase: "lobby",
-    config: { length: "short", rounds: [] },
-    roundPlan: [],
-    roundIndex: -1,
-    questionNumber: 0,
+    config: { length: "test", rounds: [] },
+    roundNumber: 0,
+    totalRounds: 10,
+    isEventRound: false,
+    questionStartedAt: 0,
+    questionDurationMs: 0,
     usedQuestionIds: new Set(),
     answers: new Map(),
-    effects: [],
-    accusations: [],
-    pacts: [],
+    swordFights: [],
     revealEvents: [],
     timerEndsAt: 0,
     ticker: [],
-    underdogRounds: new Set(),
     createdAt: Date.now(),
   };
+}
+
+/** Grant a starter power-up for testing? No — bags start empty; chests fill them. */
+export function debugPowerUp(id: PowerUpId): OwnedPowerUp {
+  return { uid: `pu-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, powerUpId: id };
 }

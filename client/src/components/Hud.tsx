@@ -12,7 +12,7 @@ export function Hud() {
   const [delta, setDelta] = useState<{ value: number; key: number } | undefined>();
   const prevTotal = useRef<number | undefined>(undefined);
 
-  const total = me ? me.score + me.roundLoot : undefined;
+  const total = me ? me.score : undefined;
 
   // Score ticker: float a +/- delta whenever my total changes.
   useEffect(() => {
@@ -38,7 +38,11 @@ export function Hud() {
             <div>
               <div className="text-sm font-black leading-tight">{me.nickname}</div>
               <div className="text-[11px] text-slate-400">
-                Rank #{me.rank} · Room {game.roomCode}
+                Rank #{me.rank}
+                {game.arcade
+                  ? ` · Rd ${game.arcade.roundNumber}/${game.arcade.totalRounds}`
+                  : ` · Room ${game.roomCode}`}
+                {me.streak >= 2 && <span className="text-neon-cyan"> · 🔥×{me.streak}</span>}
               </div>
             </div>
           </div>
@@ -50,17 +54,6 @@ export function Hud() {
                 color={delta.value > 0 ? "#4ade80" : "#fb7185"}
                 size="text-xl"
               />
-            )}
-            {me.roundLoot !== 0 && (
-              <div className="text-right">
-                <div className="font-display text-sm text-neon-green">
-                  {me.roundLoot > 0 ? "+" : ""}
-                  <AnimatedNumber value={me.roundLoot} />
-                </div>
-                <div className="whitespace-nowrap text-[10px] uppercase tracking-wide text-slate-500">
-                  this round
-                </div>
-              </div>
             )}
             <motion.div
               className="text-right"

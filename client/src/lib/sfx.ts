@@ -177,4 +177,45 @@ export const sfx = {
     noise(0.18, 0.03);
     tone({ freq: 300, dur: 0.16, type: "sine", gain: 0.03, slideTo: 700 });
   },
+
+  /** Correct answer! Bright rising major arpeggio + sparkle. */
+  correct(): void {
+    [523, 659, 784, 1046].forEach((f, i) => {
+      tone({ freq: f, dur: 0.12, type: "triangle", gain: 0.07, at: i * 0.07 });
+    });
+    tone({ freq: 2093, dur: 0.25, type: "sine", gain: 0.04, at: 0.3 });
+  },
+
+  /** Wrong answer — casino-style Pac-Man game over: wobbling descending run. */
+  gameOver(): void {
+    const steps = [988, 830, 740, 622, 554, 466, 415, 349];
+    steps.forEach((f, i) => {
+      tone({ freq: f, dur: 0.16, type: "square", gain: 0.05, at: i * 0.11, slideTo: f * 0.82 });
+    });
+    // final womp-womp
+    tone({ freq: 220, dur: 0.3, type: "sawtooth", gain: 0.06, at: 0.95, slideTo: 110 });
+    tone({ freq: 110, dur: 0.45, type: "sine", gain: 0.08, at: 1.05, slideTo: 55 });
+  },
+
+  /** Casino jackpot chime build — rings, sparkles, anticipation. */
+  jackpot(): void {
+    [660, 660, 880, 880, 1108, 1108, 1318, 1760].forEach((f, i) => {
+      tone({ freq: f, dur: 0.1, type: "triangle", gain: 0.05, at: i * 0.09 });
+    });
+    tone({ freq: 2637, dur: 0.4, type: "sine", gain: 0.05, at: 0.75 });
+    noise(0.25, 0.03, 0.8);
+  },
+
+  /** Mutiny declared — low secret drum. */
+  mutinyDrum(): void {
+    tone({ freq: 98, dur: 0.2, type: "sine", gain: 0.1, slideTo: 65 });
+    tone({ freq: 98, dur: 0.2, type: "sine", gain: 0.08, at: 0.25, slideTo: 65 });
+  },
+
+  /** Cannonball incoming whistle + boom. */
+  cannonIncoming(): void {
+    tone({ freq: 1400, dur: 0.5, type: "sine", gain: 0.04, slideTo: 300 });
+    tone({ freq: 90, dur: 0.35, type: "sine", gain: 0.14, at: 0.5, slideTo: 40 });
+    noise(0.3, 0.08, 0.5);
+  },
 };

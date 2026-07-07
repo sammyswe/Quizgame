@@ -54,8 +54,8 @@ describe("room codes", () => {
 });
 
 describe("round plans", () => {
-  it("full plan includes all 7 rounds ending in Final Plunder", () => {
-    const plan = buildRoundPlan("full");
+  it("long plan includes all 7 rounds ending in Final Plunder", () => {
+    const plan = buildRoundPlan("long");
     expect(plan).toHaveLength(7);
     expect(plan[plan.length - 1]).toBe("finalPlunder");
   });

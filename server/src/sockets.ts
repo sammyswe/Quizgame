@@ -1,25 +1,19 @@
 import type { Server, Socket } from "socket.io";
 import { isValidRoomCode, type GameConfig } from "@treasure-trap/shared";
 import {
-  accuse,
-  acceptPact,
   configureGame,
+  declareMutiny,
   forceChest,
   hostAdvance,
-  offerPact,
   openChestForPlayer,
   privateState,
   publicState,
   resetToLobby,
   setEmitter,
-  setupMission,
   skipTimer,
   startGame,
   submitAnswer,
-  submitBid,
-  submitFinalAction,
-  submitPairChoice,
-  useItem,
+  usePowerUp,
   uid,
   type ServerRoom,
 } from "./engine.js";
@@ -40,6 +34,9 @@ export function attachSockets(io: Server): void {
     toPlayer: (room, playerId, event, payload) => {
       const player = room.players.get(playerId);
       if (player?.socketId) io.to(player.socketId).emit(event, payload);
+    },
+    toRoom: (room, event, payload) => {
+      io.to(room.code).emit(event, payload);
     },
     toast: (room, playerId, msg) => {
       if (playerId) {
@@ -94,7 +91,7 @@ export function attachSockets(io: Server): void {
       const code = typeof roomCode === "string" ? roomCode.trim().toUpperCase() : "";
       const room = getRoom(code);
       const player = room?.players.get(typeof playerId === "string" ? playerId : "");
-      if (!room || !player) return cb({ ok: false, error: "Couldn't rejoin that voyage." });
+      if (!room || !player) return cb({ ok: false, error: "Couldn't rejoin that game." });
       player.socketId = socket.id;
       player.connected = true;
       data.roomCode = room.code;
@@ -109,8 +106,8 @@ export function attachSockets(io: Server): void {
       if (!room || currentPlayerId() !== room.hostId) return;
       if (room.phase !== "lobby" && room.phase !== "setup") return;
       const c = config as GameConfig;
-      if (!c || !["short", "medium", "full"].includes(c.length)) return;
-      configureGame(room, { length: c.length, rounds: Array.isArray(c.rounds) ? c.rounds : [] });
+      if (!c || !["test", "short", "medium", "long"].includes(c.length)) return;
+      configureGame(room, { length: c.length, rounds: [] });
     });
 
     socket.on("game:start", () => {
@@ -135,24 +132,24 @@ export function attachSockets(io: Server): void {
       const room = currentRoom();
       const pid = currentPlayerId();
       if (!room || !pid) return;
-      const p = payload as { choiceIndex?: number; lootAllocation?: number[]; confident?: boolean };
+      const p = payload as { choiceIndex?: number; lootAllocation?: number[] };
       submitAnswer(room, pid, p ?? {});
     });
 
-    socket.on("loot:allocate", (allocation: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid || !Array.isArray(allocation)) return;
-      submitAnswer(room, pid, { lootAllocation: allocation as number[] });
-    });
-
-    socket.on("item:use", (payload: unknown) => {
+    socket.on("mutiny:declare", () => {
       const room = currentRoom();
       const pid = currentPlayerId();
       if (!room || !pid) return;
-      const p = payload as { uid: string; targetId?: string; optionIndex?: number };
+      declareMutiny(room, pid);
+    });
+
+    socket.on("powerup:use", (payload: unknown) => {
+      const room = currentRoom();
+      const pid = currentPlayerId();
+      if (!room || !pid) return;
+      const p = payload as { uid: string; targetId?: string };
       if (!p?.uid) return;
-      useItem(room, pid, p);
+      usePowerUp(room, pid, p);
     });
 
     socket.on("chest:open", (chestUid: unknown) => {
@@ -160,58 +157,6 @@ export function attachSockets(io: Server): void {
       const pid = currentPlayerId();
       if (!room || !pid || typeof chestUid !== "string") return;
       openChestForPlayer(room, pid, chestUid);
-    });
-
-    socket.on("auction:bid", (amount: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid || typeof amount !== "number") return;
-      submitBid(room, pid, amount);
-    });
-
-    socket.on("pact:offer", (targetId: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid || typeof targetId !== "string") return;
-      offerPact(room, pid, targetId);
-    });
-
-    socket.on("pact:accept", (fromId: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid || typeof fromId !== "string") return;
-      acceptPact(room, pid, fromId);
-    });
-
-    socket.on("mutiny:accuse", (targetId: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid || typeof targetId !== "string") return;
-      accuse(room, pid, targetId);
-    });
-
-    socket.on("mission:setup", (payload: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid) return;
-      setupMission(room, pid, (payload ?? {}) as { targetId?: string; optionIndex?: number });
-    });
-
-    socket.on("pair:choose", (choice: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid) return;
-      if (choice !== "split" && choice !== "plunder" && choice !== "guard") return;
-      submitPairChoice(room, pid, choice);
-    });
-
-    socket.on("final:action", (payload: unknown) => {
-      const room = currentRoom();
-      const pid = currentPlayerId();
-      if (!room || !pid) return;
-      const p = payload as { actionId: string; targetId?: string };
-      if (!p?.actionId) return;
-      submitFinalAction(room, pid, p as Parameters<typeof submitFinalAction>[2]);
     });
 
     socket.on("phase:advance", () => {
@@ -257,12 +202,10 @@ export function attachSockets(io: Server): void {
     socket.on("debug:autoAnswer", () => {
       const room = currentRoom();
       if (!room || !DEBUG_ENABLED || room.phase !== "question") return;
-      const optionCount =
-        room.currentQuestion?.options.length ?? room.currentObscure?.options.length ?? 4;
+      const optionCount = room.currentQuestion?.options.length ?? 4;
       for (const p of room.players.values()) {
-        if (room.answers.has(p.id)) continue;
-        const round = room.roundPlan[room.roundIndex];
-        if (round === "lootDrop") {
+        if (room.answers.has(p.id) || p.marooned) continue;
+        if (room.isEventRound) {
           const alloc = [0, 0, 0, 0];
           alloc[Math.floor(Math.random() * 4)] = 100;
           submitAnswer(room, p.id, { lootAllocation: alloc });
@@ -281,12 +224,11 @@ export function attachSockets(io: Server): void {
             ...publicState(room),
             _server: {
               answers: [...room.answers.entries()],
-              effects: room.effects,
+              swordFights: room.swordFights,
               correctIndex: room.currentQuestion?.correctIndex,
-              missions: [...room.players.values()].map((p) => ({
-                id: p.nickname,
-                mission: p.mission,
-              })),
+              mutineers: [...room.players.values()]
+                .filter((p) => p.mutinied)
+                .map((p) => p.nickname),
             },
           }),
         ),

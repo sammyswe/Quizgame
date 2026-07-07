@@ -52,11 +52,56 @@ export type RoundId =
   | "captainsChase"
   | "finalPlunder";
 
-export type GameLength = "short" | "medium" | "full";
+export type GameLength = "test" | "short" | "medium" | "long";
 
 export type GameConfig = {
   length: GameLength;
   rounds: RoundId[];
+};
+
+// ----- Arcade mode (v2 game structure) --------------------------------------
+
+/** Scheduled special game modes that replace every 10th round. */
+export type SpecialEventId = "millionPoundDrop";
+
+/** Random sea events that can strike during any reveal. */
+export type SeaEventId = "poseidon" | "kraken" | "dolphinBurglary";
+
+export type ArcadeState = {
+  /** 1-based current round number. */
+  roundNumber: number;
+  totalRounds: number;
+  isEventRound: boolean;
+  eventId?: SpecialEventId;
+  /** Epoch ms when the current question opened (drives the decaying pot). */
+  questionStartedAt: number;
+  questionDurationMs: number;
+  potMax: number;
+  potMin: number;
+  /** First-5 jackpot: who has already earned their item. */
+  firstFiveEarned: string[];
+  maroonedIds: string[];
+  leaderId?: string;
+  /** Round numbers of upcoming special events (public knowledge). */
+  eventRounds: number[];
+};
+
+/** Per-player outcome pushed privately at the end of every question. */
+export type QuestionResult = {
+  correct: boolean;
+  correctIndex: number;
+  /** Gold earned from the pot (already includes rum rush doubling). */
+  earned: number;
+  streak: number;
+  streakBonus: number;
+  potAtLock: number;
+  mutiny?: "won" | "lost";
+  /** You just got marooned (skip next question, bonus chest). */
+  marooned?: boolean;
+  /** You were marooned and sat this question out. */
+  skipped?: boolean;
+  /** You just earned the first-5 jackpot chest. */
+  jackpot?: boolean;
 };
 
 // ----- Phases ---------------------------------------------------------------
@@ -114,6 +159,41 @@ export type ItemDef = {
   simplified?: boolean;
 };
 
+// ----- Power-ups (arcade item set) ------------------------------------------
+
+export type PowerUpId =
+  | "eyepatch"
+  | "parrot"
+  | "telescope"
+  | "hook"
+  | "whiteFlag"
+  | "secretX"
+  | "rumRush"
+  | "walkThePlank"
+  | "swordFight"
+  | "cannonball"
+  | "cannonballBarrage";
+
+export type PowerUpTarget = "self" | "otherPlayer" | "allOthers";
+
+export type PowerUpDef = {
+  id: PowerUpId;
+  name: string;
+  icon: string;
+  rarity: Rarity;
+  description: string;
+  target: PowerUpTarget;
+  isAttack: boolean;
+  /** Visual treatment when fired: projectile flies to the target avatar, etc. */
+  animation: "projectile" | "aura" | "sneak" | "swap";
+};
+
+/** A power-up instance owned by a player. */
+export type OwnedPowerUp = {
+  uid: string;
+  powerUpId: PowerUpId;
+};
+
 /** An item instance owned by a player. */
 export type OwnedItem = {
   uid: string;
@@ -143,6 +223,8 @@ export type ChestSource =
   | "auction"
   | "honour"
   | "revenge"
+  | "jackpot"
+  | "marooned"
   | "debug";
 
 export type Chest = {
@@ -365,12 +447,28 @@ export type PublicPlayer = {
   hasAnswered: boolean;
   confident?: boolean;
   rank: number;
+  /** Marooned: sitting out the current question. */
+  marooned: boolean;
 };
 
 export type PrivatePlayerState = {
   playerId: string;
   items: OwnedItem[];
+  /** Arcade power-ups. */
+  powerUps: OwnedPowerUp[];
   chests: Chest[];
+  /** You secretly declared mutiny this question. */
+  hasMutinied?: boolean;
+  /** Secret X: the correct option index, revealed only to you. */
+  revealedAnswerIndex?: number;
+  /** Parrot: you are copying this player's answer. */
+  parrotTargetId?: string;
+  /** Telescope: what you can see on the horizon. */
+  horizon?: string;
+  /** Cannonball hit you: the middles of the answer words are blasted out. */
+  cannonballed?: boolean;
+  /** Walk the Plank: answer before this epoch ms or score nothing. */
+  plankUntil?: number;
   mission?: ActiveMission & { def: MissionDef };
   /** Spyglass: option indexes greyed out for this player. */
   disabledOptions?: number[];
@@ -410,6 +508,8 @@ export type PublicGameState = {
   pairs?: PairState[];
   chase?: ChaseState;
   finalPlunder?: FinalPlunderState;
+  /** Arcade mode state (v2 game structure). */
+  arcade?: ArcadeState;
   winnerId?: string;
   /** Public log line ticker, e.g. "Bones played an item!" */
   ticker: string[];
@@ -442,6 +542,10 @@ export type ClientEvents = {
   "pact:offer": (targetId: string) => void;
   "pact:accept": (fromId: string) => void;
   "mutiny:accuse": (targetId: string) => void;
+  /** Arcade: secretly declare mutiny against the leader this question. */
+  "mutiny:declare": () => void;
+  /** Arcade: fire a power-up (targetId required for attacks). */
+  "powerup:use": (payload: { uid: string; targetId?: string }) => void;
   "mission:setup": (payload: { targetId?: string; optionIndex?: number }) => void;
   "pair:choose": (choice: PlunderChoice) => void;
   "final:action": (payload: { actionId: FinalActionId; targetId?: string }) => void;
@@ -464,8 +568,18 @@ export type ServerEvents = {
   "chest:opened": (result: {
     uid: string;
     rarity: Rarity;
-    item: OwnedItem;
-    itemDef: ItemDef;
+    powerUp: OwnedPowerUp;
+    powerUpDef: PowerUpDef;
+    /** First-5 jackpot chests get the full ceremony. */
+    jackpot?: boolean;
+  }) => void;
+  /** Per-player outcome at the end of every question — drives the CORRECT!/WRONG overlay. */
+  "question:result": (result: QuestionResult) => void;
+  /** A power-up was fired — clients play the attack animation. */
+  "powerup:fired": (info: {
+    byId: string;
+    targetIds: string[];
+    powerUpId: PowerUpId;
   }) => void;
   toast: (msg: { icon?: string; text: string }) => void;
   error: (message: string) => void;

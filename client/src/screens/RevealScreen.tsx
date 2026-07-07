@@ -109,11 +109,13 @@ export function RevealScreen() {
   useEffect(() => {
     setShown(0);
     if (events.length === 0) return;
+    // The personal CORRECT!/WRONG overlay plays first; reveal cards follow.
+    const lead = TIMING.RESULT_OVERLAY_MS + 200;
     sfx.drum();
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 1; i <= events.length; i++) {
       timers.push(
-        setTimeout(() => setShown(i), i === 1 ? 500 : 500 + (i - 1) * TIMING.REVEAL_STEP_MS),
+        setTimeout(() => setShown(i), lead + (i - 1) * TIMING.ARCADE_REVEAL_STEP_MS),
       );
     }
     return () => timers.forEach(clearTimeout);

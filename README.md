@@ -65,15 +65,27 @@ is not enough for the server**. Split it:
 Copy `.env.example` / `client/.env.example` as starting points. Send friends the client
 URL — room codes do the rest (invite links use `?room=CODE`).
 
-## How a game flows
+## How a game flows (arcade mode)
 
-1. **Lobby** — host picks Short (3), Medium (5) or Full (7 rounds), picks/randomises rounds.
-2. Each round: **intro → question(s) (talk! lie! accuse!) → reveal queue → leaderboard**.
-3. Rounds: 🪙 Loot Drop · 🔨 Treasure Auction · 🗺️ False Map · 💎 Obscure Island ·
-   ⚖️ Split or Plunder · ⛵ Captain's Chase · 🏴‍☠️ Final Plunder (always last).
-4. Earn mystery chests (losing big, streaks, schemes, revenge…), open them from the 🎒
-   booty bag — lower ranks roll better rarities.
-5. Final Plunder: protected score + secret actions + 3 questions of chaos. Richest pirate wins.
+1. **Lobby** — host picks the length: **Test (10)**, Short (30), Medium (50) or Long (70) rounds.
+2. Every round is a fast trivia question with a **decaying pot** (answer instantly: 100 🪙,
+   at the buzzer: 30 🪙). Streaks pay bonuses; 3 in a row earns a chest.
+3. **First 5 rounds**: your first correct answer triggers the 🎰 **jackpot chest ceremony**
+   and hands you a power-up.
+4. **Every 10th round is a special event** — the first is 💷 **Million Pound Drop**:
+   stack 100 gold on trapdoors, wrong doors open, that gold is gone.
+5. **Mutiny is always on** — secretly demand the leader gets it right. Leader wrong: you
+   profit. Leader right: you pay. Mutiny **alone** and you're **marooned** 🏝️ (skip a
+   question, keep a pity chest). Get marooned too if you're the only one wrong.
+6. **Power-ups** fire from the 🎒 booty bag — attacks are aimed by tapping a pirate's
+   avatar: 🏴‍☠️ Eyepatch (50/50) · 🦜 Parrot (copy) · 🔭 Telescope (see events coming) ·
+   🪝 Hook (steal) · 🏳️ White Flag (cash your streak) · ❌ Secret X (the answer) ·
+   🍾 Rum Rush (double) · 🪵 Walk the Plank (5s or nothing) · ⚔️ Sword Fight (duel) ·
+   💣 Cannonball / 🧨 Barrage (holes in the answers).
+7. **Random sea events** strike at reveals: 🐬 Dolphin Burglary (too many right answers —
+   everyone pays), 🦑 Kraken (drags the leader's gold under), 🔱 Poseidon (blesses a
+   struggling pirate once per game). Atlantis and Iceberg are on the roadmap.
+8. Richest pirate at the end wins.
 
 ## Repo map
 

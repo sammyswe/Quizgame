@@ -5,25 +5,29 @@ import { EmojiBurst } from "./fx";
 import { ImpactFlash } from "./gamefeel/ImpactFlash";
 import { ItemCard } from "./items/ItemCard";
 import { RARITY_STYLES } from "../lib/rarityStyles";
-import { playSound } from "../lib/soundEvents";
+import { sfx } from "../lib/sfx";
 import { particleCount, useGameFeel } from "../lib/gameFeel";
 
-type Stage = "drop" | "chains" | "shake" | "spin" | "burst" | "card";
+/**
+ * The jackpot chest sequence (6 frames, per the animation spec):
+ * 1 CHEST DROPS      — slams onto deck, golden impact + shockwave
+ * 2 CHEST RATTLES    — shakes, light leaks out
+ * 3 JACKPOT BUILD-UP — rings, sparkles, 777 slot spin, casino chime build
+ * 4 EXPLODES OPEN    — burst of riches: coins, gems, confetti
+ * 5 ITEM RISES       — hero moment: light beam + item ascends
+ * 6 REWARD           — "NEW ITEM UNLOCKED!" card + confirm
+ */
+type Stage = "drop" | "rattle" | "jackpot" | "burst" | "rise" | "card";
 
 const STAGE_TIMINGS: Array<{ stage: Stage; at: number }> = [
   { stage: "drop", at: 0 },
-  { stage: "chains", at: 750 },
-  { stage: "shake", at: 1500 },
-  { stage: "spin", at: 2400 },
-  { stage: "burst", at: 3700 },
-  { stage: "card", at: 4300 },
+  { stage: "rattle", at: 800 },
+  { stage: "jackpot", at: 1700 },
+  { stage: "burst", at: 3300 },
+  { stage: "rise", at: 4000 },
+  { stage: "card", at: 5300 },
 ];
 
-/**
- * The loot-box moment: chest slams down → chains snap → escalating shake →
- * rarity slot spin → burst open with coins → item card flies out with a
- * rarity banner. Skippable after a moment, but built to be watched.
- */
 export function ChestModal() {
   const reveal = useGameStore((s) => s.chestReveal);
   const clear = useGameStore((s) => s.clearChestReveal);
@@ -35,27 +39,27 @@ export function ChestModal() {
     if (!reveal) return;
     setStage("drop");
     setShowSkip(false);
-    playSound("chestOpen");
+    sfx.drum();
+    const sounds: Array<[number, () => void]> = [
+      [800, sfx.chest],
+      [1700, sfx.jackpot],
+      [3300, sfx.boom],
+      [4000, sfx.legendary],
+      [5300, reveal.rarity === "legendary" ? sfx.fanfare : sfx.coins],
+    ];
+    const soundTimers = sounds.map(([at, fn]) => setTimeout(fn, at));
     const timers = STAGE_TIMINGS.slice(1).map(({ stage: s, at }) =>
-      setTimeout(() => {
-        setStage(s);
-        if (s === "burst") {
-          playSound(
-            reveal.rarity === "legendary" || reveal.rarity === "epic" ? "itemReveal" : "coinGain",
-          );
-        }
-      }, at),
+      setTimeout(() => setStage(s), at),
     );
-    const skipTimer = setTimeout(() => setShowSkip(true), 1200);
+    const skipTimer = setTimeout(() => setShowSkip(true), 1500);
     return () => {
-      timers.forEach(clearTimeout);
-      clearTimeout(skipTimer);
+      [...timers, ...soundTimers, skipTimer].forEach(clearTimeout);
     };
   }, [reveal]);
 
   if (!reveal) return null;
   const style = RARITY_STYLES[reveal.rarity];
-  const preOpen = stage === "drop" || stage === "chains" || stage === "shake" || stage === "spin";
+  const closed = stage === "drop" || stage === "rattle" || stage === "jackpot";
 
   return (
     <AnimatePresence>
@@ -67,94 +71,135 @@ export function ChestModal() {
         role="dialog"
         aria-label="Chest opening"
       >
-        {stage === "drop" && <ImpactFlash key="dropflash" color="#fbbf24" opacity={0.15} />}
-        {stage === "burst" && <ImpactFlash key="burstflash" color={style.frame} opacity={0.5} />}
+        {stage === "drop" && <ImpactFlash key="dropflash" color="#fbbf24" opacity={0.2} />}
+        {stage === "burst" && <ImpactFlash key="burstflash" color={style.frame} opacity={0.55} />}
+
+        {reveal.jackpot && (
+          <motion.div
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="absolute top-10 rounded-full border-2 border-neon-gold bg-amber-400/15 px-6 py-1.5 font-display text-xl tracking-widest text-neon-gold shadow-neon-gold"
+          >
+            🎰 FIRST-5 JACKPOT!
+          </motion.div>
+        )}
 
         <div className="relative flex w-full max-w-sm flex-col items-center gap-5 text-center">
-          {/* ---- Chest (pre-open stages) ---- */}
-          {preOpen && (
+          {/* ---- Frames 1-3: the closed chest ---- */}
+          {closed && (
             <div className="relative flex h-64 flex-col items-center justify-center">
+              {/* 1: slam down with shockwave */}
+              {stage === "drop" && (
+                <motion.div
+                  className="absolute bottom-6 h-3 w-48 rounded-full bg-amber-300/40 blur-sm"
+                  initial={{ scaleX: 0.2, opacity: 0 }}
+                  animate={{ scaleX: [0.2, 1.6, 1], opacity: [0, 1, 0] }}
+                  transition={{ duration: 0.7, delay: 0.25 }}
+                  aria-hidden
+                />
+              )}
               <div
                 className={
                   stage === "drop"
                     ? "animate-chest-slam"
-                    : stage === "shake" || stage === "spin"
+                    : stage === "jackpot"
                       ? "animate-chest-shake-hard"
                       : "animate-chestShake"
                 }
               >
-                <span className="text-9xl drop-shadow-[0_0_30px_rgba(251,191,36,0.5)]" aria-hidden>
+                <span className="text-9xl drop-shadow-[0_0_30px_rgba(251,191,36,0.6)]" aria-hidden>
                   🎁
                 </span>
               </div>
 
-              {/* Chains snapping off */}
-              {stage === "chains" && (
-                <>
-                  {[
-                    { x: -90, y: -40, r: -80 },
-                    { x: 80, y: -60, r: 60 },
-                    { x: -60, y: 60, r: 45 },
-                    { x: 95, y: 40, r: -50 },
-                  ].map((c, i) => (
-                    <motion.span
-                      key={i}
-                      className="absolute text-3xl"
-                      initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
-                      animate={{ x: c.x, y: c.y, rotate: c.r, opacity: 0 }}
-                      transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
-                      aria-hidden
-                    >
-                      ⛓️
-                    </motion.span>
-                  ))}
-                </>
-              )}
-
-              {/* Escalating glow */}
-              {(stage === "shake" || stage === "spin") && (
+              {/* 2: light leaks out of the seams */}
+              {(stage === "rattle" || stage === "jackpot") && (
                 <motion.div
                   className="absolute inset-0 -z-10 rounded-full blur-2xl"
-                  style={{ backgroundColor: `${style.frame}44` }}
-                  animate={{ scale: [1, 1.5, 1.2, 1.8], opacity: [0.3, 0.7, 0.5, 0.9] }}
-                  transition={{ duration: 1.2, repeat: Infinity }}
+                  style={{ backgroundColor: `${style.frame}55` }}
+                  animate={{ scale: [1, 1.5, 1.2, 1.9], opacity: [0.3, 0.8, 0.5, 1] }}
+                  transition={{ duration: 1.1, repeat: Infinity }}
                   aria-hidden
                 />
               )}
 
-              {/* Rarity slot-machine spin */}
-              {stage === "spin" && <RaritySlot finalRarity={reveal.rarity} />}
+              {/* 3: jackpot build-up — golden rings + 777 slot */}
+              {stage === "jackpot" && (
+                <>
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute rounded-full border-2 border-amber-300/80"
+                      style={{ width: 80, height: 80 }}
+                      initial={{ scale: 0.6, opacity: 0.9, rotate: 0 }}
+                      animate={{ scale: 3.2 + i, opacity: 0, rotate: 120 }}
+                      transition={{ duration: 1.1, delay: i * 0.25, repeat: Infinity }}
+                      aria-hidden
+                    />
+                  ))}
+                  <EmojiBurst emoji="✨" count={particleCount(8, intensity)} distance={120} duration={1.4} />
+                  <motion.div
+                    className="absolute -bottom-2 flex gap-1 rounded-xl border-2 border-amber-300 bg-black/80 px-4 py-1.5 font-display text-3xl text-neon-gold shadow-neon-gold"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    aria-hidden
+                  >
+                    {[0, 1, 2].map((i) => (
+                      <SlotDigit key={i} delay={i * 0.3} />
+                    ))}
+                  </motion.div>
+                </>
+              )}
             </div>
           )}
 
-          {/* ---- Burst ---- */}
+          {/* ---- Frame 4: explodes open ---- */}
           {stage === "burst" && (
             <div className="relative flex h-64 items-center justify-center">
               <motion.span
                 className="text-9xl"
                 initial={{ scale: 1 }}
-                animate={{ scale: [1, 1.4, 0.9], rotate: [0, -6, 4] }}
+                animate={{ scale: [1, 1.5, 0.9], rotate: [0, -8, 5] }}
                 transition={{ duration: 0.5 }}
                 aria-hidden
               >
                 🧨
               </motion.span>
-              <EmojiBurst
-                emoji="🪙"
-                count={particleCount(16, intensity)}
-                distance={160}
-                duration={1.1}
-              />
-              <EmojiBurst
-                emoji={style.burst}
-                count={particleCount(10, intensity)}
-                distance={120}
-                duration={1}
-              />
+              <EmojiBurst emoji="🪙" count={particleCount(18, intensity)} distance={170} duration={1.1} />
+              <EmojiBurst emoji="💎" count={particleCount(8, intensity)} distance={130} duration={1} />
+              <EmojiBurst emoji={style.burst} count={particleCount(10, intensity)} distance={120} duration={1} />
             </div>
           )}
 
-          {/* ---- Item card flies out ---- */}
+          {/* ---- Frame 5: the item RISES on a beam of light ---- */}
+          {stage === "rise" && (
+            <div className="relative flex h-64 items-center justify-center overflow-visible">
+              {/* light beam */}
+              <motion.div
+                className="absolute bottom-0 h-full w-24"
+                style={{
+                  background: `linear-gradient(to top, ${style.frame}66, transparent)`,
+                }}
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={{ opacity: 1, scaleY: 1 }}
+                transition={{ duration: 0.4 }}
+                aria-hidden
+              />
+              <motion.span
+                className="relative text-8xl"
+                initial={{ y: 90, scale: 0.5, opacity: 0 }}
+                animate={{ y: -10, scale: 1.2, opacity: 1, rotate: [0, -6, 6, 0] }}
+                transition={{ duration: 1, type: "spring", stiffness: 120, damping: 12 }}
+                style={{ filter: `drop-shadow(0 0 30px ${style.frame})` }}
+                aria-hidden
+              >
+                {reveal.powerUpDef.icon}
+              </motion.span>
+              <EmojiBurst emoji="✨" count={particleCount(10, intensity)} distance={110} duration={1.2} />
+            </div>
+          )}
+
+          {/* ---- Frame 6: reward resolution ---- */}
           {stage === "card" && (
             <motion.div
               initial={{ y: 120, scale: 0.4, opacity: 0, rotate: -8 }}
@@ -162,24 +207,18 @@ export function ChestModal() {
               transition={{ type: "spring", stiffness: 240, damping: 15 }}
               className="relative flex w-full flex-col items-center gap-4"
             >
-              <EmojiBurst
-                emoji={style.burst}
-                count={particleCount(8, intensity)}
-                distance={130}
-                duration={1}
-              />
-              {/* Rarity banner */}
+              <EmojiBurst emoji={style.burst} count={particleCount(8, intensity)} distance={130} duration={1} />
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="rounded-full px-6 py-1.5 font-display text-lg uppercase tracking-[0.3em] text-black"
+                transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
+                className="rounded-full px-6 py-1.5 font-display text-lg uppercase tracking-[0.25em] text-black"
                 style={{ background: style.banner, boxShadow: style.glow }}
               >
-                {style.label}!
+                New item unlocked!
               </motion.div>
               <div className="w-full">
-                <ItemCard def={reveal.itemDef} />
+                <ItemCard def={reveal.powerUpDef} />
               </div>
               <motion.button whileTap={{ scale: 0.94 }} className="btn-gold w-full" onClick={clear}>
                 Keep it 💰
@@ -204,46 +243,32 @@ export function ChestModal() {
   );
 }
 
-/** Slot-machine rarity spinner that settles on the real rarity. */
-function RaritySlot({ finalRarity }: { finalRarity: keyof typeof RARITY_STYLES }) {
-  const order = ["common", "rare", "epic", "legendary"] as const;
-  const [idx, setIdx] = useState(0);
+/** One reel of the 777 slot — spins digits then settles on 7. */
+function SlotDigit({ delay }: { delay: number }) {
+  const [digit, setDigit] = useState(0);
   const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     let i = 0;
-    let speed = 90;
-    let timer: ReturnType<typeof setTimeout>;
-    const spin = () => {
+    const iv = setInterval(() => {
       i += 1;
-      setIdx(i % order.length);
-      speed *= 1.13; // slows down like a real slot wheel
-      if (speed < 300) {
-        timer = setTimeout(spin, speed);
-      } else {
+      setDigit(Math.floor(Math.random() * 10));
+      if (i > 8 + delay * 10) {
+        clearInterval(iv);
+        setDigit(7);
         setSettled(true);
       }
-    };
-    timer = setTimeout(spin, speed);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    }, 80);
+    return () => clearInterval(iv);
+  }, [delay]);
 
-  const showing = settled ? finalRarity : (order[idx] ?? "common");
-  const style = RARITY_STYLES[showing];
   return (
-    <motion.div
-      className="absolute -bottom-2 rounded-full border-2 px-6 py-1.5 font-display text-xl"
-      style={{
-        color: style.text,
-        borderColor: style.frame,
-        boxShadow: settled ? style.glow : undefined,
-        background: "rgba(0,0,0,0.6)",
-      }}
-      animate={settled ? { scale: [1, 1.3, 1] } : {}}
-      transition={{ duration: 0.35 }}
+    <motion.span
+      animate={settled ? { scale: [1, 1.4, 1], color: "#fbbf24" } : { color: "#94a3b8" }}
+      transition={{ duration: 0.3 }}
+      className="w-7 tabular-nums"
     >
-      {style.label}
-    </motion.div>
+      {digit}
+    </motion.span>
   );
 }

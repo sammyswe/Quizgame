@@ -8,15 +8,13 @@ import { LandingScreen } from "./screens/LandingScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { RoundIntroScreen } from "./screens/RoundIntroScreen";
 import { QuestionScreen } from "./screens/QuestionScreen";
-import { AuctionScreen } from "./screens/AuctionScreen";
-import { PairChoiceScreen } from "./screens/PairChoiceScreen";
-import { FinalActionScreen } from "./screens/FinalActionScreen";
 import { RevealScreen } from "./screens/RevealScreen";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
 import { WinnerScreen } from "./screens/WinnerScreen";
 import { Hud } from "./components/Hud";
 import { ItemDrawer } from "./components/ItemDrawer";
 import { ChestModal } from "./components/ChestModal";
+import { ResultOverlay } from "./components/ResultOverlay";
 import { Toasts } from "./components/Toasts";
 import { DebugPanel } from "./components/DebugPanel";
 
@@ -41,31 +39,19 @@ export default function App() {
         break;
       case "round_intro":
         screen = <RoundIntroScreen />;
-        screenKey = `intro-${game.roundIndex}`;
-        break;
-      case "auction":
-        screen = <AuctionScreen />;
-        screenKey = "auction";
+        screenKey = `intro-${game.arcade?.roundNumber ?? 0}`;
         break;
       case "question":
         screen = <QuestionScreen />;
         screenKey = `q-${game.question?.id ?? game.questionNumber}`;
         break;
-      case "pair_choice":
-        screen = <PairChoiceScreen />;
-        screenKey = "pair";
-        break;
-      case "final_action":
-        screen = <FinalActionScreen />;
-        screenKey = `final-${game.finalPlunder?.questionNumber ?? 0}`;
-        break;
       case "reveal":
         screen = <RevealScreen />;
-        screenKey = `reveal-${game.revealEvents[0]?.id ?? game.roundIndex}`;
+        screenKey = `reveal-${game.revealEvents[0]?.id ?? game.arcade?.roundNumber ?? 0}`;
         break;
       case "leaderboard":
         screen = <LeaderboardScreen />;
-        screenKey = `board-${game.roundIndex}`;
+        screenKey = `board-${game.arcade?.roundNumber ?? 0}`;
         break;
       case "winner":
         screen = <WinnerScreen />;
@@ -77,10 +63,13 @@ export default function App() {
     }
   }
 
+  // Event rounds sail to the island scene; regular rounds keep the open ocean.
+  const scene = game?.arcade?.isEventRound ? ("lootDrop" as const) : undefined;
+
   return (
     <div className="relative min-h-full">
       <Background />
-      {inGame && <SceneBackdrop round={game?.currentRound} />}
+      {inGame && scene && <SceneBackdrop round={scene} />}
       <div className="relative z-10 min-h-full">
         {inGame && <Hud />}
         <AnimatePresence mode="wait">
@@ -97,6 +86,7 @@ export default function App() {
         </AnimatePresence>
       </div>
       {game && <ItemDrawer />}
+      <ResultOverlay />
       <ChestModal />
       <Toasts />
       <MuteButton />

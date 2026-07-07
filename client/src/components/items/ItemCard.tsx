@@ -1,18 +1,19 @@
 import { motion } from "framer-motion";
-import type { ItemDef } from "@treasure-trap/shared";
+import type { Rarity } from "@treasure-trap/shared";
 import { RARITY_STYLES } from "../../lib/rarityStyles";
 
-const TIMING_LABELS: Record<string, string> = {
-  prep: "⏳ before question",
-  question: "❓ during question",
-  lock: "🔒 on lock-in",
-  reveal: "🎭 at reveal",
-  final: "🏴‍☠️ late game",
+export type CardDef = {
+  name: string;
+  icon: string;
+  rarity: Rarity;
+  description: string;
+  /** True for attack power-ups — the Fire button arms targeting mode. */
+  isAttack?: boolean;
 };
 
 /**
  * Mobile-game power-up card: rarity frame + glow, chunky icon, name,
- * one-line effect, timing chip. Used in the booty bag and chest reveals.
+ * one-line effect. Used in the booty bag and chest reveals.
  */
 export function ItemCard({
   def,
@@ -20,7 +21,7 @@ export function ItemCard({
   onPlay,
   playDisabled,
 }: {
-  def: ItemDef;
+  def: CardDef;
   compact?: boolean;
   onPlay?: () => void;
   playDisabled?: boolean;
@@ -59,18 +60,15 @@ export function ItemCard({
           <p className={`text-slate-300 ${compact ? "text-[11px]" : "text-xs"}`}>
             {def.description}
           </p>
-          <div className="mt-1 inline-block rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-bold text-slate-400">
-            {TIMING_LABELS[def.timing] ?? def.timing}
-          </div>
         </div>
         {onPlay && (
           <motion.button
             whileTap={{ scale: 0.85 }}
             disabled={playDisabled}
             onClick={onPlay}
-            className="btn-cyan !min-h-0 shrink-0 !px-3.5 !py-2 !text-sm"
+            className={`!min-h-0 shrink-0 !px-3.5 !py-2 !text-sm ${def.isAttack ? "btn-pink" : "btn-cyan"} ${playDisabled ? "opacity-40" : ""}`}
           >
-            Fire!
+            {def.isAttack ? "🎯 Aim" : "Use"}
           </motion.button>
         )}
       </div>

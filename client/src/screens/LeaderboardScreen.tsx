@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo } from "react";
-import { ROUNDS } from "@treasure-trap/shared";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { AnimatedNumber, Screen, TimerBar } from "../components/ui";
@@ -44,7 +43,9 @@ export function LeaderboardScreen() {
   }, []);
 
   if (!game) return null;
-  const nextRound = game.roundPlan[game.roundIndex + 1];
+  const arcade = game.arcade;
+  const nextRoundNumber = arcade ? arcade.roundNumber + 1 : 0;
+  const nextEventRound = arcade?.eventRounds.find((r) => r >= nextRoundNumber);
   const maxScore = Math.max(1, ...sorted.map((p) => p.score));
 
   return (
@@ -160,24 +161,25 @@ export function LeaderboardScreen() {
       </div>
 
       <div className="mt-auto text-center">
-        {nextRound ? (
+        {arcade && nextRoundNumber <= arcade.totalRounds ? (
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
             className="text-sm text-slate-300"
           >
-            Next:{" "}
-            <b>
-              {ROUNDS[nextRound].icon} {ROUNDS[nextRound].name}
-            </b>
-            <br />
-            <span className="text-xs text-slate-500">{ROUNDS[nextRound].tagline}</span>
+            Next: <b>Round {nextRoundNumber}</b> of {arcade.totalRounds}
+            {nextEventRound && (
+              <>
+                <br />
+                <span className="text-xs text-neon-gold">
+                  ⚡ {nextEventRound === nextRoundNumber ? "SPECIAL EVENT NOW" : `Special event at round ${nextEventRound}`}
+                </span>
+              </>
+            )}
           </motion.p>
         ) : (
-          <p className="animate-shimmer font-display text-xl text-neon-red">
-            Final Plunder begins...
-          </p>
+          <p className="animate-shimmer font-display text-xl text-neon-red">The final tally...</p>
         )}
         <p className="mt-2 text-xs text-slate-500">💡 Got chests? Open them now → 🎒</p>
         {isHost && (

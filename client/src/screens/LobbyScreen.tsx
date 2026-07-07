@@ -1,19 +1,15 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import {
-  GAME_LENGTHS,
-  ROUNDS,
-  ROUND_ORDER,
-  type GameLength,
-  type RoundId,
-} from "@treasure-trap/shared";
+import { ARCADE, ARCADE_LENGTHS, type GameLength } from "@treasure-trap/shared";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { Screen, SectionTitle } from "../components/ui";
 import { PirateAvatar } from "../components/players/PirateAvatar";
 import { sfx } from "../lib/sfx";
 
-/** Lobby + game setup. The host configures the voyage; the crew watches it build. */
+const LENGTH_ORDER: GameLength[] = ["test", "short", "medium", "long"];
+
+/** Lobby + game setup. The host picks the length; the crew gathers. */
 export function LobbyScreen() {
   const game = useGameStore((s) => s.game);
   const isHost = useGameStore((s) => s.isHost());
@@ -23,8 +19,6 @@ export function LobbyScreen() {
   if (!game) return null;
 
   const length = game.config.length;
-  const pickedRounds = game.config.rounds;
-  const roundCount = GAME_LENGTHS[length].roundCount;
 
   const shareUrl = `${window.location.origin}${window.location.pathname}?room=${game.roomCode}`;
 
@@ -40,24 +34,6 @@ export function LobbyScreen() {
 
   const setLength = (l: GameLength) => {
     socket.emit("game:configure", { length: l, rounds: [] });
-  };
-
-  const toggleRound = (r: RoundId) => {
-    if (length === "full") return;
-    let next: RoundId[];
-    if (pickedRounds.includes(r)) {
-      next = pickedRounds.filter((x) => x !== r);
-    } else if (pickedRounds.length < roundCount) {
-      next = [...pickedRounds, r];
-    } else {
-      return;
-    }
-    socket.emit("game:configure", { length, rounds: next });
-  };
-
-  const randomise = () => {
-    socket.emit("game:configure", { length, rounds: [] });
-    pushToast({ icon: "🎲", text: "Rounds will be randomised. Fate decides!" });
   };
 
   return (
@@ -112,8 +88,8 @@ export function LobbyScreen() {
 
       <div>
         <SectionTitle>Game length</SectionTitle>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {(Object.keys(GAME_LENGTHS) as GameLength[]).map((l) => (
+        <div className="mt-2 grid grid-cols-4 gap-2">
+          {LENGTH_ORDER.map((l) => (
             <button
               key={l}
               disabled={!isHost}
@@ -122,54 +98,16 @@ export function LobbyScreen() {
                 length === l ? "border-neon-gold/70 shadow-neon-gold" : "opacity-60"
               } ${isHost ? "" : "pointer-events-none"}`}
             >
-              <div className="font-display text-sm text-neon-gold">{GAME_LENGTHS[l].label}</div>
-              <div className="mt-0.5 text-[10px] text-slate-400">{GAME_LENGTHS[l].blurb}</div>
+              <div className="font-display text-sm text-neon-gold">{ARCADE_LENGTHS[l].label}</div>
+              <div className="mt-0.5 text-[10px] text-slate-400">{ARCADE_LENGTHS[l].blurb}</div>
             </button>
           ))}
         </div>
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          ⚡ Special event every {ARCADE.EVENT_EVERY}th round · 🎁 answer right in the first{" "}
+          {ARCADE.FIRST_ITEM_WINDOW} rounds for an item
+        </p>
       </div>
-
-      {length !== "full" && (
-        <div>
-          <div className="flex items-center justify-between">
-            <SectionTitle>
-              Rounds (
-              {pickedRounds.length === 0 ? "random" : `${pickedRounds.length}/${roundCount}`})
-            </SectionTitle>
-            {isHost && (
-              <button className="btn-ghost !min-h-0 !px-3 !py-1 !text-xs" onClick={randomise}>
-                🎲 Randomise
-              </button>
-            )}
-          </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {ROUND_ORDER.map((r) => {
-              const meta = ROUNDS[r];
-              const picked = pickedRounds.includes(r);
-              return (
-                <button
-                  key={r}
-                  disabled={!isHost}
-                  onClick={() => toggleRound(r)}
-                  className={`neon-card flex items-center gap-2 p-2.5 text-left transition ${
-                    picked
-                      ? "border-neon-cyan/70 shadow-neon-cyan"
-                      : pickedRounds.length > 0
-                        ? "opacity-50"
-                        : ""
-                  } ${isHost ? "" : "pointer-events-none"}`}
-                >
-                  <span className="text-xl" aria-hidden>
-                    {meta.icon}
-                  </span>
-                  <span className="text-xs font-bold">{meta.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-1.5 text-[11px] text-slate-500">Pick rounds, or leave it random.</p>
-        </div>
-      )}
 
       {isHost ? (
         <motion.button

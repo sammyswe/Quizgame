@@ -107,13 +107,18 @@ export const ROUND_ORDER: RoundId[] = [
   "finalPlunder",
 ];
 
+/**
+ * Legacy mini-game round plan (v1). The arcade structure in `config/arcade.ts`
+ * supersedes this; kept for the classic mini-game modes and their tests.
+ */
 export const GAME_LENGTHS: Record<
   GameLength,
   { label: string; roundCount: number; blurb: string }
 > = {
-  short: { label: "Short", roundCount: 3, blurb: "3 rounds · 15 min" },
-  medium: { label: "Medium", roundCount: 5, blurb: "5 rounds · 25 min" },
-  full: { label: "Full", roundCount: 7, blurb: "7 rounds · 35 min" },
+  test: { label: "Test", roundCount: 3, blurb: "3 rounds" },
+  short: { label: "Short", roundCount: 3, blurb: "3 rounds" },
+  medium: { label: "Medium", roundCount: 5, blurb: "5 rounds" },
+  long: { label: "Long", roundCount: 7, blurb: "7 rounds" },
 };
 
 /** Build a round plan. Final Plunder always closes the game when included. */
@@ -123,7 +128,7 @@ export function buildRoundPlan(
   rng: () => number = Math.random,
 ): RoundId[] {
   const count = GAME_LENGTHS[length].roundCount;
-  if (length === "full") return [...ROUND_ORDER];
+  if (length === "long") return [...ROUND_ORDER];
 
   let plan: RoundId[];
   if (picked && picked.length === count) {

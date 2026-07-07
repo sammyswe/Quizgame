@@ -25,6 +25,8 @@ export const CHEST_SOURCES: Record<ChestSource, { name: string; icon: string; bl
   auction: { name: "Auction Chest", icon: "🔨", blurb: "Won at the Treasure Auction" },
   honour: { name: "Honour Chest", icon: "🤝", blurb: "Helped a crewmate — you both won" },
   revenge: { name: "Revenge Chest", icon: "😤", blurb: "Betrayed, plundered or wrongly accused" },
+  jackpot: { name: "Jackpot Chest", icon: "🎰", blurb: "First correct answer of the voyage" },
+  marooned: { name: "Castaway Chest", icon: "🏝️", blurb: "Marooned on the island" },
   debug: { name: "Debug Chest", icon: "🧪", blurb: "Forced from the playtest panel" },
 };
 

@@ -28,10 +28,10 @@ export type SoundEventName =
 const SOUND_MAP: Record<SoundEventName, () => void> = {
   chestOpen: sfx.chest,
   itemReveal: sfx.legendary,
-  cannonFire: sfx.boom,
+  cannonFire: sfx.cannonIncoming,
   lootPlundered: sfx.lose,
-  correctAnswer: sfx.sting,
-  wrongAnswer: sfx.lose,
+  correctAnswer: sfx.correct,
+  wrongAnswer: sfx.gameOver,
   mutiny: sfx.alarm,
   finalPlunder: sfx.drum,
   winner: sfx.fanfare,
