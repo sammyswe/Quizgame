@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { SCORING } from "@treasure-trap/shared";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
-import { PlayerChip, Screen, TimerBar } from "../components/ui";
+import { Screen, TimerBar } from "../components/ui";
 import { MissionCard } from "../components/MissionCard";
 import { EmojiBurst, LockStamp } from "../components/fx";
+import { PirateAvatar } from "../components/players/PirateAvatar";
 import { sfx } from "../lib/sfx";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
@@ -367,18 +368,28 @@ function AnswerStatusRow() {
   const game = useGameStore((s) => s.game);
   if (!game) return null;
   return (
-    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-      {game.players.map((p) => (
-        <PlayerChip
+    <div className="flex flex-wrap items-end justify-center gap-3 pt-1">
+      {game.players.map((p, i) => (
+        <motion.div
           key={p.id}
-          player={p}
-          highlight={p.hasAnswered}
-          suffix={
-            <span aria-label={p.hasAnswered ? "answered" : "thinking"}>
-              {p.hasAnswered ? "✅" : "💭"}
-            </span>
-          }
-        />
+          layout
+          className="flex flex-col items-center gap-0.5"
+          animate={p.hasAnswered ? { scale: [1, 1.15, 1] } : {}}
+          transition={{ duration: 0.35 }}
+        >
+          <PirateAvatar
+            playerId={p.id}
+            emoji={p.avatar}
+            size={38}
+            bobDelay={i * 0.25}
+            mood={p.hasAnswered ? "answered" : "nervous"}
+          />
+          <span
+            className={`max-w-[9ch] truncate text-[10px] font-bold ${p.connected ? "text-slate-300" : "text-slate-600"}`}
+          >
+            {p.nickname}
+          </span>
+        </motion.div>
       ))}
     </div>
   );

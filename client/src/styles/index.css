@@ -303,6 +303,74 @@ body {
   animation: ringPulse 1.1s ease-out infinite;
 }
 
+/* Legendary card shimmer */
+@keyframes legendaryShimmer {
+  0%,
+  100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.25) saturate(1.3);
+  }
+}
+
+.animate-legendary-shimmer {
+  animation: legendaryShimmer 1.6s ease-in-out infinite;
+}
+
+/* Chained/locked disabled buttons */
+.btn:disabled {
+  position: relative;
+  filter: grayscale(0.55);
+}
+
+/* Chest slam bounce */
+@keyframes chestSlam {
+  0% {
+    transform: translateY(-60vh) scale(1.2);
+  }
+  60% {
+    transform: translateY(0) scale(1);
+  }
+  72% {
+    transform: translateY(-4vh) scale(1.04);
+  }
+  86% {
+    transform: translateY(0) scale(0.98);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-chest-slam {
+  animation: chestSlam 0.7s cubic-bezier(0.3, 0.9, 0.4, 1) forwards;
+}
+
+/* Escalating chest shake */
+@keyframes chestShakeHard {
+  0%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  20% {
+    transform: rotate(-9deg) scale(1.04);
+  }
+  40% {
+    transform: rotate(9deg) scale(1.06);
+  }
+  60% {
+    transform: rotate(-7deg) scale(1.08);
+  }
+  80% {
+    transform: rotate(7deg) scale(1.1);
+  }
+}
+
+.animate-chest-shake-hard {
+  animation: chestShakeHard 0.35s ease-in-out infinite;
+}
+
 /* Idle bobbing for hero icons */
 @keyframes heroBob {
   0%,

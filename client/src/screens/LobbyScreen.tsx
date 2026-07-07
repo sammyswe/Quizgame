@@ -10,6 +10,7 @@ import {
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { Screen, SectionTitle } from "../components/ui";
+import { PirateAvatar } from "../components/players/PirateAvatar";
 import { sfx } from "../lib/sfx";
 
 /** Lobby + game setup. The host configures the voyage; the crew watches it build. */
@@ -85,14 +86,12 @@ export function LobbyScreen() {
           {game.players.map((p, i) => (
             <motion.div
               key={p.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.05 }}
+              initial={{ opacity: 0, scale: 0.5, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 18 }}
               className={`neon-card flex items-center gap-2 p-3 ${p.id === playerId ? "border-neon-cyan/50 shadow-neon-cyan" : ""}`}
             >
-              <span className="text-2xl" aria-hidden>
-                {p.avatar}
-              </span>
+              <PirateAvatar playerId={p.id} emoji={p.avatar} size={40} bobDelay={i * 0.3} />
               <div className="min-w-0">
                 <div className="truncate text-sm font-black">
                   {p.nickname} {p.id === playerId && <span className="text-neon-cyan">(you)</span>}

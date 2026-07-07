@@ -1,13 +1,59 @@
-import type { RevealEvent, RevealEventType } from "../types/index.js";
+import type {
+  RevealAnimation,
+  RevealEvent,
+  RevealEventType,
+  RevealIntensity,
+} from "../types/index.js";
 
 let counter = 0;
+
+/** Default visual treatment per event type; call sites can override via `extra`. */
+export function inferAnimation(type: RevealEventType): {
+  animation: RevealAnimation;
+  intensity: RevealIntensity;
+} {
+  switch (type) {
+    case "lootPlundered":
+      return { animation: "plunder", intensity: "medium" };
+    case "itemTriggered":
+      return { animation: "cannon", intensity: "medium" };
+    case "itemBlocked":
+      return { animation: "curse", intensity: "medium" };
+    case "chestEarned":
+      return { animation: "chest", intensity: "medium" };
+    case "missionSuccess":
+      return { animation: "mission", intensity: "big" };
+    case "missionFailed":
+      return { animation: "wave", intensity: "small" };
+    case "accusationCorrect":
+      return { animation: "mutiny", intensity: "big" };
+    case "accusationWrong":
+      return { animation: "wave", intensity: "small" };
+    case "scoreChanged":
+      return { animation: "coinBurst", intensity: "small" };
+    case "auctionResult":
+      return { animation: "coinBurst", intensity: "medium" };
+    case "pairResult":
+      return { animation: "duel", intensity: "medium" };
+    case "chaseMove":
+      return { animation: "wave", intensity: "small" };
+    case "finalAction":
+      return { animation: "cannon", intensity: "big" };
+    case "correctAnswer":
+      return { animation: "mapFlip", intensity: "medium" };
+    default:
+      return { animation: "wave", intensity: "small" };
+  }
+}
 
 /** Build a reveal event with a unique id. Reveal events are the ONLY way scores change on screen. */
 export function ev(
   type: RevealEventType,
   title: string,
   description: string,
-  extra: Partial<Pick<RevealEvent, "icon" | "playerIds" | "pointsDelta">> = {},
+  extra: Partial<
+    Pick<RevealEvent, "icon" | "playerIds" | "pointsDelta" | "animation" | "intensity">
+  > = {},
 ): RevealEvent {
   counter += 1;
   return {
@@ -15,6 +61,7 @@ export function ev(
     type,
     title,
     description,
+    ...inferAnimation(type),
     ...extra,
   };
 }

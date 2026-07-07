@@ -4,6 +4,7 @@ import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { AnimatedNumber, Confetti, Screen } from "../components/ui";
 import { EmojiRain } from "../components/fx";
+import { PirateAvatar } from "../components/players/PirateAvatar";
 import { sfx } from "../lib/sfx";
 
 export function WinnerScreen() {
@@ -37,12 +38,13 @@ export function WinnerScreen() {
           The richest pirate
         </div>
         <motion.div
-          className="text-8xl"
           animate={{ y: [0, -12, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
           aria-hidden
         >
-          {winner?.avatar}
+          {winner && (
+            <PirateAvatar playerId={winner.id} emoji={winner.avatar} size={110} mood="winner" />
+          )}
         </motion.div>
         <h1 className="font-display text-6xl text-neon-gold title-glow">{winner?.nickname}</h1>
         <div className="font-display text-4xl text-neon-gold">

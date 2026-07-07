@@ -1,8 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { CHEST_SOURCES, ITEMS, RARITY_META, type OwnedItem } from "@treasure-trap/shared";
+import { CHEST_SOURCES, ITEMS, type ItemDef, type OwnedItem } from "@treasure-trap/shared";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
+import { ItemCard } from "./items/ItemCard";
+import { ItemUseOverlay } from "./items/ItemUseOverlay";
+import { playSound } from "../lib/soundEvents";
 
 /**
  * The player's booty bag: mystery chests to crack open and items to play.
@@ -11,6 +14,7 @@ import { useGameStore } from "../store/gameStore";
 export function ItemDrawer() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<OwnedItem | undefined>();
+  const [useFx, setUseFx] = useState<{ def: ItemDef; key: number } | undefined>();
   const priv = useGameStore((s) => s.priv);
   const game = useGameStore((s) => s.game);
   const playerId = useGameStore((s) => s.playerId);
@@ -18,6 +22,16 @@ export function ItemDrawer() {
   if (!priv || !game) return null;
   const count = priv.items.length + priv.chests.length;
   const inQuestion = game.phase === "question";
+
+  const fireItem = (
+    itemId: keyof typeof ITEMS,
+    payload: { uid: string; targetId?: string; optionIndex?: number },
+  ) => {
+    socket.emit("item:use", payload);
+    playSound("cannonFire");
+    setUseFx({ def: ITEMS[itemId], key: Date.now() });
+    setTimeout(() => setUseFx(undefined), 1700);
+  };
 
   const playItem = (item: OwnedItem) => {
     const def = ITEMS[item.itemId];
@@ -29,7 +43,7 @@ export function ItemDrawer() {
     ) {
       setPending(item);
     } else {
-      socket.emit("item:use", { uid: item.uid });
+      fireItem(item.itemId, { uid: item.uid });
       setOpen(false);
     }
   };
@@ -124,43 +138,22 @@ export function ItemDrawer() {
                   {priv.items.length > 0 && (
                     <div>
                       <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-400">
-                        Items
+                        Power-ups
                       </h3>
-                      <div className="flex flex-col gap-2">
-                        {priv.items.map((item) => {
-                          const def = ITEMS[item.itemId];
-                          const meta = RARITY_META[def.rarity];
-                          return (
-                            <div key={item.uid} className="neon-card flex items-center gap-3 p-3">
-                              <span className="text-3xl" aria-hidden>
-                                {def.icon}
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-display">{def.name}</span>
-                                  <span
-                                    className="rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase"
-                                    style={{ color: meta.color, border: `1px solid ${meta.color}` }}
-                                  >
-                                    {meta.label}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-400">{def.description}</p>
-                              </div>
-                              <button
-                                className="btn-cyan !min-h-0 !px-3 !py-1.5 !text-sm shrink-0"
-                                disabled={!inQuestion}
-                                onClick={() => playItem(item)}
-                              >
-                                Play
-                              </button>
-                            </div>
-                          );
-                        })}
+                      <div className="flex flex-col gap-2.5">
+                        {priv.items.map((item) => (
+                          <ItemCard
+                            key={item.uid}
+                            def={ITEMS[item.itemId]}
+                            compact
+                            playDisabled={!inQuestion}
+                            onPlay={() => playItem(item)}
+                          />
+                        ))}
                       </div>
                       {!inQuestion && (
                         <p className="mt-2 text-center text-xs text-slate-500">
-                          Items can be played while a question is live.
+                          ⛓️ Power-ups unlock while a question is live.
                         </p>
                       )}
                     </div>
@@ -178,6 +171,10 @@ export function ItemDrawer() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {useFx && <ItemUseOverlay key={useFx.key} def={useFx.def} />}
       </AnimatePresence>
     </>
   );
@@ -208,7 +205,7 @@ export function ItemDrawer() {
               key={i}
               className="btn-ghost justify-start text-left !text-base"
               onClick={() => {
-                socket.emit("item:use", { uid: item.uid, optionIndex: i });
+                fireItem(item.itemId, { uid: item.uid, optionIndex: i });
                 onDone();
               }}
             >
@@ -242,7 +239,7 @@ export function ItemDrawer() {
             key={p.id}
             className="btn-ghost justify-start !text-base"
             onClick={() => {
-              socket.emit("item:use", { uid: item.uid, targetId: p.id });
+              fireItem(item.itemId, { uid: item.uid, targetId: p.id });
               onDone();
             }}
           >

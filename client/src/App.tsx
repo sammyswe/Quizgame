@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useGameStore } from "./store/gameStore";
 import { Background } from "./components/Background";
+import { SceneBackdrop } from "./components/scenes/SceneBackdrop";
 import { isMuted, setMuted } from "./lib/sfx";
 import { LandingScreen } from "./screens/LandingScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
@@ -79,6 +80,7 @@ export default function App() {
   return (
     <div className="relative min-h-full">
       <Background />
+      {inGame && <SceneBackdrop round={game?.currentRound} />}
       <div className="relative z-10 min-h-full">
         {inGame && <Hud />}
         <AnimatePresence mode="wait">

@@ -90,5 +90,10 @@ docs/     PRD · GAME_DESIGN · ARCHITECTURE · ROADMAP · IMPLEMENTATION_PLAN �
 - [docs/PRD.md](docs/PRD.md) — product requirements & principles
 - [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) — every round/item/mission + what's simplified
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how state flows
+- [docs/ANIMATION_DIRECTION.md](docs/ANIMATION_DIRECTION.md) — the motion identity
+- [docs/VISUAL_SYSTEM.md](docs/VISUAL_SYSTEM.md) — palette, typography, rarity language
+- [docs/GAME_FEEL.md](docs/GAME_FEEL.md) — the feedback toolkit and contract
+- [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md) — placeholder → professional art map
 - [docs/SELF_REVIEW.md](docs/SELF_REVIEW.md) — honest state of the prototype
+- [docs/ANIMATION_SELF_REVIEW.md](docs/ANIMATION_SELF_REVIEW.md) — visual overhaul review
 - [docs/PLAYTEST_NOTES.md](docs/PLAYTEST_NOTES.md) — log your playtests here

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { emitWithAck, socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
+import { useGameFeel, type AnimationIntensity } from "../lib/gameFeel";
 
 /**
  * Dev-only playtest panel (import.meta.env.DEV). Not rendered in production
@@ -10,6 +11,8 @@ export function DebugPanel() {
   const [open, setOpen] = useState(false);
   const [stateJson, setStateJson] = useState<string | undefined>();
   const game = useGameStore((s) => s.game);
+  const intensity = useGameFeel((s) => s.intensity);
+  const setIntensity = useGameFeel((s) => s.setIntensity);
 
   if (!import.meta.env.DEV || !game) return null;
 
@@ -48,6 +51,20 @@ export function DebugPanel() {
             label={stateJson ? "🙈 Hide state JSON" : "🔍 Show state JSON"}
             onClick={() => (stateJson ? setStateJson(undefined) : void dump())}
           />
+          <div className="mt-1 flex items-center gap-1">
+            <span className="text-[10px] text-slate-400">FX:</span>
+            {(["reduced", "normal", "chaos"] as AnimationIntensity[]).map((i) => (
+              <button
+                key={i}
+                onClick={() => setIntensity(i)}
+                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                  intensity === i ? "bg-neon-green/30 text-neon-green" : "bg-white/5 text-slate-400"
+                }`}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
           <div className="text-[10px] text-slate-500">
             Phase: {game.phase} · Round: {game.currentRound ?? "-"}
           </div>

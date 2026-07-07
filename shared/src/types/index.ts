@@ -312,12 +312,30 @@ export type RevealEventType =
   | "chaseMove"
   | "finalAction";
 
+/** Visual treatment hint for the client reveal player. */
+export type RevealAnimation =
+  | "plunder"
+  | "cannon"
+  | "chest"
+  | "curse"
+  | "coinBurst"
+  | "mapFlip"
+  | "duel"
+  | "mutiny"
+  | "mission"
+  | "wave";
+
+export type RevealIntensity = "small" | "medium" | "big";
+
 export type RevealEvent = {
   id: string;
   type: RevealEventType;
   title: string;
   description: string;
   icon?: string;
+  /** Animation hint; the client infers from `type` when absent. */
+  animation?: RevealAnimation;
+  intensity?: RevealIntensity;
   playerIds?: string[];
   pointsDelta?: Record<string, number>;
 };
