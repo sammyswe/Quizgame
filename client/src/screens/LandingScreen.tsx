@@ -111,11 +111,24 @@ export function LandingScreen() {
           <button
             type="submit"
             className={effectiveMode === "create" ? "btn-gold w-full" : "btn-cyan w-full"}
-            disabled={busy || !connected || !nickname.trim() || (effectiveMode === "join" && code.length < 4)}
+            disabled={
+              busy ||
+              !connected ||
+              !nickname.trim() ||
+              (effectiveMode === "join" && code.length < 4)
+            }
           >
-            {busy ? "Hoisting sails..." : effectiveMode === "create" ? "⚓ Create a Voyage" : "🦜 Join the Crew"}
+            {busy
+              ? "Hoisting sails..."
+              : effectiveMode === "create"
+                ? "⚓ Create a Voyage"
+                : "🦜 Join the Crew"}
           </button>
-          <button type="button" className="btn-ghost !min-h-0 !py-2 !text-sm" onClick={() => setMode("landing")}>
+          <button
+            type="button"
+            className="btn-ghost !min-h-0 !py-2 !text-sm"
+            onClick={() => setMode("landing")}
+          >
             ← Back
           </button>
           {!connected && <p className="text-xs text-slate-500">Connecting to the high seas...</p>}

@@ -55,7 +55,11 @@ export function protectedPct(rank: number, playerCount: number): number {
 }
 
 /** Split of a score into protected/unprotected pools for the Final Plunder. */
-export function splitProtected(score: number, rank: number, playerCount: number): {
+export function splitProtected(
+  score: number,
+  rank: number,
+  playerCount: number,
+): {
   protected: number;
   unprotected: number;
 } {

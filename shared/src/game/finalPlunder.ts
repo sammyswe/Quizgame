@@ -47,13 +47,11 @@ export function offerFinalActions(
   return shuffled.slice(0, 3);
 }
 
-export function resolveFinalQuestion(
-  ctx: {
-    correctIndex: number;
-    players: FinalPlayerInput[];
-    rng?: () => number;
-  },
-): FinalResolution {
+export function resolveFinalQuestion(ctx: {
+  correctIndex: number;
+  players: FinalPlayerInput[];
+  rng?: () => number;
+}): FinalResolution {
   const rng = ctx.rng ?? Math.random;
   const events: RevealEvent[] = [];
   const scoreDelta: Record<string, number> = {};
@@ -70,10 +68,15 @@ export function resolveFinalQuestion(
     if (p.action?.actionId === "bankTheBooty") {
       pct = Math.min(0.95, pct + 0.15);
       events.push(
-        ev("finalAction", "Booty banked 🏦", `${p.nickname} locks more treasure in the vault — ${Math.round(pct * 100)}% protected this question.`, {
-          icon: "🏦",
-          playerIds: [p.id],
-        }),
+        ev(
+          "finalAction",
+          "Booty banked 🏦",
+          `${p.nickname} locks more treasure in the vault — ${Math.round(pct * 100)}% protected this question.`,
+          {
+            icon: "🏦",
+            playerIds: [p.id],
+          },
+        ),
       );
     }
     unprotectedPool[p.id] = Math.max(0, p.score - Math.round(p.score * pct));
@@ -108,7 +111,12 @@ export function resolveFinalQuestion(
    * Attempt to steal `amount` unprotected points from `victimId` for `attackerId`.
    * Handles shield/curse/bodyguard/false-treasure counters. Returns actual stolen.
    */
-  const attemptSteal = (attackerId: string, victimId: string, amount: number, label: string): number => {
+  const attemptSteal = (
+    attackerId: string,
+    victimId: string,
+    amount: number,
+    label: string,
+  ): number => {
     if (curses.has(victimId)) {
       curses.delete(victimId);
       const reversal = Math.min(SCORING.CURSE_REVERSAL_BONUS, unprotectedPool[attackerId] ?? 0);
@@ -116,21 +124,31 @@ export function resolveFinalQuestion(
       addDelta(scoreDelta, victimId, reversal);
       unprotectedPool[attackerId] = Math.max(0, (unprotectedPool[attackerId] ?? 0) - reversal);
       events.push(
-        ev("itemBlocked", "CURSED! ☠️", `${name(attackerId)}'s ${label} reversed! ${name(victimId)} steals ${reversal} back.`, {
-          icon: "☠️",
-          playerIds: [attackerId, victimId],
-          pointsDelta: { [attackerId]: -reversal, [victimId]: reversal },
-        }),
+        ev(
+          "itemBlocked",
+          "CURSED! ☠️",
+          `${name(attackerId)}'s ${label} reversed! ${name(victimId)} steals ${reversal} back.`,
+          {
+            icon: "☠️",
+            playerIds: [attackerId, victimId],
+            pointsDelta: { [attackerId]: -reversal, [victimId]: reversal },
+          },
+        ),
       );
       return 0;
     }
     if (shields.has(victimId)) {
       shields.delete(victimId);
       events.push(
-        ev("itemBlocked", "Shield holds! 🛡️", `${name(victimId)}'s Captain's Shield blocked ${name(attackerId)}'s ${label}.`, {
-          icon: "🛡️",
-          playerIds: [attackerId, victimId],
-        }),
+        ev(
+          "itemBlocked",
+          "Shield holds! 🛡️",
+          `${name(victimId)}'s Captain's Shield blocked ${name(attackerId)}'s ${label}.`,
+          {
+            icon: "🛡️",
+            playerIds: [attackerId, victimId],
+          },
+        ),
       );
       return 0;
     }
@@ -140,11 +158,19 @@ export function resolveFinalQuestion(
       addDelta(scoreDelta, guardId, SCORING.BODYGUARD_BONUS);
       addDelta(scoreDelta, victimId, SCORING.BODYGUARD_BONUS);
       events.push(
-        ev("itemBlocked", "Bodyguard! 🦍", `${name(guardId)} took the hit for ${name(victimId)}! Both gain +${SCORING.BODYGUARD_BONUS}.`, {
-          icon: "🦍",
-          playerIds: [attackerId, victimId, guardId],
-          pointsDelta: { [guardId]: SCORING.BODYGUARD_BONUS, [victimId]: SCORING.BODYGUARD_BONUS },
-        }),
+        ev(
+          "itemBlocked",
+          "Bodyguard! 🦍",
+          `${name(guardId)} took the hit for ${name(victimId)}! Both gain +${SCORING.BODYGUARD_BONUS}.`,
+          {
+            icon: "🦍",
+            playerIds: [attackerId, victimId, guardId],
+            pointsDelta: {
+              [guardId]: SCORING.BODYGUARD_BONUS,
+              [victimId]: SCORING.BODYGUARD_BONUS,
+            },
+          },
+        ),
       );
       return 0;
     }
@@ -155,11 +181,16 @@ export function resolveFinalQuestion(
       addDelta(scoreDelta, victimId, bait);
       unprotectedPool[attackerId] = Math.max(0, (unprotectedPool[attackerId] ?? 0) - bait);
       events.push(
-        ev("itemBlocked", "False Treasure! 🪤", `${name(attackerId)} stole a chest of painted rocks and pays ${name(victimId)} ${bait}!`, {
-          icon: "🪤",
-          playerIds: [attackerId, victimId],
-          pointsDelta: { [attackerId]: -bait, [victimId]: bait },
-        }),
+        ev(
+          "itemBlocked",
+          "False Treasure! 🪤",
+          `${name(attackerId)} stole a chest of painted rocks and pays ${name(victimId)} ${bait}!`,
+          {
+            icon: "🪤",
+            playerIds: [attackerId, victimId],
+            pointsDelta: { [attackerId]: -bait, [victimId]: bait },
+          },
+        ),
       );
       return 0;
     }
@@ -174,10 +205,17 @@ export function resolveFinalQuestion(
   // --- 1. Base scoring ---------------------------------------------------------------
   const correctPlayers = ctx.players.filter((p) => isCorrect(p.id));
   events.push(
-    ev("correctAnswer", "The answer surfaces!", correctPlayers.length > 0 ? `${correctPlayers.map((p) => p.nickname).join(", ")} answered true.` : "Not one pirate found it.", {
-      icon: "🏝️",
-      playerIds: correctPlayers.map((p) => p.id),
-    }),
+    ev(
+      "correctAnswer",
+      "The answer surfaces!",
+      correctPlayers.length > 0
+        ? `${correctPlayers.map((p) => p.nickname).join(", ")} answered true.`
+        : "Not one pirate found it.",
+      {
+        icon: "🏝️",
+        playerIds: correctPlayers.map((p) => p.id),
+      },
+    ),
   );
 
   for (const p of ctx.players) {
@@ -200,11 +238,16 @@ export function resolveFinalQuestion(
       if (action === "lastCannon") {
         addDelta(scoreDelta, p.id, SCORING.LAST_CANNON_BONUS);
         events.push(
-          ev("finalAction", "LAST CANNON! 🧨", `${p.nickname}'s desperate shot lands: +${SCORING.LAST_CANNON_BONUS} bonus!`, {
-            icon: "🧨",
-            playerIds: [p.id],
-            pointsDelta: { [p.id]: SCORING.LAST_CANNON_BONUS },
-          }),
+          ev(
+            "finalAction",
+            "LAST CANNON! 🧨",
+            `${p.nickname}'s desperate shot lands: +${SCORING.LAST_CANNON_BONUS} bonus!`,
+            {
+              icon: "🧨",
+              playerIds: [p.id],
+              pointsDelta: { [p.id]: SCORING.LAST_CANNON_BONUS },
+            },
+          ),
         );
       }
     } else if (action === "allInPlunder") {
@@ -212,11 +255,16 @@ export function resolveFinalQuestion(
       unprotectedPool[p.id] = Math.max(0, (unprotectedPool[p.id] ?? 0) - loss);
       addDelta(scoreDelta, p.id, -loss);
       events.push(
-        ev("finalAction", "All-in... all gone 🎰", `${p.nickname} went all-in and missed. -${loss} unprotected points.`, {
-          icon: "🎰",
-          playerIds: [p.id],
-          pointsDelta: { [p.id]: -loss },
-        }),
+        ev(
+          "finalAction",
+          "All-in... all gone 🎰",
+          `${p.nickname} went all-in and missed. -${loss} unprotected points.`,
+          {
+            icon: "🎰",
+            playerIds: [p.id],
+            pointsDelta: { [p.id]: -loss },
+          },
+        ),
       );
     }
   }
@@ -233,29 +281,49 @@ export function resolveFinalQuestion(
       case "raiseTheBlackFlag": {
         if (!isCorrect(p.id)) {
           events.push(
-            ev("finalAction", "Flag half-raised", `${p.nickname} raised the Black Flag but answered wrong. The crew laughs.`, {
-              icon: "🏴‍☠️",
-              playerIds: [p.id],
-            }),
+            ev(
+              "finalAction",
+              "Flag half-raised",
+              `${p.nickname} raised the Black Flag but answered wrong. The crew laughs.`,
+              {
+                icon: "🏴‍☠️",
+                playerIds: [p.id],
+              },
+            ),
           );
           break;
         }
         events.push(
-          ev("finalAction", "THE BLACK FLAG RISES! 🏴‍☠️", `${p.nickname} answered true under the black flag — every other pirate bleeds ${SCORING.BLACK_FLAG_ALL_LOSE} unprotected points!`, {
-            icon: "🏴‍☠️",
-            playerIds: [p.id],
-          }),
+          ev(
+            "finalAction",
+            "THE BLACK FLAG RISES! 🏴‍☠️",
+            `${p.nickname} answered true under the black flag — every other pirate bleeds ${SCORING.BLACK_FLAG_ALL_LOSE} unprotected points!`,
+            {
+              icon: "🏴‍☠️",
+              playerIds: [p.id],
+            },
+          ),
         );
         for (const victim of ctx.players) {
           if (victim.id === p.id) continue;
-          const stolen = attemptSteal(p.id, victim.id, SCORING.BLACK_FLAG_ALL_LOSE, "Black Flag raid");
+          const stolen = attemptSteal(
+            p.id,
+            victim.id,
+            SCORING.BLACK_FLAG_ALL_LOSE,
+            "Black Flag raid",
+          );
           if (stolen > 0) {
             events.push(
-              ev("lootPlundered", "Raided!", `${victim.nickname} loses ${stolen} to the black flag.`, {
-                icon: "🏴‍☠️",
-                playerIds: [p.id, victim.id],
-                pointsDelta: { [victim.id]: -stolen, [p.id]: stolen },
-              }),
+              ev(
+                "lootPlundered",
+                "Raided!",
+                `${victim.nickname} loses ${stolen} to the black flag.`,
+                {
+                  icon: "🏴‍☠️",
+                  playerIds: [p.id, victim.id],
+                  pointsDelta: { [victim.id]: -stolen, [p.id]: stolen },
+                },
+              ),
             );
           }
         }
@@ -266,7 +334,12 @@ export function resolveFinalQuestion(
         if (!leader || leader.id === p.id) break;
         if (!isCorrect(p.id)) {
           events.push(
-            ev("finalAction", "Heist fumbled 👑", `${p.nickname} tripped the alarm — wrong answer, no heist.`, { icon: "👑", playerIds: [p.id] }),
+            ev(
+              "finalAction",
+              "Heist fumbled 👑",
+              `${p.nickname} tripped the alarm — wrong answer, no heist.`,
+              { icon: "👑", playerIds: [p.id] },
+            ),
           );
           break;
         }
@@ -275,11 +348,16 @@ export function resolveFinalQuestion(
         const stolen = attemptSteal(p.id, leader.id, amount, "Crown Heist");
         if (stolen > 0) {
           events.push(
-            ev("finalAction", "CROWN HEIST! 👑", `${p.nickname} lifts ${stolen} from the leader, ${leader.nickname}. Absolutely robbed.`, {
-              icon: "👑",
-              playerIds: [p.id, leader.id],
-              pointsDelta: { [p.id]: stolen, [leader.id]: -stolen },
-            }),
+            ev(
+              "finalAction",
+              "CROWN HEIST! 👑",
+              `${p.nickname} lifts ${stolen} from the leader, ${leader.nickname}. Absolutely robbed.`,
+              {
+                icon: "👑",
+                playerIds: [p.id, leader.id],
+                pointsDelta: { [p.id]: stolen, [leader.id]: -stolen },
+              },
+            ),
           );
         }
         break;
@@ -291,19 +369,29 @@ export function resolveFinalQuestion(
           const stolen = attemptSteal(p.id, targetId, SCORING.BETRAY_STEAL, "betrayal");
           if (stolen > 0) {
             events.push(
-              ev("finalAction", "BETRAYED! 🐀", `${p.nickname} sold out ${name(targetId)} for ${stolen} points. Cold.`, {
-                icon: "🐀",
-                playerIds: [p.id, targetId],
-                pointsDelta: { [p.id]: stolen, [targetId]: -stolen },
-              }),
+              ev(
+                "finalAction",
+                "BETRAYED! 🐀",
+                `${p.nickname} sold out ${name(targetId)} for ${stolen} points. Cold.`,
+                {
+                  icon: "🐀",
+                  playerIds: [p.id, targetId],
+                  pointsDelta: { [p.id]: stolen, [targetId]: -stolen },
+                },
+              ),
             );
           }
         } else {
           events.push(
-            ev("finalAction", "Betrayal fizzled", `${p.nickname}'s knife slipped — the betrayal of ${name(targetId)} failed.`, {
-              icon: "🐀",
-              playerIds: [p.id, targetId],
-            }),
+            ev(
+              "finalAction",
+              "Betrayal fizzled",
+              `${p.nickname}'s knife slipped — the betrayal of ${name(targetId)} failed.`,
+              {
+                icon: "🐀",
+                playerIds: [p.id, targetId],
+              },
+            ),
           );
         }
         break;
@@ -314,11 +402,16 @@ export function resolveFinalQuestion(
         if (!isCorrect(targetId)) {
           addDelta(scoreDelta, p.id, SCORING.FOLLOW_ME_BONUS);
           events.push(
-            ev("finalAction", "Blame lands! 👉", `${p.nickname} blamed ${name(targetId)} — who indeed got it wrong. +${SCORING.FOLLOW_ME_BONUS}.`, {
-              icon: "👉",
-              playerIds: [p.id, targetId],
-              pointsDelta: { [p.id]: SCORING.FOLLOW_ME_BONUS },
-            }),
+            ev(
+              "finalAction",
+              "Blame lands! 👉",
+              `${p.nickname} blamed ${name(targetId)} — who indeed got it wrong. +${SCORING.FOLLOW_ME_BONUS}.`,
+              {
+                icon: "👉",
+                playerIds: [p.id, targetId],
+                pointsDelta: { [p.id]: SCORING.FOLLOW_ME_BONUS },
+              },
+            ),
           );
         }
         break;
@@ -339,11 +432,19 @@ export function resolveFinalQuestion(
           addDelta(scoreDelta, p.id, SCORING.FOLLOW_ME_BONUS);
           addDelta(scoreDelta, action.targetId, SCORING.FOLLOW_ME_BONUS);
           events.push(
-            ev("finalAction", "Follow me! 🧭", `${p.nickname} and ${name(action.targetId)} sailed true together: +${SCORING.FOLLOW_ME_BONUS} each.`, {
-              icon: "🧭",
-              playerIds: [p.id, action.targetId],
-              pointsDelta: { [p.id]: SCORING.FOLLOW_ME_BONUS, [action.targetId]: SCORING.FOLLOW_ME_BONUS },
-            }),
+            ev(
+              "finalAction",
+              "Follow me! 🧭",
+              `${p.nickname} and ${name(action.targetId)} sailed true together: +${SCORING.FOLLOW_ME_BONUS} each.`,
+              {
+                icon: "🧭",
+                playerIds: [p.id, action.targetId],
+                pointsDelta: {
+                  [p.id]: SCORING.FOLLOW_ME_BONUS,
+                  [action.targetId]: SCORING.FOLLOW_ME_BONUS,
+                },
+              },
+            ),
           );
         }
         break;
@@ -353,22 +454,32 @@ export function resolveFinalQuestion(
         if (win) {
           addDelta(scoreDelta, p.id, 120);
           events.push(
-            ev("finalAction", "Cursed Chest... blessed! 📦", `${p.nickname} gambled on the cursed chest and found +120 inside!`, {
-              icon: "📦",
-              playerIds: [p.id],
-              pointsDelta: { [p.id]: 120 },
-            }),
+            ev(
+              "finalAction",
+              "Cursed Chest... blessed! 📦",
+              `${p.nickname} gambled on the cursed chest and found +120 inside!`,
+              {
+                icon: "📦",
+                playerIds: [p.id],
+                pointsDelta: { [p.id]: 120 },
+              },
+            ),
           );
         } else {
           const loss = Math.min(60, unprotectedPool[p.id] ?? 0);
           unprotectedPool[p.id] = Math.max(0, (unprotectedPool[p.id] ?? 0) - loss);
           addDelta(scoreDelta, p.id, -loss);
           events.push(
-            ev("finalAction", "Cursed Chest... cursed! 📦", `${p.nickname} opened the cursed chest. A ghost took ${loss} points. Should've known.`, {
-              icon: "👻",
-              playerIds: [p.id],
-              pointsDelta: { [p.id]: -loss },
-            }),
+            ev(
+              "finalAction",
+              "Cursed Chest... cursed! 📦",
+              `${p.nickname} opened the cursed chest. A ghost took ${loss} points. Should've known.`,
+              {
+                icon: "👻",
+                playerIds: [p.id],
+                pointsDelta: { [p.id]: -loss },
+              },
+            ),
           );
         }
         break;
@@ -379,11 +490,16 @@ export function resolveFinalQuestion(
         if (targetAction && ATTACK_ACTIONS.includes(targetAction.actionId)) {
           addDelta(scoreDelta, p.id, SCORING.FALSE_TREASURE_BAIT);
           events.push(
-            ev("finalAction", "Double Cross! 🃏", `${p.nickname} read ${name(action.targetId)}'s treachery like a map: +${SCORING.FALSE_TREASURE_BAIT}.`, {
-              icon: "🃏",
-              playerIds: [p.id, action.targetId],
-              pointsDelta: { [p.id]: SCORING.FALSE_TREASURE_BAIT },
-            }),
+            ev(
+              "finalAction",
+              "Double Cross! 🃏",
+              `${p.nickname} read ${name(action.targetId)}'s treachery like a map: +${SCORING.FALSE_TREASURE_BAIT}.`,
+              {
+                icon: "🃏",
+                playerIds: [p.id, action.targetId],
+                pointsDelta: { [p.id]: SCORING.FALSE_TREASURE_BAIT },
+              },
+            ),
           );
         }
         break;

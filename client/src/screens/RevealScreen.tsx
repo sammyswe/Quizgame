@@ -38,14 +38,19 @@ export function RevealScreen() {
     if (events.length === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 1; i <= events.length; i++) {
-      timers.push(setTimeout(() => setShown(i), i === 1 ? 400 : 400 + (i - 1) * TIMING.REVEAL_STEP_MS));
+      timers.push(
+        setTimeout(() => setShown(i), i === 1 ? 400 : 400 + (i - 1) * TIMING.REVEAL_STEP_MS),
+      );
     }
     return () => timers.forEach(clearTimeout);
   }, [events]);
 
   if (!game) return null;
   const current: RevealEvent | undefined = shown > 0 ? events[shown - 1] : undefined;
-  const history = events.slice(0, Math.max(0, shown - 1)).slice(-4).reverse();
+  const history = events
+    .slice(0, Math.max(0, shown - 1))
+    .slice(-4)
+    .reverse();
   const bigWin =
     current &&
     (current.type === "missionSuccess" ||
@@ -97,7 +102,10 @@ export function RevealScreen() {
 
         <div className="flex w-full max-w-sm flex-col gap-1.5" aria-label="Previous reveals">
           {history.map((e) => (
-            <div key={e.id} className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-1.5 text-xs text-slate-400">
+            <div
+              key={e.id}
+              className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-1.5 text-xs text-slate-400"
+            >
               <span aria-hidden>{e.icon}</span>
               <span className="truncate">{e.title}</span>
             </div>
@@ -110,7 +118,10 @@ export function RevealScreen() {
           {Math.min(shown, events.length)}/{events.length} revealed
         </span>
         {isHost && (
-          <button className="btn-ghost !min-h-0 !px-3 !py-1.5 !text-xs" onClick={() => socket.emit("phase:advance")}>
+          <button
+            className="btn-ghost !min-h-0 !px-3 !py-1.5 !text-xs"
+            onClick={() => socket.emit("phase:advance")}
+          >
             Skip ahead ⏭️
           </button>
         )}

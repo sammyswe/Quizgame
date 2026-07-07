@@ -38,4 +38,4 @@ Log every playtest here. Be specific — this file drives the balance backlog.
 
 ## Sessions
 
-*(none yet — add the first one!)*
+_(none yet — add the first one!)_

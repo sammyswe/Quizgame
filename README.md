@@ -29,14 +29,14 @@ incognito) and **Join a Crew** with the room code. Solo? Use the 🧪 playtest p
 
 ### All scripts
 
-| Command | What it does |
-| --- | --- |
-| `pnpm dev` | server + client together |
-| `pnpm dev:client` / `pnpm dev:server` | each side alone |
-| `pnpm build` | typecheck server/shared + production client build |
-| `pnpm test` | Vitest unit tests (game logic) |
-| `pnpm test:e2e` | Playwright smoke test (needs `pnpm exec playwright install chromium` once) |
-| `pnpm lint` / `pnpm typecheck` / `pnpm format` | hygiene |
+| Command                                        | What it does                                                               |
+| ---------------------------------------------- | -------------------------------------------------------------------------- |
+| `pnpm dev`                                     | server + client together                                                   |
+| `pnpm dev:client` / `pnpm dev:server`          | each side alone                                                            |
+| `pnpm build`                                   | typecheck server/shared + production client build                          |
+| `pnpm test`                                    | Vitest unit tests (game logic)                                             |
+| `pnpm test:e2e`                                | Playwright smoke test (needs `pnpm exec playwright install chromium` once) |
+| `pnpm lint` / `pnpm typecheck` / `pnpm format` | hygiene                                                                    |
 
 ## Playing with a friend on another laptop (same network)
 
@@ -52,10 +52,12 @@ The realtime server is a long-lived Node process — **static-only hosting (plai
 is not enough for the server**. Split it:
 
 **Server → Render / Railway / Fly**
+
 - Start command: `pnpm install && pnpm --filter @treasure-trap/server start`
 - Env: `PORT` (platform-provided), `CORS_ORIGIN=https://your-client-domain`
 
 **Client → Vercel / Netlify**
+
 - Build command: `pnpm --filter @treasure-trap/client build`
 - Output dir: `client/dist`
 - Env: `VITE_SERVER_URL=https://your-server.onrender.com`

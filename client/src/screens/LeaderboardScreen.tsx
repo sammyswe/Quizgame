@@ -39,13 +39,16 @@ export function LeaderboardScreen() {
                   : "border-white/10"
             }`}
           >
-            <span className="w-8 text-center font-display text-2xl">{MEDALS[i] ?? `#${p.rank}`}</span>
+            <span className="w-8 text-center font-display text-2xl">
+              {MEDALS[i] ?? `#${p.rank}`}
+            </span>
             <span className="text-2xl" aria-hidden>
               {p.avatar}
             </span>
             <div className="min-w-0 flex-1">
               <div className="truncate font-black">
-                {p.nickname} {p.id === playerId && <span className="text-xs text-neon-cyan">(you)</span>}
+                {p.nickname}{" "}
+                {p.id === playerId && <span className="text-xs text-neon-cyan">(you)</span>}
               </div>
               <div className="flex gap-2 text-[11px] text-slate-400">
                 {p.streak >= 2 && <span>🔥 {p.streak} streak</span>}
@@ -63,18 +66,26 @@ export function LeaderboardScreen() {
       <div className="mt-auto text-center">
         {nextRound ? (
           <p className="text-sm text-slate-300">
-            Next: <b>{ROUNDS[nextRound].icon} {ROUNDS[nextRound].name}</b>
+            Next:{" "}
+            <b>
+              {ROUNDS[nextRound].icon} {ROUNDS[nextRound].name}
+            </b>
             <br />
             <span className="text-xs text-slate-500">{ROUNDS[nextRound].tagline}</span>
           </p>
         ) : (
-          <p className="animate-shimmer font-display text-xl text-neon-red">Final Plunder begins...</p>
+          <p className="animate-shimmer font-display text-xl text-neon-red">
+            Final Plunder begins...
+          </p>
         )}
         <p className="mt-2 text-xs text-slate-500">
           💡 Now's a good moment to open chests from your 🎒 bag.
         </p>
         {isHost && (
-          <button className="btn-ghost mt-2 !min-h-0 !px-4 !py-2 !text-sm" onClick={() => socket.emit("phase:advance")}>
+          <button
+            className="btn-ghost mt-2 !min-h-0 !px-4 !py-2 !text-sm"
+            onClick={() => socket.emit("phase:advance")}
+          >
             Sail on ⏭️
           </button>
         )}

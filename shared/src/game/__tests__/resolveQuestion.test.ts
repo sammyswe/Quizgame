@@ -78,7 +78,10 @@ describe("items", () => {
   it("backstab pays when the target is wrong, whiffs when right", () => {
     const hit = resolveQuestion({
       correctIndex: 0,
-      players: [player("stabber", { choiceIndex: 0 }), player("victim", { choiceIndex: 1, rank: 2 })],
+      players: [
+        player("stabber", { choiceIndex: 0 }),
+        player("victim", { choiceIndex: 1, rank: 2 }),
+      ],
       effects: [{ uid: "e1", itemId: "backstab", byId: "stabber", targetId: "victim" }],
       accusations: [],
     });
@@ -87,7 +90,10 @@ describe("items", () => {
 
     const whiff = resolveQuestion({
       correctIndex: 0,
-      players: [player("stabber", { choiceIndex: 0 }), player("victim", { choiceIndex: 0, rank: 2 })],
+      players: [
+        player("stabber", { choiceIndex: 0 }),
+        player("victim", { choiceIndex: 0, rank: 2 }),
+      ],
       effects: [{ uid: "e1", itemId: "backstab", byId: "stabber", targetId: "victim" }],
       accusations: [],
     });
@@ -97,7 +103,10 @@ describe("items", () => {
   it("shipwreck sinks the target's unbanked loot when they are wrong", () => {
     const res = resolveQuestion({
       correctIndex: 0,
-      players: [player("wrecker", { choiceIndex: 0 }), player("target", { choiceIndex: 1, roundLoot: 120, rank: 2 })],
+      players: [
+        player("wrecker", { choiceIndex: 0 }),
+        player("target", { choiceIndex: 1, roundLoot: 120, rank: 2 }),
+      ],
       effects: [{ uid: "e1", itemId: "shipwreck", byId: "wrecker", targetId: "target" }],
       accusations: [],
     });

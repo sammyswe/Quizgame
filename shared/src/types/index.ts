@@ -96,7 +96,8 @@ export type ItemId =
 
 export type ItemTiming = "prep" | "question" | "lock" | "reveal" | "final";
 
-export type ItemTargetRule = "none" | "self" | "otherPlayer" | "anyPlayer" | "higherRanked" | "wrongOption";
+export type ItemTargetRule =
+  "none" | "self" | "otherPlayer" | "anyPlayer" | "higherRanked" | "wrongOption";
 
 export type ItemDef = {
   id: ItemId;
@@ -206,12 +207,7 @@ export type LootAllocation = number[];
 // ----- Auction ----------------------------------------------------------------
 
 export type AuctionPrizeId =
-  | "spyglass"
-  | "mysteryChest"
-  | "doubleReward"
-  | "privateClue"
-  | "protectLoot"
-  | "cursedLot";
+  "spyglass" | "mysteryChest" | "doubleReward" | "privateClue" | "protectLoot" | "cursedLot";
 
 export type AuctionState = {
   prizeId: AuctionPrizeId;
@@ -404,7 +400,10 @@ export type PublicGameState = {
 // ----- Socket protocol -------------------------------------------------------------------
 
 export type ClientEvents = {
-  "room:create": (nickname: string, cb: (res: Ack<{ roomCode: string; playerId: string }>) => void) => void;
+  "room:create": (
+    nickname: string,
+    cb: (res: Ack<{ roomCode: string; playerId: string }>) => void,
+  ) => void;
   "room:join": (
     roomCode: string,
     nickname: string,
@@ -413,7 +412,11 @@ export type ClientEvents = {
   "room:rejoin": (roomCode: string, playerId: string, cb: (res: Ack<{ ok: true }>) => void) => void;
   "game:configure": (config: GameConfig) => void;
   "game:start": () => void;
-  "answer:submit": (payload: { choiceIndex?: number; lootAllocation?: number[]; confident?: boolean }) => void;
+  "answer:submit": (payload: {
+    choiceIndex?: number;
+    lootAllocation?: number[];
+    confident?: boolean;
+  }) => void;
   "loot:allocate": (allocation: number[]) => void;
   "item:use": (payload: { uid: string; targetId?: string; optionIndex?: number }) => void;
   "chest:open": (uid: string) => void;
@@ -440,9 +443,14 @@ export type ServerEvents = {
   "player:privateState": (state: PrivatePlayerState) => void;
   "phase:changed": (phase: Phase) => void;
   "reveal:events": (events: RevealEvent[]) => void;
-  "chest:opened": (result: { uid: string; rarity: Rarity; item: OwnedItem; itemDef: ItemDef }) => void;
-  "toast": (msg: { icon?: string; text: string }) => void;
-  "error": (message: string) => void;
+  "chest:opened": (result: {
+    uid: string;
+    rarity: Rarity;
+    item: OwnedItem;
+    itemDef: ItemDef;
+  }) => void;
+  toast: (msg: { icon?: string; text: string }) => void;
+  error: (message: string) => void;
 };
 
 export type Ack<T> = { ok: true; data: T } | { ok: false; error: string };

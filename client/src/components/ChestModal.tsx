@@ -69,7 +69,10 @@ export function ChestModal() {
                 background: "rgba(13,18,51,0.95)",
               }}
             >
-              <div className="font-display text-sm uppercase tracking-[0.3em]" style={{ color: meta.color }}>
+              <div
+                className="font-display text-sm uppercase tracking-[0.3em]"
+                style={{ color: meta.color }}
+              >
                 {meta.label}
               </div>
               <motion.div
@@ -81,7 +84,9 @@ export function ChestModal() {
               >
                 {reveal.itemDef.icon}
               </motion.div>
-              <div className="font-display text-2xl text-neon-gold text-outline">{reveal.itemDef.name}</div>
+              <div className="font-display text-2xl text-neon-gold text-outline">
+                {reveal.itemDef.name}
+              </div>
               <p className="text-sm text-slate-300">{reveal.itemDef.description}</p>
               <p className="text-xs italic text-slate-500">Counter: {reveal.itemDef.counterplay}</p>
               <button className="btn-gold mt-2 w-full" onClick={clear}>

@@ -5,7 +5,13 @@ import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { Screen, TimerBar } from "../components/ui";
 
-const CHOICES: Array<{ id: PlunderChoice; icon: string; name: string; blurb: string; cls: string }> = [
+const CHOICES: Array<{
+  id: PlunderChoice;
+  icon: string;
+  name: string;
+  blurb: string;
+  cls: string;
+}> = [
   {
     id: "split",
     icon: "🤝",
@@ -52,10 +58,15 @@ export function PairChoiceScreen() {
       </div>
       <h1 className="font-display text-4xl text-neon-gold title-glow">⚖️ Split or Plunder</h1>
       {solo ? (
-        <p className="text-slate-300">You sail alone this round — your fate rests on your answer. 🐺</p>
+        <p className="text-slate-300">
+          You sail alone this round — your fate rests on your answer. 🐺
+        </p>
       ) : partner ? (
         <p className="text-base">
-          Your partner in crime: <b>{partner.avatar} {partner.nickname}</b>
+          Your partner in crime:{" "}
+          <b>
+            {partner.avatar} {partner.nickname}
+          </b>
           <br />
           <span className="text-sm text-slate-400">
             The pot: 🪙 {myPair?.potSize}. Choose in secret. Look them in the eye.
@@ -91,7 +102,11 @@ export function PairChoiceScreen() {
               </div>
             </motion.button>
           ))}
-          {picked && <p className="text-sm text-neon-cyan">Choice sealed 🤐 — you can still switch until time runs out.</p>}
+          {picked && (
+            <p className="text-sm text-neon-cyan">
+              Choice sealed 🤐 — you can still switch until time runs out.
+            </p>
+          )}
         </div>
       )}
     </Screen>

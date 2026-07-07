@@ -98,7 +98,11 @@ export function nextAvatar(room: Pick<ServerRoom, "players">): string {
   return AVATAR_POOL.find((a) => !used.has(a)) ?? "🏴‍☠️";
 }
 
-export function createPlayer(id: string, nickname: string, opts: Partial<ServerPlayer> = {}): ServerPlayer {
+export function createPlayer(
+  id: string,
+  nickname: string,
+  opts: Partial<ServerPlayer> = {},
+): ServerPlayer {
   return {
     id,
     nickname: nickname.slice(0, 16),

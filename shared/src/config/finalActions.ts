@@ -10,7 +10,8 @@ export const FINAL_ACTIONS: Record<FinalActionId, FinalActionDef> = {
     id: "bankTheBooty",
     name: "Bank the Booty",
     icon: "🏦",
-    description: "Raise your protected score by 15% this question. Safe and boring — like a coward.",
+    description:
+      "Raise your protected score by 15% this question. Safe and boring — like a coward.",
     needsTarget: false,
     tiers: ["leader", "middle"],
   },
@@ -66,7 +67,8 @@ export const FINAL_ACTIONS: Record<FinalActionId, FinalActionDef> = {
     id: "falseTreasure",
     name: "False Treasure",
     icon: "🪤",
-    description: "Plant fake loot. The first pirate who steals from you gets nothing and pays you instead.",
+    description:
+      "Plant fake loot. The first pirate who steals from you gets nothing and pays you instead.",
     needsTarget: false,
     tiers: ["leader"],
   },
@@ -82,7 +84,8 @@ export const FINAL_ACTIONS: Record<FinalActionId, FinalActionDef> = {
     id: "betrayTheCrew",
     name: "Betray the Crew",
     icon: "🐀",
-    description: "Pick a pirate. Steal 100 of their unprotected points if you answer right and they don't.",
+    description:
+      "Pick a pirate. Steal 100 of their unprotected points if you answer right and they don't.",
     needsTarget: true,
     tiers: ["middle", "bottom"],
   },
@@ -106,7 +109,8 @@ export const FINAL_ACTIONS: Record<FinalActionId, FinalActionDef> = {
     id: "blameGame",
     name: "Blame Game",
     icon: "👉",
-    description: "Pick a pirate. If they answer wrong, you gain half of what they lose. (v1 simplified: +60)",
+    description:
+      "Pick a pirate. If they answer wrong, you gain half of what they lose. (v1 simplified: +60)",
     needsTarget: true,
     tiers: ["middle"],
     simplified: true,
@@ -124,7 +128,8 @@ export const FINAL_ACTIONS: Record<FinalActionId, FinalActionDef> = {
     id: "doubleCross",
     name: "Double Cross",
     icon: "🃏",
-    description: "Pick a pirate. If they chose an attack this question, you steal its bonus. (v1 simplified)",
+    description:
+      "Pick a pirate. If they chose an attack this question, you steal its bonus. (v1 simplified)",
     needsTarget: true,
     tiers: ["leader", "middle"],
     simplified: true,

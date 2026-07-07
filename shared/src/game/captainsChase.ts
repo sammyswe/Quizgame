@@ -53,17 +53,27 @@ export function stepChase(
   if (captainCorrect) {
     next.positions[chase.captainId] = (next.positions[chase.captainId] ?? 0) + 1;
     events.push(
-      ev("chaseMove", "The Captain surges ahead! ⛵", `${name(chase.captainId)} answered correctly and gains a length of open water.`, {
-        icon: "⛵",
-        playerIds: [chase.captainId],
-      }),
+      ev(
+        "chaseMove",
+        "The Captain surges ahead! ⛵",
+        `${name(chase.captainId)} answered correctly and gains a length of open water.`,
+        {
+          icon: "⛵",
+          playerIds: [chase.captainId],
+        },
+      ),
     );
   } else {
     events.push(
-      ev("chaseMove", "The Captain falters!", `${name(chase.captainId)} got it wrong — the ship stalls in the wind.`, {
-        icon: "🌫️",
-        playerIds: [chase.captainId],
-      }),
+      ev(
+        "chaseMove",
+        "The Captain falters!",
+        `${name(chase.captainId)} got it wrong — the ship stalls in the wind.`,
+        {
+          icon: "🌫️",
+          playerIds: [chase.captainId],
+        },
+      ),
     );
   }
 
@@ -74,11 +84,16 @@ export function stepChase(
     next.positions[id] = (next.positions[id] ?? 0) + 1;
     addDelta(lootDelta, id, SCORING.CHASE_CHASER_STEP_BONUS);
     events.push(
-      ev("chaseMove", "A chaser gains! 🚣", `${name(id)} closes the gap and pockets +${SCORING.CHASE_CHASER_STEP_BONUS}.`, {
-        icon: "🚣",
-        playerIds: [id],
-        pointsDelta: { [id]: SCORING.CHASE_CHASER_STEP_BONUS },
-      }),
+      ev(
+        "chaseMove",
+        "A chaser gains! 🚣",
+        `${name(id)} closes the gap and pockets +${SCORING.CHASE_CHASER_STEP_BONUS}.`,
+        {
+          icon: "🚣",
+          playerIds: [id],
+          pointsDelta: { [id]: SCORING.CHASE_CHASER_STEP_BONUS },
+        },
+      ),
     );
     const captainPos = next.positions[chase.captainId] ?? 0;
     if (!caughtBy && (next.positions[id] ?? 0) >= captainPos) {
@@ -94,11 +109,16 @@ export function stepChase(
     addDelta(lootDelta, caughtBy, steal);
     addDelta(lootDelta, chase.captainId, -steal);
     events.push(
-      ev("chaseMove", "CAUGHT! ⚓", `${name(caughtBy)} boarded the Captain's ship first and plunders ${steal} from ${name(chase.captainId)}!`, {
-        icon: "⚓",
-        playerIds: [caughtBy, chase.captainId],
-        pointsDelta: { [caughtBy]: steal, [chase.captainId]: -steal },
-      }),
+      ev(
+        "chaseMove",
+        "CAUGHT! ⚓",
+        `${name(caughtBy)} boarded the Captain's ship first and plunders ${steal} from ${name(chase.captainId)}!`,
+        {
+          icon: "⚓",
+          playerIds: [caughtBy, chase.captainId],
+          pointsDelta: { [caughtBy]: steal, [chase.captainId]: -steal },
+        },
+      ),
     );
     return { chase: next, events, lootDelta, finished: true };
   }
@@ -106,11 +126,16 @@ export function stepChase(
   if (isLastQuestion) {
     addDelta(lootDelta, chase.captainId, SCORING.CHASE_CAPTAIN_ESCAPE);
     events.push(
-      ev("chaseMove", "THE CAPTAIN ESCAPES! 🌅", `${name(chase.captainId)} sails over the horizon with +${SCORING.CHASE_CAPTAIN_ESCAPE} escape bonus!`, {
-        icon: "🌅",
-        playerIds: [chase.captainId],
-        pointsDelta: { [chase.captainId]: SCORING.CHASE_CAPTAIN_ESCAPE },
-      }),
+      ev(
+        "chaseMove",
+        "THE CAPTAIN ESCAPES! 🌅",
+        `${name(chase.captainId)} sails over the horizon with +${SCORING.CHASE_CAPTAIN_ESCAPE} escape bonus!`,
+        {
+          icon: "🌅",
+          playerIds: [chase.captainId],
+          pointsDelta: { [chase.captainId]: SCORING.CHASE_CAPTAIN_ESCAPE },
+        },
+      ),
     );
     return { chase: next, events, lootDelta, finished: true };
   }

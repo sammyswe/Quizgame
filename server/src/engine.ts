@@ -167,7 +167,12 @@ export function privateState(room: ServerRoom, p: ServerPlayer): PrivatePlayerSt
 // Phase machinery
 // ---------------------------------------------------------------------------
 
-function setPhase(room: ServerRoom, phase: Phase, durationMs: number, onTimeout?: () => void): void {
+function setPhase(
+  room: ServerRoom,
+  phase: Phase,
+  durationMs: number,
+  onTimeout?: () => void,
+): void {
   if (room.timer) clearTimeout(room.timer);
   room.phase = phase;
   room.onPhaseEnd = onTimeout;
@@ -456,10 +461,18 @@ function showLeaderboard(room: ServerRoom): void {
   }
   const ranked = publicPlayers(room).sort((a, b) => a.rank - b.rank);
   const last = ranked[ranked.length - 1];
-  if (last && ranked.length >= 3 && !room.underdogRounds.has(room.roundIndex) && room.roundIndex >= 1) {
+  if (
+    last &&
+    ranked.length >= 3 &&
+    !room.underdogRounds.has(room.roundIndex) &&
+    room.roundIndex >= 1
+  ) {
     room.underdogRounds.add(room.roundIndex);
     grantChest(room, { playerId: last.id, source: "underdog" });
-    emitter.toast(room, last.id, { icon: "🐙", text: "Underdog Chest! The sea favours the desperate." });
+    emitter.toast(room, last.id, {
+      icon: "🐙",
+      text: "Underdog Chest! The sea favours the desperate.",
+    });
   }
   const isLastRound = room.roundIndex >= room.roundPlan.length - 1;
   if (isLastRound) {
@@ -564,7 +577,9 @@ function resolveLootDropQuestion(room: ServerRoom): void {
     basePoints: 0, // island loot already scored; items only
   });
   // Drop the auto "+0 correct" noise events; keep item drama.
-  const itemEvents = itemRes.events.filter((e) => e.type !== "correctAnswer" && e.type !== "scoreChanged");
+  const itemEvents = itemRes.events.filter(
+    (e) => e.type !== "correctAnswer" && e.type !== "scoreChanged",
+  );
   applyLootDelta(room, itemRes.lootDelta);
   for (const award of itemRes.chests) grantChest(room, award);
   for (const p of room.players.values()) {
@@ -595,7 +610,9 @@ export function submitBid(room: ServerRoom, playerId: string, amount: number): v
   const clamped = Math.max(0, Math.min(Math.floor(amount), p.score + p.roundLoot));
   room.auction.bids.set(playerId, { amount: clamped, at: Date.now() });
   emitter.broadcast(room);
-  const everyoneIn = [...room.players.values()].filter((x) => x.connected).every((x) => room.auction?.bids.has(x.id));
+  const everyoneIn = [...room.players.values()]
+    .filter((x) => x.connected)
+    .every((x) => room.auction?.bids.has(x.id));
   if (everyoneIn) {
     if (room.timer) clearTimeout(room.timer);
     room.timer = setTimeout(() => finishAuction(room), 1000);
@@ -616,11 +633,16 @@ function finishAuction(room: ServerRoom): void {
       applyLootDelta(room, { [winner.id]: -result.amount });
       const lot = room.auction.lot;
       events.push(
-        ev("auctionResult", "SOLD! 🔨", `${winner.nickname} wins the ${lot.name} for ${result.amount} points!`, {
-          icon: lot.icon,
-          playerIds: [winner.id],
-          pointsDelta: { [winner.id]: -result.amount },
-        }),
+        ev(
+          "auctionResult",
+          "SOLD! 🔨",
+          `${winner.nickname} wins the ${lot.name} for ${result.amount} points!`,
+          {
+            icon: lot.icon,
+            playerIds: [winner.id],
+            pointsDelta: { [winner.id]: -result.amount },
+          },
+        ),
       );
       switch (lot.id) {
         case "mysteryChest":
@@ -641,16 +663,28 @@ function finishAuction(room: ServerRoom): void {
           break;
         case "cursedLot":
           events.push(
-            ev("auctionResult", "It was SAND. ✨", `${winner.nickname} opens the glittering crate... sand. Beautiful, worthless sand.`, {
-              icon: "🏖️",
-              playerIds: [winner.id],
-            }),
+            ev(
+              "auctionResult",
+              "It was SAND. ✨",
+              `${winner.nickname} opens the glittering crate... sand. Beautiful, worthless sand.`,
+              {
+                icon: "🏖️",
+                playerIds: [winner.id],
+              },
+            ),
           );
           break;
       }
     }
   } else {
-    events.push(ev("auctionResult", "No bids!", "The auctioneer sighs and closes the lot. Cowards, all of you.", { icon: "🔨" }));
+    events.push(
+      ev(
+        "auctionResult",
+        "No bids!",
+        "The auctioneer sighs and closes the lot. Cowards, all of you.",
+        { icon: "🔨" },
+      ),
+    );
   }
 
   // Draw the question, deliver clue if bought, then play it.
@@ -667,8 +701,11 @@ function finishAuction(room: ServerRoom): void {
   room.auction = undefined;
   // Show auction outcome as a short reveal, then the question starts.
   room.revealEvents = auctionRecap;
-  setPhase(room, "reveal", Math.max(TIMING.REVEAL_MIN_MS, auctionRecap.length * TIMING.REVEAL_STEP_MS), () =>
-    beginQuestion(room, TIMING.QUESTION_MS),
+  setPhase(
+    room,
+    "reveal",
+    Math.max(TIMING.REVEAL_MIN_MS, auctionRecap.length * TIMING.REVEAL_STEP_MS),
+    () => beginQuestion(room, TIMING.QUESTION_MS),
   );
 }
 
@@ -684,7 +721,10 @@ function startFalseMap(room: ServerRoom): void {
   const trueCaptainId = shuffled[0];
   const falseCaptainId = shuffled[1];
   if (trueCaptainId && falseCaptainId) {
-    room.falseMap = { captainIds: [trueCaptainId, falseCaptainId].sort(() => Math.random() - 0.5), trueCaptainId };
+    room.falseMap = {
+      captainIds: [trueCaptainId, falseCaptainId].sort(() => Math.random() - 0.5),
+      trueCaptainId,
+    };
     const trueCap = room.players.get(trueCaptainId);
     const falseCap = room.players.get(falseCaptainId);
     if (trueCap) {
@@ -720,7 +760,11 @@ function assignMission(room: ServerRoom, p: ServerPlayer): void {
   });
 }
 
-export function setupMission(room: ServerRoom, playerId: string, payload: { targetId?: string; optionIndex?: number }): void {
+export function setupMission(
+  room: ServerRoom,
+  playerId: string,
+  payload: { targetId?: string; optionIndex?: number },
+): void {
   const p = room.players.get(playerId);
   if (!p?.mission) return;
   const def = MISSIONS[p.mission.missionId];
@@ -826,7 +870,9 @@ export function submitPairChoice(room: ServerRoom, playerId: string, choice: Plu
   if (!p) return;
   p.pairChoice = choice;
   emitter.broadcast(room);
-  const everyoneIn = [...room.players.values()].filter((x) => x.connected).every((x) => x.pairChoice);
+  const everyoneIn = [...room.players.values()]
+    .filter((x) => x.connected)
+    .every((x) => x.pairChoice);
   if (everyoneIn) {
     if (room.timer) clearTimeout(room.timer);
     room.timer = setTimeout(() => resolveSplitOrPlunder(room), 800);
@@ -847,18 +893,33 @@ function resolveSplitOrPlunder(room: ServerRoom): void {
       if (correct) {
         applyLootDelta(room, { [a.id]: pair.potSize });
         events.push(
-          ev("pairResult", "Lone wolf eats!", `${a.nickname} had no partner and quietly pockets +${pair.potSize}.`, {
-            icon: "🐺",
-            playerIds: [a.id],
-            pointsDelta: { [a.id]: pair.potSize },
-          }),
+          ev(
+            "pairResult",
+            "Lone wolf eats!",
+            `${a.nickname} had no partner and quietly pockets +${pair.potSize}.`,
+            {
+              icon: "🐺",
+              playerIds: [a.id],
+              pointsDelta: { [a.id]: pair.potSize },
+            },
+          ),
         );
       }
       continue;
     }
     const res = resolvePair(
-      { id: a.id, nickname: a.nickname, correct: room.answers.get(a.id)?.choiceIndex === q.correctIndex, choice: a.pairChoice },
-      { id: b.id, nickname: b.nickname, correct: room.answers.get(b.id)?.choiceIndex === q.correctIndex, choice: b.pairChoice },
+      {
+        id: a.id,
+        nickname: a.nickname,
+        correct: room.answers.get(a.id)?.choiceIndex === q.correctIndex,
+        choice: a.pairChoice,
+      },
+      {
+        id: b.id,
+        nickname: b.nickname,
+        correct: room.answers.get(b.id)?.choiceIndex === q.correctIndex,
+        choice: b.pairChoice,
+      },
     );
     applyLootDelta(room, res.lootDelta);
     for (const award of res.chests) grantChest(room, award);
@@ -922,7 +983,9 @@ function startFinalPlunder(room: ServerRoom): void {
 }
 
 function beginFinalActionPhase(room: ServerRoom): void {
-  const ranks = computeRanks(Object.fromEntries([...room.players.values()].map((p) => [p.id, p.score])));
+  const ranks = computeRanks(
+    Object.fromEntries([...room.players.values()].map((p) => [p.id, p.score])),
+  );
   const playerCount = room.players.size;
   for (const p of room.players.values()) {
     p.finalChoice = undefined;
@@ -943,7 +1006,9 @@ export function submitFinalAction(
   if (def.needsTarget && (!payload.targetId || payload.targetId === playerId)) return;
   p.finalChoice = { actionId: payload.actionId, targetId: payload.targetId };
   emitter.broadcast(room);
-  const everyoneIn = [...room.players.values()].filter((x) => x.connected).every((x) => x.finalChoice);
+  const everyoneIn = [...room.players.values()]
+    .filter((x) => x.connected)
+    .every((x) => x.finalChoice);
   if (everyoneIn) {
     if (room.timer) clearTimeout(room.timer);
     room.timer = setTimeout(() => startFinalQuestion(room), 800);
@@ -954,7 +1019,8 @@ function startFinalQuestion(room: ServerRoom): void {
   // Default anyone without an action to something sensible & non-targeted.
   for (const p of room.players.values()) {
     if (!p.finalChoice) {
-      const fallback = p.finalActionsOffered?.find((a) => !FINAL_ACTIONS[a].needsTarget) ?? "bankTheBooty";
+      const fallback =
+        p.finalActionsOffered?.find((a) => !FINAL_ACTIONS[a].needsTarget) ?? "bankTheBooty";
       p.finalChoice = { actionId: fallback };
     }
     if (p.finalChoice.actionId === "spyTheDeck") {
@@ -976,7 +1042,9 @@ function startFinalQuestion(room: ServerRoom): void {
 function resolveFinalPlunderQuestion(room: ServerRoom): void {
   const q = room.currentQuestion;
   if (!q) return;
-  const ranks = computeRanks(Object.fromEntries([...room.players.values()].map((p) => [p.id, p.score])));
+  const ranks = computeRanks(
+    Object.fromEntries([...room.players.values()].map((p) => [p.id, p.score])),
+  );
   const res = resolveFinalQuestion({
     correctIndex: q.correctIndex,
     players: [...room.players.values()].map((p) => ({
@@ -1019,7 +1087,9 @@ export function submitAnswer(
   room.answers.set(playerId, {
     playerId,
     choiceIndex: payload.choiceIndex,
-    lootAllocation: payload.lootAllocation ? normaliseAllocation(payload.lootAllocation) : undefined,
+    lootAllocation: payload.lootAllocation
+      ? normaliseAllocation(payload.lootAllocation)
+      : undefined,
     confident: payload.confident,
     lockedAt: Date.now(),
   });
@@ -1058,7 +1128,12 @@ export function useItem(
       Object.fromEntries([...room.players.values()].map((x) => [x.id, x.score + x.roundLoot])),
     );
     if ((ranks[payload.targetId] ?? 99) >= (ranks[playerId] ?? 99)) {
-      emitter.toPlayer(room, playerId, "error", "Broadside Duel can only challenge a pirate ranked above you.");
+      emitter.toPlayer(
+        room,
+        playerId,
+        "error",
+        "Broadside Duel can only challenge a pirate ranked above you.",
+      );
       return;
     }
   }
@@ -1073,43 +1148,65 @@ export function useItem(
     case "spyglass": {
       const q = room.currentQuestion;
       if (q) {
-        const wrong = q.options.map((_, i) => i).filter((i) => i !== q.correctIndex && !p.disabledOptions.includes(i));
+        const wrong = q.options
+          .map((_, i) => i)
+          .filter((i) => i !== q.correctIndex && !p.disabledOptions.includes(i));
         const remove = wrong[Math.floor(Math.random() * wrong.length)];
         if (remove !== undefined) p.disabledOptions = [...p.disabledOptions, remove];
       } else if (room.currentObscure) {
         const q2 = room.currentObscure;
-        const wrong = q2.options.map((o, i) => ({ o, i })).filter((x) => !x.o.correct && !p.disabledOptions.includes(x.i));
+        const wrong = q2.options
+          .map((o, i) => ({ o, i }))
+          .filter((x) => !x.o.correct && !p.disabledOptions.includes(x.i));
         const remove = wrong[Math.floor(Math.random() * wrong.length)]?.i;
         if (remove !== undefined) p.disabledOptions = [...p.disabledOptions, remove];
       }
-      emitter.toPlayer(room, playerId, "toast", { icon: "🔭", text: "The spyglass reveals a false island!" });
+      emitter.toPlayer(room, playerId, "toast", {
+        icon: "🔭",
+        text: "The spyglass reveals a false island!",
+      });
       break;
     }
     case "rumRush":
       p.rumRush = true;
-      emitter.toPlayer(room, playerId, "toast", { icon: "🍾", text: "Rum Rush! Next correct answer pays DOUBLE." });
+      emitter.toPlayer(room, playerId, "toast", {
+        icon: "🍾",
+        text: "Rum Rush! Next correct answer pays DOUBLE.",
+      });
       break;
     case "doubleAgent":
       p.agentShield = true;
       assignMission(room, p);
-      emitter.toPlayer(room, playerId, "toast", { icon: "🎭", text: "You are now a Double Agent. New mission received." });
+      emitter.toPlayer(room, playerId, "toast", {
+        icon: "🎭",
+        text: "You are now a Double Agent. New mission received.",
+      });
       break;
     case "sabotage": {
       const target = room.players.get(payload.targetId ?? "");
       if (target) {
-        room.effects.push({ uid: uid("fx"), itemId: item.itemId, byId: playerId, targetId: payload.targetId });
+        room.effects.push({
+          uid: uid("fx"),
+          itemId: item.itemId,
+          byId: playerId,
+          targetId: payload.targetId,
+        });
         setTimeout(() => {
           target.answerLocked = true;
           // If they haven't answered, lock in a random choice — the rigging is tangled!
           if (!room.answers.has(target.id) && room.phase === "question") {
-            const optionCount = room.currentQuestion?.options.length ?? room.currentObscure?.options.length ?? 4;
+            const optionCount =
+              room.currentQuestion?.options.length ?? room.currentObscure?.options.length ?? 4;
             room.answers.set(target.id, {
               playerId: target.id,
               choiceIndex: Math.floor(Math.random() * optionCount),
               lockedAt: Date.now(),
             });
           }
-          emitter.toPlayer(room, target.id, "toast", { icon: "🪢", text: "SABOTAGE! Your answer is locked!" });
+          emitter.toPlayer(room, target.id, "toast", {
+            icon: "🪢",
+            text: "SABOTAGE! Your answer is locked!",
+          });
           emitter.broadcast(room);
           maybeEndEarly(room);
         }, TIMING.SABOTAGE_LOCK_DELAY_MS);
@@ -1152,7 +1249,12 @@ export function openChestForPlayer(room: ServerRoom, playerId: string, chestUid:
   const owned: OwnedItem = { uid: uid("item"), itemId };
   p.items.push(owned);
   const def: ItemDef = ITEMS[itemId];
-  emitter.toPlayer(room, playerId, "chest:opened", { uid: chestUid, rarity, item: owned, itemDef: def });
+  emitter.toPlayer(room, playerId, "chest:opened", {
+    uid: chestUid,
+    rarity,
+    item: owned,
+    itemDef: def,
+  });
   ticker(room, `🎁 ${p.nickname} opened a chest...`);
   emitter.broadcast(room);
 }
@@ -1160,7 +1262,11 @@ export function openChestForPlayer(room: ServerRoom, playerId: string, chestUid:
 export function forceChest(room: ServerRoom, playerId: string, _rarity?: Rarity): void {
   grantChest(room, { playerId, source: "debug" });
   const p = room.players.get(playerId);
-  if (p) emitter.toast(room, playerId, { icon: "🧪", text: `Debug chest granted (${CHEST_SOURCES.debug.name})` });
+  if (p)
+    emitter.toast(room, playerId, {
+      icon: "🧪",
+      text: `Debug chest granted (${CHEST_SOURCES.debug.name})`,
+    });
   emitter.broadcast(room);
 }
 
@@ -1174,7 +1280,10 @@ export function offerPact(room: ServerRoom, fromId: string, toId: string): void 
   if (room.pacts.some((x) => x.fromId === fromId)) return;
   room.pacts.push({ fromId, toId, accepted: false });
   const from = room.players.get(fromId);
-  emitter.toPlayer(room, toId, "toast", { icon: "🤝", text: `${from?.nickname} offers a trust pact! Accept to share fates.` });
+  emitter.toPlayer(room, toId, "toast", {
+    icon: "🤝",
+    text: `${from?.nickname} offers a trust pact! Accept to share fates.`,
+  });
   emitter.broadcast(room);
 }
 

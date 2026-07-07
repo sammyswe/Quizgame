@@ -114,7 +114,10 @@ export const ROUND_ORDER: RoundId[] = [
   "finalPlunder",
 ];
 
-export const GAME_LENGTHS: Record<GameLength, { label: string; roundCount: number; blurb: string }> = {
+export const GAME_LENGTHS: Record<
+  GameLength,
+  { label: string; roundCount: number; blurb: string }
+> = {
   short: { label: "Short Voyage", roundCount: 3, blurb: "3 rounds · ~15 min" },
   medium: { label: "Grand Voyage", roundCount: 5, blurb: "5 rounds · ~25 min" },
   full: { label: "Legendary Voyage", roundCount: 7, blurb: "All 7 rounds · ~35 min" },

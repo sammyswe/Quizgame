@@ -35,23 +35,38 @@ export function resolveObscure(
   }
 
   events.push(
-    ev("correctAnswer", "Obscure Island reveals its secrets...", "Rare knowledge pays. Common knowledge pays less. Fool's Gold pays nothing.", {
-      icon: "🏝️",
-    }),
+    ev(
+      "correctAnswer",
+      "Obscure Island reveals its secrets...",
+      "Rare knowledge pays. Common knowledge pays less. Fool's Gold pays nothing.",
+      {
+        icon: "🏝️",
+      },
+    ),
   );
 
   for (const p of players) {
     const opt = p.choiceIndex !== undefined ? question.options[p.choiceIndex] : undefined;
     if (!opt) {
-      events.push(ev("scoreChanged", `${p.nickname} froze`, "No answer, no gold.", { icon: "🦀", playerIds: [p.id] }));
+      events.push(
+        ev("scoreChanged", `${p.nickname} froze`, "No answer, no gold.", {
+          icon: "🦀",
+          playerIds: [p.id],
+        }),
+      );
       continue;
     }
     if (opt.foolsGold) {
       events.push(
-        ev("lootPlundered", "FOOL'S GOLD!", `${p.nickname} picked "${opt.text}" — it glittered, but it was worthless.`, {
-          icon: "🪙",
-          playerIds: [p.id],
-        }),
+        ev(
+          "lootPlundered",
+          "FOOL'S GOLD!",
+          `${p.nickname} picked "${opt.text}" — it glittered, but it was worthless.`,
+          {
+            icon: "🪙",
+            playerIds: [p.id],
+          },
+        ),
       );
       continue;
     }
@@ -59,7 +74,8 @@ export function resolveObscure(
     const pts = obscurePoints(opt.correct, count);
     if (pts > 0) {
       addDelta(lootDelta, p.id, pts);
-      const rarityNote = count === 1 ? "SOLO pick — maximum gold!" : `${count} pirates shared this island.`;
+      const rarityNote =
+        count === 1 ? "SOLO pick — maximum gold!" : `${count} pirates shared this island.`;
       events.push(
         ev("scoreChanged", `+${pts} for "${opt.text}"`, `${p.nickname}: ${rarityNote}`, {
           icon: count === 1 ? "💎" : "💰",
@@ -70,10 +86,15 @@ export function resolveObscure(
       if (count === 1) {
         chests.push({ playerId: p.id, source: "captains" });
         events.push(
-          ev("chestEarned", "Lone explorer!", `${p.nickname} alone found "${opt.text}" — Captain's Chest earned.`, {
-            icon: "⚓",
-            playerIds: [p.id],
-          }),
+          ev(
+            "chestEarned",
+            "Lone explorer!",
+            `${p.nickname} alone found "${opt.text}" — Captain's Chest earned.`,
+            {
+              icon: "⚓",
+              playerIds: [p.id],
+            },
+          ),
         );
       }
     } else {

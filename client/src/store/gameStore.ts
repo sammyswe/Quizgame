@@ -56,7 +56,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   createRoom: async (nickname: string) => {
-    const res = await emitWithAck<Ack<{ roomCode: string; playerId: string }>>("room:create", nickname);
+    const res = await emitWithAck<Ack<{ roomCode: string; playerId: string }>>(
+      "room:create",
+      nickname,
+    );
     if (res.ok) {
       set({ roomCode: res.data.roomCode, playerId: res.data.playerId, joinError: undefined });
       persistSession(res.data.roomCode, res.data.playerId);

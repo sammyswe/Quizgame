@@ -9,7 +9,14 @@ import type { ChestAward } from "./resolveQuestion.js";
  * Classic prisoner's-dilemma-with-a-counter matrix.
  */
 
-export type PairOutcome = { a: number; b: number; title: string; description: string; honour?: boolean; revengeFor?: "a" | "b" };
+export type PairOutcome = {
+  a: number;
+  b: number;
+  title: string;
+  description: string;
+  honour?: boolean;
+  revengeFor?: "a" | "b";
+};
 
 /** The full outcome matrix for two eligible players. Order-independent. */
 export function resolvePairOutcome(choiceA: PlunderChoice, choiceB: PlunderChoice): PairOutcome {
@@ -106,10 +113,15 @@ export function resolvePair(a: PairPlayerInput, b: PairPlayerInput): PairResolut
 
   if (!a.correct && !b.correct) {
     events.push(
-      ev("pairResult", `${a.nickname} ⚔️ ${b.nickname}`, "Neither found the treasure. The pot sinks, unclaimed.", {
-        icon: "🌊",
-        playerIds: [a.id, b.id],
-      }),
+      ev(
+        "pairResult",
+        `${a.nickname} ⚔️ ${b.nickname}`,
+        "Neither found the treasure. The pot sinks, unclaimed.",
+        {
+          icon: "🌊",
+          playerIds: [a.id, b.id],
+        },
+      ),
     );
     return { events, lootDelta, chests };
   }
@@ -118,11 +130,16 @@ export function resolvePair(a: PairPlayerInput, b: PairPlayerInput): PairResolut
     const winner = a.correct ? a : b;
     addDelta(lootDelta, winner.id, SCORING.SOLO_CORRECT_IN_PAIR);
     events.push(
-      ev("pairResult", `${winner.nickname} claims it alone!`, `Only ${winner.nickname} was correct — no dilemma, +${SCORING.SOLO_CORRECT_IN_PAIR} uncontested.`, {
-        icon: "💰",
-        playerIds: [a.id, b.id],
-        pointsDelta: { [winner.id]: SCORING.SOLO_CORRECT_IN_PAIR },
-      }),
+      ev(
+        "pairResult",
+        `${winner.nickname} claims it alone!`,
+        `Only ${winner.nickname} was correct — no dilemma, +${SCORING.SOLO_CORRECT_IN_PAIR} uncontested.`,
+        {
+          icon: "💰",
+          playerIds: [a.id, b.id],
+          pointsDelta: { [winner.id]: SCORING.SOLO_CORRECT_IN_PAIR },
+        },
+      ),
     );
     return { events, lootDelta, chests };
   }
@@ -134,29 +151,44 @@ export function resolvePair(a: PairPlayerInput, b: PairPlayerInput): PairResolut
   addDelta(lootDelta, a.id, outcome.a);
   addDelta(lootDelta, b.id, outcome.b);
   events.push(
-    ev("pairResult", outcome.title, `${a.nickname} chose ${ca.toUpperCase()}, ${b.nickname} chose ${cb.toUpperCase()}. ${outcome.description}`, {
-      icon: "⚔️",
-      playerIds: [a.id, b.id],
-      pointsDelta: { [a.id]: outcome.a, [b.id]: outcome.b },
-    }),
+    ev(
+      "pairResult",
+      outcome.title,
+      `${a.nickname} chose ${ca.toUpperCase()}, ${b.nickname} chose ${cb.toUpperCase()}. ${outcome.description}`,
+      {
+        icon: "⚔️",
+        playerIds: [a.id, b.id],
+        pointsDelta: { [a.id]: outcome.a, [b.id]: outcome.b },
+      },
+    ),
   );
   if (outcome.honour) {
     chests.push({ playerId: a.id, source: "honour" }, { playerId: b.id, source: "honour" });
     events.push(
-      ev("chestEarned", "Honour Chests! 🤝", `${a.nickname} and ${b.nickname} both kept the code — Honour Chest each.`, {
-        icon: "🤝",
-        playerIds: [a.id, b.id],
-      }),
+      ev(
+        "chestEarned",
+        "Honour Chests! 🤝",
+        `${a.nickname} and ${b.nickname} both kept the code — Honour Chest each.`,
+        {
+          icon: "🤝",
+          playerIds: [a.id, b.id],
+        },
+      ),
     );
   }
   if (outcome.revengeFor) {
     const victim = outcome.revengeFor === "a" ? a : b;
     chests.push({ playerId: victim.id, source: "revenge" });
     events.push(
-      ev("chestEarned", "Revenge brews...", `${victim.nickname} pockets a Revenge Chest. This isn't over.`, {
-        icon: "😤",
-        playerIds: [victim.id],
-      }),
+      ev(
+        "chestEarned",
+        "Revenge brews...",
+        `${victim.nickname} pockets a Revenge Chest. This isn't over.`,
+        {
+          icon: "😤",
+          playerIds: [victim.id],
+        },
+      ),
     );
   }
   return { events, lootDelta, chests };

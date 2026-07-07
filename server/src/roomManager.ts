@@ -1,5 +1,11 @@
 import { generateRoomCode } from "@treasure-trap/shared";
-import { createPlayer, createRoom, nextAvatar, type ServerPlayer, type ServerRoom } from "./state.js";
+import {
+  createPlayer,
+  createRoom,
+  nextAvatar,
+  type ServerPlayer,
+  type ServerRoom,
+} from "./state.js";
 import { uid } from "./engine.js";
 
 const rooms = new Map<string, ServerRoom>();

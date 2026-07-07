@@ -62,16 +62,27 @@ export function AuctionScreen() {
             className="flex-1 accent-amber-400"
             aria-label="Bid amount"
           />
-          <span className="w-16 text-right font-display text-2xl text-neon-gold tabular-nums">{bid}</span>
+          <span className="w-16 text-right font-display text-2xl text-neon-gold tabular-nums">
+            {bid}
+          </span>
         </div>
         <button className="btn-gold mt-3 w-full" onClick={submit} disabled={sent}>
-          {sent ? `Bid sealed: ${bid} 🤐` : bid === 0 ? "Bid nothing (coward)" : `Seal secret bid: ${bid}`}
+          {sent
+            ? `Bid sealed: ${bid} 🤐`
+            : bid === 0
+              ? "Bid nothing (coward)"
+              : `Seal secret bid: ${bid}`}
         </button>
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {game.players.map((p) => (
-          <PlayerChip key={p.id} player={p} highlight={bidsIn.has(p.id)} suffix={<span>{bidsIn.has(p.id) ? "🤐" : "🤔"}</span>} />
+          <PlayerChip
+            key={p.id}
+            player={p}
+            highlight={bidsIn.has(p.id)}
+            suffix={<span>{bidsIn.has(p.id) ? "🤐" : "🤔"}</span>}
+          />
         ))}
       </div>
     </Screen>

@@ -52,7 +52,9 @@ export function runBotsForPhase(room: ServerRoom): void {
           if (q && accurate) {
             choiceIndex = q.correctIndex;
           } else if (obscure && accurate) {
-            const correctIdxs = obscure.options.map((o, i) => (o.correct ? i : -1)).filter((i) => i >= 0);
+            const correctIdxs = obscure.options
+              .map((o, i) => (o.correct ? i : -1))
+              .filter((i) => i >= 0);
             choiceIndex = correctIdxs[Math.floor(Math.random() * correctIdxs.length)] ?? 0;
           } else {
             choiceIndex = Math.floor(Math.random() * optionCount);
@@ -73,7 +75,8 @@ export function runBotsForPhase(room: ServerRoom): void {
         }
         case "auction": {
           const budget = bot.score + bot.roundLoot;
-          const amount = Math.random() < 0.3 ? 0 : Math.floor(Math.random() * Math.min(budget, 120));
+          const amount =
+            Math.random() < 0.3 ? 0 : Math.floor(Math.random() * Math.min(budget, 120));
           submitBid(room, bot.id, amount);
           break;
         }

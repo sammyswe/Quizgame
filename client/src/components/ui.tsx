@@ -109,7 +109,11 @@ export function Confetti({ count = 40 }: { count?: number }) {
           <motion.div
             key={i}
             initial={{ y: -40, x: 0, rotate: 0, opacity: 1 }}
-            animate={{ y: "110vh", rotate: 360 * (Math.random() > 0.5 ? 2 : -2), opacity: [1, 1, 0.6] }}
+            animate={{
+              y: "110vh",
+              rotate: 360 * (Math.random() > 0.5 ? 2 : -2),
+              opacity: [1, 1, 0.6],
+            }}
             transition={{ duration, delay, ease: "easeIn" }}
             style={{
               position: "absolute",

@@ -38,8 +38,8 @@ export function FinalActionScreen() {
       <div className="text-center">
         <h1 className="font-display text-4xl text-neon-red title-glow">🏴‍☠️ FINAL PLUNDER</h1>
         <p className="text-sm text-slate-300">
-          Question {game.finalPlunder.questionNumber} of {game.finalPlunder.totalQuestions} — choose your
-          secret move. Part of your gold is protected. The rest? Fair game.
+          Question {game.finalPlunder.questionNumber} of {game.finalPlunder.totalQuestions} — choose
+          your secret move. Part of your gold is protected. The rest? Fair game.
         </p>
       </div>
 

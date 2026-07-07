@@ -15,7 +15,7 @@ and survive a chaotic final plunder to become the richest pirate at the table.
 ## Product principles
 
 1. **Knowledge usually wins.** The most knowledgeable player should win ~75% of normal
-   games. Items, deception and risk-taking decide the rest — and decide *close* games.
+   games. Items, deception and risk-taking decide the rest — and decide _close_ games.
 2. **Discussion must matter.** Every round creates reasons to persuade, lie, accuse,
    trust, follow, or betray out loud.
 3. **Easy to learn, deep to master.** The UI teaches each round in ≤4 short lines.
@@ -48,5 +48,5 @@ No accounts, no payments, no AI generation, no database, no matchmaking, no nati
 ## Success criteria
 
 Two friends on separate laptops can play a full game end-to-end with visible scores,
-items/chests firing, a dramatic Final Plunder, and a winner screen — and it *looks* like
+items/chests firing, a dramatic Final Plunder, and a winner screen — and it _looks_ like
 a neon pirate casino, not a form.

@@ -21,7 +21,12 @@ export function ItemDrawer() {
 
   const playItem = (item: OwnedItem) => {
     const def = ITEMS[item.itemId];
-    if (def.target === "otherPlayer" || def.target === "higherRanked" || def.target === "anyPlayer" || def.target === "wrongOption") {
+    if (
+      def.target === "otherPlayer" ||
+      def.target === "higherRanked" ||
+      def.target === "anyPlayer" ||
+      def.target === "wrongOption"
+    ) {
       setPending(item);
     } else {
       socket.emit("item:use", { uid: item.uid });
@@ -66,7 +71,10 @@ export function ItemDrawer() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-display text-2xl text-neon-gold text-outline">Booty Bag 🎒</h2>
-                <button className="btn-ghost !min-h-0 !px-3 !py-1.5 !text-sm" onClick={() => setOpen(false)}>
+                <button
+                  className="btn-ghost !min-h-0 !px-3 !py-1.5 !text-sm"
+                  onClick={() => setOpen(false)}
+                >
                   Close
                 </button>
               </div>
@@ -99,7 +107,9 @@ export function ItemDrawer() {
                               <span className="text-3xl animate-floaty" aria-hidden>
                                 🎁
                               </span>
-                              <span className="font-display text-sm text-neon-gold">{src.name}</span>
+                              <span className="font-display text-sm text-neon-gold">
+                                {src.name}
+                              </span>
                               <span className="text-[11px] text-slate-400">{src.blurb}</span>
                               <span className="mt-1 rounded-full bg-neon-gold/20 px-2 py-0.5 text-[11px] font-bold text-neon-gold">
                                 Open the Chest!
@@ -113,7 +123,9 @@ export function ItemDrawer() {
 
                   {priv.items.length > 0 && (
                     <div>
-                      <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-400">Items</h3>
+                      <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-400">
+                        Items
+                      </h3>
                       <div className="flex flex-col gap-2">
                         {priv.items.map((item) => {
                           const def = ITEMS[item.itemId];

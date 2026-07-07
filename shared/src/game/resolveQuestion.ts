@@ -112,10 +112,15 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     if (!e.targetId) continue;
     effectiveChoices[e.byId] = effectiveChoices[e.targetId];
     events.push(
-      ev("itemTriggered", "Copycat!", `${name(e.byId)} secretly copied ${name(e.targetId)}'s answer.`, {
-        icon: ITEMS.copycat.icon,
-        playerIds: [e.byId, e.targetId],
-      }),
+      ev(
+        "itemTriggered",
+        "Copycat!",
+        `${name(e.byId)} secretly copied ${name(e.targetId)}'s answer.`,
+        {
+          icon: ITEMS.copycat.icon,
+          playerIds: [e.byId, e.targetId],
+        },
+      ),
     );
   }
 
@@ -130,19 +135,29 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     const target = byId.get(e.targetId);
     if (target?.hasAgentShield) {
       events.push(
-        ev("itemBlocked", "Shot absorbed!", `${name(e.targetId)}'s Double Agent cover soaked up a Fear Shot.`, {
-          icon: "🎭",
-          playerIds: [e.byId, e.targetId],
-        }),
+        ev(
+          "itemBlocked",
+          "Shot absorbed!",
+          `${name(e.targetId)}'s Double Agent cover soaked up a Fear Shot.`,
+          {
+            icon: "🎭",
+            playerIds: [e.byId, e.targetId],
+          },
+        ),
       );
       continue;
     }
     missionBlocked.add(e.targetId);
     events.push(
-      ev("itemTriggered", "Fear Shot!", `${name(e.byId)} fired a Fear Shot at ${name(e.targetId)} — any secret scheme is blocked.`, {
-        icon: ITEMS.fearShot.icon,
-        playerIds: [e.byId, e.targetId],
-      }),
+      ev(
+        "itemTriggered",
+        "Fear Shot!",
+        `${name(e.byId)} fired a Fear Shot at ${name(e.targetId)} — any secret scheme is blocked.`,
+        {
+          icon: ITEMS.fearShot.icon,
+          playerIds: [e.byId, e.targetId],
+        },
+      ),
     );
   }
 
@@ -188,10 +203,15 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     if (solo) {
       chests.push({ playerId: solo.id, source: "captains" });
       events.push(
-        ev("chestEarned", "Captain's Chest!", `${solo.nickname} was the ONLY pirate to get it right.`, {
-          icon: "⚓",
-          playerIds: [solo.id],
-        }),
+        ev(
+          "chestEarned",
+          "Captain's Chest!",
+          `${solo.nickname} was the ONLY pirate to get it right.`,
+          {
+            icon: "⚓",
+            playerIds: [solo.id],
+          },
+        ),
       );
     }
   }
@@ -201,11 +221,16 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     if (isCorrect(e.byId)) continue;
     addDelta(lootDelta, e.byId, SCORING.LUCKY_DOUBLOON_CONSOLATION);
     events.push(
-      ev("itemTriggered", "Lucky Doubloon!", `${name(e.byId)} was wrong but flips a doubloon: +${SCORING.LUCKY_DOUBLOON_CONSOLATION}.`, {
-        icon: "🪙",
-        playerIds: [e.byId],
-        pointsDelta: { [e.byId]: SCORING.LUCKY_DOUBLOON_CONSOLATION },
-      }),
+      ev(
+        "itemTriggered",
+        "Lucky Doubloon!",
+        `${name(e.byId)} was wrong but flips a doubloon: +${SCORING.LUCKY_DOUBLOON_CONSOLATION}.`,
+        {
+          icon: "🪙",
+          playerIds: [e.byId],
+          pointsDelta: { [e.byId]: SCORING.LUCKY_DOUBLOON_CONSOLATION },
+        },
+      ),
     );
   }
 
@@ -214,14 +239,21 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     if (e.optionIndex === undefined || e.optionIndex === ctx.correctIndex) continue;
     if (effectiveChoices[e.byId] === e.optionIndex) {
       events.push(
-        ev("missionFailed", "Trapped by their own map!", `${name(e.byId)} fell into their own trap. Embarrassing.`, {
-          icon: "🗺️",
-          playerIds: [e.byId],
-        }),
+        ev(
+          "missionFailed",
+          "Trapped by their own map!",
+          `${name(e.byId)} fell into their own trap. Embarrassing.`,
+          {
+            icon: "🗺️",
+            playerIds: [e.byId],
+          },
+        ),
       );
       continue;
     }
-    const victims = ctx.players.filter((p) => p.id !== e.byId && effectiveChoices[p.id] === e.optionIndex);
+    const victims = ctx.players.filter(
+      (p) => p.id !== e.byId && effectiveChoices[p.id] === e.optionIndex,
+    );
     if (victims.length > 0) {
       const gain = victims.length * SCORING.SNEAKS_MAP_PER_VICTIM;
       addDelta(lootDelta, e.byId, gain);
@@ -230,20 +262,31 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
           "itemTriggered",
           "Sneak's Map!",
           `${victims.map((v) => v.nickname).join(", ")} followed a fake map! ${name(e.byId)} collects +${gain}.`,
-          { icon: "🗺️", playerIds: [e.byId, ...victims.map((v) => v.id)], pointsDelta: { [e.byId]: gain } },
+          {
+            icon: "🗺️",
+            playerIds: [e.byId, ...victims.map((v) => v.id)],
+            pointsDelta: { [e.byId]: gain },
+          },
         ),
       );
     } else {
       // Everyone dodged: survivors near the trap earn a Survivor Chest (max 1).
-      const dodgers = ctx.players.filter((p) => p.id !== e.byId && answered(p.id) && isCorrect(p.id));
+      const dodgers = ctx.players.filter(
+        (p) => p.id !== e.byId && answered(p.id) && isCorrect(p.id),
+      );
       const luckiest = dodgers[0];
       if (luckiest) {
         chests.push({ playerId: luckiest.id, source: "survivor" });
         events.push(
-          ev("chestEarned", "Trap dodged!", `${name(e.byId)}'s fake map fooled nobody. ${luckiest.nickname} earns a Survivor Chest.`, {
-            icon: "🛟",
-            playerIds: [luckiest.id],
-          }),
+          ev(
+            "chestEarned",
+            "Trap dodged!",
+            `${name(e.byId)}'s fake map fooled nobody. ${luckiest.nickname} earns a Survivor Chest.`,
+            {
+              icon: "🛟",
+              playerIds: [luckiest.id],
+            },
+          ),
         );
       }
     }
@@ -257,18 +300,28 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
       addDelta(lootDelta, e.byId, SCORING.BACKSTAB_BONUS);
       chests.push({ playerId: e.targetId, source: "revenge" });
       events.push(
-        ev("itemTriggered", "Backstab!", `${name(e.byId)} bet on ${name(e.targetId)} failing... and cashes +${SCORING.BACKSTAB_BONUS}. The victim pockets a Revenge Chest.`, {
-          icon: "🗡️",
-          playerIds: [e.byId, e.targetId],
-          pointsDelta: { [e.byId]: SCORING.BACKSTAB_BONUS },
-        }),
+        ev(
+          "itemTriggered",
+          "Backstab!",
+          `${name(e.byId)} bet on ${name(e.targetId)} failing... and cashes +${SCORING.BACKSTAB_BONUS}. The victim pockets a Revenge Chest.`,
+          {
+            icon: "🗡️",
+            playerIds: [e.byId, e.targetId],
+            pointsDelta: { [e.byId]: SCORING.BACKSTAB_BONUS },
+          },
+        ),
       );
     } else {
       events.push(
-        ev("itemBlocked", "Backstab whiffed!", `${name(e.targetId)} answered correctly — ${name(e.byId)}'s blade found only air.`, {
-          icon: "🗡️",
-          playerIds: [e.byId, e.targetId],
-        }),
+        ev(
+          "itemBlocked",
+          "Backstab whiffed!",
+          `${name(e.targetId)} answered correctly — ${name(e.byId)}'s blade found only air.`,
+          {
+            icon: "🗡️",
+            playerIds: [e.byId, e.targetId],
+          },
+        ),
       );
     }
   }
@@ -285,27 +338,42 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
       if (loss > 0) {
         addDelta(lootDelta, e.targetId, -loss);
         events.push(
-          ev("itemTriggered", "Shipwreck!", `${name(e.byId)} wrecked ${name(e.targetId)}'s ship — ${loss} unbanked loot sinks to the depths.`, {
-            icon: "🚢",
-            playerIds: [e.byId, e.targetId],
-            pointsDelta: { [e.targetId]: -loss },
-          }),
+          ev(
+            "itemTriggered",
+            "Shipwreck!",
+            `${name(e.byId)} wrecked ${name(e.targetId)}'s ship — ${loss} unbanked loot sinks to the depths.`,
+            {
+              icon: "🚢",
+              playerIds: [e.byId, e.targetId],
+              pointsDelta: { [e.targetId]: -loss },
+            },
+          ),
         );
         chests.push({ playerId: e.targetId, source: "revenge" });
       } else {
         events.push(
-          ev("itemTriggered", "Shipwreck!", `${name(e.byId)} wrecked ${name(e.targetId)}'s ship... but the hold was already empty.`, {
-            icon: "🚢",
-            playerIds: [e.byId, e.targetId],
-          }),
+          ev(
+            "itemTriggered",
+            "Shipwreck!",
+            `${name(e.byId)} wrecked ${name(e.targetId)}'s ship... but the hold was already empty.`,
+            {
+              icon: "🚢",
+              playerIds: [e.byId, e.targetId],
+            },
+          ),
         );
       }
     } else {
       events.push(
-        ev("itemBlocked", "Shipwreck dodged!", `${name(e.targetId)} sailed true — the cannonball missed.`, {
-          icon: "🚢",
-          playerIds: [e.byId, e.targetId],
-        }),
+        ev(
+          "itemBlocked",
+          "Shipwreck dodged!",
+          `${name(e.targetId)} sailed true — the cannonball missed.`,
+          {
+            icon: "🚢",
+            playerIds: [e.byId, e.targetId],
+          },
+        ),
       );
     }
   }
@@ -322,18 +390,28 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
         delta[b.id] = SCORING.BLACK_SPOT_BONUS;
       }
       events.push(
-        ev("itemTriggered", "The Black Spot!", `${name(e.targetId)} was marked and got it wrong. Everyone else gains +${SCORING.BLACK_SPOT_BONUS}.`, {
-          icon: "⚫",
-          playerIds: [e.targetId],
-          pointsDelta: delta,
-        }),
+        ev(
+          "itemTriggered",
+          "The Black Spot!",
+          `${name(e.targetId)} was marked and got it wrong. Everyone else gains +${SCORING.BLACK_SPOT_BONUS}.`,
+          {
+            icon: "⚫",
+            playerIds: [e.targetId],
+            pointsDelta: delta,
+          },
+        ),
       );
     } else {
       events.push(
-        ev("itemBlocked", "Spot torn up!", `${name(e.targetId)} answered right and tore up the Black Spot.`, {
-          icon: "⚫",
-          playerIds: [e.byId, e.targetId],
-        }),
+        ev(
+          "itemBlocked",
+          "Spot torn up!",
+          `${name(e.targetId)} answered right and tore up the Black Spot.`,
+          {
+            icon: "⚫",
+            playerIds: [e.byId, e.targetId],
+          },
+        ),
       );
     }
   }
@@ -351,11 +429,16 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     addDelta(lootDelta, b.id, aLoot - bLoot);
     chests.push({ playerId: b.id, source: "revenge" });
     events.push(
-      ev("itemTriggered", "Treasure Switch!", `${a.nickname} swapped loot bags with ${b.nickname}! (${aLoot} ⇄ ${bLoot})`, {
-        icon: "🔁",
-        playerIds: [a.id, b.id],
-        pointsDelta: { [a.id]: bLoot - aLoot, [b.id]: aLoot - bLoot },
-      }),
+      ev(
+        "itemTriggered",
+        "Treasure Switch!",
+        `${a.nickname} swapped loot bags with ${b.nickname}! (${aLoot} ⇄ ${bLoot})`,
+        {
+          icon: "🔁",
+          playerIds: [a.id, b.id],
+          pointsDelta: { [a.id]: bLoot - aLoot, [b.id]: aLoot - bLoot },
+        },
+      ),
     );
   }
 
@@ -365,10 +448,15 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     if (!leader || leader.id === e.byId) continue;
     if (!isCorrect(e.byId)) {
       events.push(
-        ev("itemBlocked", "Heist foiled!", `${name(e.byId)} fumbled the Crown Heist by answering wrong.`, {
-          icon: "👑",
-          playerIds: [e.byId],
-        }),
+        ev(
+          "itemBlocked",
+          "Heist foiled!",
+          `${name(e.byId)} fumbled the Crown Heist by answering wrong.`,
+          {
+            icon: "👑",
+            playerIds: [e.byId],
+          },
+        ),
       );
       continue;
     }
@@ -378,11 +466,16 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     addDelta(lootDelta, e.byId, steal);
     addDelta(lootDelta, leader.id, -steal);
     events.push(
-      ev("itemTriggered", "CROWN HEIST!", `${name(e.byId)} robbed the leader! ${steal} points lifted from ${leader.nickname}. Absolutely robbed.`, {
-        icon: "👑",
-        playerIds: [e.byId, leader.id],
-        pointsDelta: { [e.byId]: steal, [leader.id]: -steal },
-      }),
+      ev(
+        "itemTriggered",
+        "CROWN HEIST!",
+        `${name(e.byId)} robbed the leader! ${steal} points lifted from ${leader.nickname}. Absolutely robbed.`,
+        {
+          icon: "👑",
+          playerIds: [e.byId, leader.id],
+          pointsDelta: { [e.byId]: steal, [leader.id]: -steal },
+        },
+      ),
     );
   }
 
@@ -397,27 +490,38 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     const dRight = isCorrect(defender.id);
     if (cRight === dRight) {
       events.push(
-        ev("itemTriggered", "Broadside stalemate!", `${challenger.nickname} and ${defender.nickname} both ${cRight ? "hit" : "missed"} — cannons fall silent.`, {
-          icon: "💣",
-          playerIds: [challenger.id, defender.id],
-        }),
+        ev(
+          "itemTriggered",
+          "Broadside stalemate!",
+          `${challenger.nickname} and ${defender.nickname} both ${cRight ? "hit" : "missed"} — cannons fall silent.`,
+          {
+            icon: "💣",
+            playerIds: [challenger.id, defender.id],
+          },
+        ),
       );
       continue;
     }
     const winner = cRight ? challenger : defender;
     const loser = cRight ? defender : challenger;
     // Higher-ranked (lower rank number) loser risks more.
-    const loserLoss = loser.rank < winner.rank ? SCORING.BROADSIDE_LOSS_HIGHER : SCORING.BROADSIDE_LOSS_LOWER;
+    const loserLoss =
+      loser.rank < winner.rank ? SCORING.BROADSIDE_LOSS_HIGHER : SCORING.BROADSIDE_LOSS_LOWER;
     addDelta(lootDelta, winner.id, SCORING.BROADSIDE_WIN);
     const loserPool = loser.score + loser.roundLoot + (lootDelta[loser.id] ?? 0);
     const actualLoss = Math.min(loserLoss, Math.max(0, loserPool));
     addDelta(lootDelta, loser.id, -actualLoss);
     events.push(
-      ev("itemTriggered", "BROADSIDE DUEL!", `${winner.nickname} out-gunned ${loser.nickname}! +${SCORING.BROADSIDE_WIN} / -${actualLoss}.`, {
-        icon: "💣",
-        playerIds: [winner.id, loser.id],
-        pointsDelta: { [winner.id]: SCORING.BROADSIDE_WIN, [loser.id]: -actualLoss },
-      }),
+      ev(
+        "itemTriggered",
+        "BROADSIDE DUEL!",
+        `${winner.nickname} out-gunned ${loser.nickname}! +${SCORING.BROADSIDE_WIN} / -${actualLoss}.`,
+        {
+          icon: "💣",
+          playerIds: [winner.id, loser.id],
+          pointsDelta: { [winner.id]: SCORING.BROADSIDE_WIN, [loser.id]: -actualLoss },
+        },
+      ),
     );
   }
 
@@ -428,10 +532,15 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     if (!def.implemented) continue;
     if (missionBlocked.has(p.id)) {
       events.push(
-        ev("missionFailed", "Scheme blocked!", `${p.nickname}'s secret plan (${def.name}) was blocked by a Fear Shot.`, {
-          icon: "💀",
-          playerIds: [p.id],
-        }),
+        ev(
+          "missionFailed",
+          "Scheme blocked!",
+          `${p.nickname}'s secret plan (${def.name}) was blocked by a Fear Shot.`,
+          {
+            icon: "💀",
+            playerIds: [p.id],
+          },
+        ),
       );
       continue;
     }
@@ -442,18 +551,28 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
       addDelta(lootDelta, p.id, SCORING.SECRET_MISSION_BASE);
       chests.push({ playerId: p.id, source: "betrayal" });
       events.push(
-        ev("missionSuccess", `Secret mission complete! ${def.icon}`, `${p.nickname} pulled off "${def.name}": +${SCORING.SECRET_MISSION_BASE} and a Betrayal Chest.`, {
-          icon: def.icon,
-          playerIds: [p.id],
-          pointsDelta: { [p.id]: SCORING.SECRET_MISSION_BASE },
-        }),
+        ev(
+          "missionSuccess",
+          `Secret mission complete! ${def.icon}`,
+          `${p.nickname} pulled off "${def.name}": +${SCORING.SECRET_MISSION_BASE} and a Betrayal Chest.`,
+          {
+            icon: def.icon,
+            playerIds: [p.id],
+            pointsDelta: { [p.id]: SCORING.SECRET_MISSION_BASE },
+          },
+        ),
       );
     } else {
       events.push(
-        ev("missionFailed", "Mission failed", `${p.nickname}'s secret mission "${def.name}" slipped away.`, {
-          icon: def.icon,
-          playerIds: [p.id],
-        }),
+        ev(
+          "missionFailed",
+          "Mission failed",
+          `${p.nickname}'s secret mission "${def.name}" slipped away.`,
+          {
+            icon: def.icon,
+            playerIds: [p.id],
+          },
+        ),
       );
     }
   }
@@ -467,10 +586,15 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     const correct = Boolean(accusedMission?.deceptive);
     if (correct && accused.hasAgentShield) {
       events.push(
-        ev("itemBlocked", "Cover held!", `${accuser.nickname} accused ${accused.nickname}... the Double Agent's cover held. No proof!`, {
-          icon: "🎭",
-          playerIds: [accuser.id, accused.id],
-        }),
+        ev(
+          "itemBlocked",
+          "Cover held!",
+          `${accuser.nickname} accused ${accused.nickname}... the Double Agent's cover held. No proof!`,
+          {
+            icon: "🎭",
+            playerIds: [accuser.id, accused.id],
+          },
+        ),
       );
       continue;
     }
@@ -479,11 +603,16 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
       chests.push({ playerId: accuser.id, source: "mutiny" });
       if (accused.mission) accused.mission.blocked = true;
       events.push(
-        ev("accusationCorrect", "MUTINY! ⚔️", `${accuser.nickname} exposed ${accused.nickname} as a deceiver! +${SCORING.ACCUSATION_CORRECT} and a Mutiny Chest. The scheme is cancelled.`, {
-          icon: "⚔️",
-          playerIds: [accuser.id, accused.id],
-          pointsDelta: { [accuser.id]: SCORING.ACCUSATION_CORRECT },
-        }),
+        ev(
+          "accusationCorrect",
+          "MUTINY! ⚔️",
+          `${accuser.nickname} exposed ${accused.nickname} as a deceiver! +${SCORING.ACCUSATION_CORRECT} and a Mutiny Chest. The scheme is cancelled.`,
+          {
+            icon: "⚔️",
+            playerIds: [accuser.id, accused.id],
+            pointsDelta: { [accuser.id]: SCORING.ACCUSATION_CORRECT },
+          },
+        ),
       );
     } else {
       chests.push({ playerId: accused.id, source: "revenge" });
@@ -493,19 +622,29 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
         missionSuccesses.push(accused.id);
         addDelta(lootDelta, accused.id, SCORING.SECRET_MISSION_BASE);
         events.push(
-          ev("missionSuccess", "Mutiny Bait! 🪤", `${accused.nickname} WANTED to be accused! +${SCORING.SECRET_MISSION_BASE}.`, {
-            icon: "🪤",
-            playerIds: [accused.id],
-            pointsDelta: { [accused.id]: SCORING.SECRET_MISSION_BASE },
-          }),
+          ev(
+            "missionSuccess",
+            "Mutiny Bait! 🪤",
+            `${accused.nickname} WANTED to be accused! +${SCORING.SECRET_MISSION_BASE}.`,
+            {
+              icon: "🪤",
+              playerIds: [accused.id],
+              pointsDelta: { [accused.id]: SCORING.SECRET_MISSION_BASE },
+            },
+          ),
         );
       }
       events.push(
-        ev("accusationWrong", "False mutiny!", `${accuser.nickname} accused ${accused.nickname}... but their map was clean. ${accused.nickname} gets a Revenge Chest +${SCORING.ACCUSATION_WRONG_CONSOLATION}.`, {
-          icon: "🕊️",
-          playerIds: [accuser.id, accused.id],
-          pointsDelta: { [accused.id]: SCORING.ACCUSATION_WRONG_CONSOLATION },
-        }),
+        ev(
+          "accusationWrong",
+          "False mutiny!",
+          `${accuser.nickname} accused ${accused.nickname}... but their map was clean. ${accused.nickname} gets a Revenge Chest +${SCORING.ACCUSATION_WRONG_CONSOLATION}.`,
+          {
+            icon: "🕊️",
+            playerIds: [accuser.id, accused.id],
+            pointsDelta: { [accused.id]: SCORING.ACCUSATION_WRONG_CONSOLATION },
+          },
+        ),
       );
     }
   }
@@ -517,10 +656,15 @@ export function resolveQuestion(ctx: ResolveQuestionContext): QuestionResolution
     if (next > 0 && next % 3 === 0) {
       chests.push({ playerId: p.id, source: "streak" });
       events.push(
-        ev("chestEarned", "On fire! 🔥", `${p.nickname} hit ${next} correct in a row — Streak Chest earned!`, {
-          icon: "🔥",
-          playerIds: [p.id],
-        }),
+        ev(
+          "chestEarned",
+          "On fire! 🔥",
+          `${p.nickname} hit ${next} correct in a row — Streak Chest earned!`,
+          {
+            icon: "🔥",
+            playerIds: [p.id],
+          },
+        ),
       );
     }
   }

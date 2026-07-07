@@ -94,7 +94,9 @@ function ChoiceGrid() {
   };
 
   return (
-    <div className={`grid gap-2.5 ${game.question.options.length > 4 ? "grid-cols-2" : "grid-cols-1"}`}>
+    <div
+      className={`grid gap-2.5 ${game.question.options.length > 4 ? "grid-cols-2" : "grid-cols-1"}`}
+    >
       {game.question.options.map((opt, i) => {
         const isMine = choice === i;
         const isDisabled = disabled.has(i);
@@ -124,7 +126,8 @@ function ChoiceGrid() {
       })}
       {locked && (
         <p className="text-center text-xs text-slate-400">
-          Locked in — but you can switch until the timer ends{priv?.answerLocked ? " (unless sabotaged!)" : ""}.
+          Locked in — but you can switch until the timer ends
+          {priv?.answerLocked ? " (unless sabotaged!)" : ""}.
         </p>
       )}
     </div>
@@ -168,7 +171,9 @@ function LootAllocator() {
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between text-sm">
         <span className="font-bold text-slate-300">Split yer loot across the islands:</span>
-        <span className={`font-display text-xl ${remaining === 0 ? "text-neon-green" : "text-neon-gold"}`}>
+        <span
+          className={`font-display text-xl ${remaining === 0 ? "text-neon-green" : "text-neon-gold"}`}
+        >
           🪙 {remaining} left
         </span>
       </div>
@@ -209,7 +214,10 @@ function LootAllocator() {
       ))}
       <label className="flex items-center justify-between gap-2 rounded-2xl border border-neon-pink/40 bg-pink-950/30 px-4 py-2.5">
         <span className="text-sm font-bold">
-          😤 Confidence token <span className="text-slate-400">(+{SCORING.CONFIDENCE_BONUS} if half+ survives, −{SCORING.CONFIDENCE_PENALTY} if not)</span>
+          😤 Confidence token{" "}
+          <span className="text-slate-400">
+            (+{SCORING.CONFIDENCE_BONUS} if half+ survives, −{SCORING.CONFIDENCE_PENALTY} if not)
+          </span>
         </span>
         <input
           type="checkbox"
@@ -298,17 +306,14 @@ function AccusePanel() {
   return (
     <div className="pt-1">
       {!open ? (
-        <button
-          className="btn-pink w-full"
-          disabled={tokens <= 0}
-          onClick={() => setOpen(true)}
-        >
+        <button className="btn-pink w-full" disabled={tokens <= 0} onClick={() => setOpen(true)}>
           ⚔️ MUTINY! Accuse a deceiver ({tokens} token{tokens === 1 ? "" : "s"})
         </button>
       ) : (
         <div className="neon-card border-neon-pink/50 p-3">
           <p className="mb-2 text-center text-sm font-bold">
-            Who's scheming? Correct: +{SCORING.ACCUSATION_CORRECT} & their plot burns. Wrong: they profit.
+            Who's scheming? Correct: +{SCORING.ACCUSATION_CORRECT} & their plot burns. Wrong: they
+            profit.
           </p>
           <div className="flex flex-col gap-1.5">
             {game.players
@@ -352,14 +357,21 @@ function PactPanel() {
   return (
     <div>
       {!open ? (
-        <button className="btn-ghost w-full !text-sm" disabled={offered} onClick={() => setOpen(true)}>
-          🤝 {offered ? "Pact offered..." : `Offer a trust pact (+${SCORING.PACT_BONUS} each if you both nail it)`}
+        <button
+          className="btn-ghost w-full !text-sm"
+          disabled={offered}
+          onClick={() => setOpen(true)}
+        >
+          🤝{" "}
+          {offered
+            ? "Pact offered..."
+            : `Offer a trust pact (+${SCORING.PACT_BONUS} each if you both nail it)`}
         </button>
       ) : (
         <div className="neon-card p-3">
           <p className="mb-2 text-center text-xs text-slate-300">
-            If you BOTH put your biggest pile on the true island, +{SCORING.PACT_BONUS} each and an Honour
-            Chest. If one of you is wrong... awkward.
+            If you BOTH put your biggest pile on the true island, +{SCORING.PACT_BONUS} each and an
+            Honour Chest. If one of you is wrong... awkward.
           </p>
           <div className="flex flex-wrap justify-center gap-1.5">
             {game.players
@@ -377,7 +389,10 @@ function PactPanel() {
                   {p.avatar} {p.nickname}
                 </button>
               ))}
-            <button className="rounded-full border border-white/20 px-3 py-1.5 text-sm" onClick={() => setOpen(false)}>
+            <button
+              className="rounded-full border border-white/20 px-3 py-1.5 text-sm"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </button>
           </div>
@@ -398,7 +413,13 @@ export function ChaseTrack() {
     return Object.entries(chase.positions)
       .map(([id, pos]) => {
         const p = game.players.find((x) => x.id === id);
-        return { id, pos, avatar: p?.avatar ?? "⛵", name: p?.nickname ?? "?", isCaptain: id === chase.captainId };
+        return {
+          id,
+          pos,
+          avatar: p?.avatar ?? "⛵",
+          name: p?.nickname ?? "?",
+          isCaptain: id === chase.captainId,
+        };
       })
       .sort((a, b) => (a.isCaptain ? -1 : b.isCaptain ? 1 : 0));
   }, [chase, game]);
@@ -407,7 +428,10 @@ export function ChaseTrack() {
   return (
     <div className="neon-card border-neon-cyan/40 p-3">
       <div className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-400">
-        <span>🌊 The chase — Q{Math.min(chase.questionNumber, chase.totalQuestions)}/{chase.totalQuestions}</span>
+        <span>
+          🌊 The chase — Q{Math.min(chase.questionNumber, chase.totalQuestions)}/
+          {chase.totalQuestions}
+        </span>
         <span>Catch the Captain! ⚓</span>
       </div>
       <div className="relative h-14 overflow-hidden rounded-xl bg-gradient-to-r from-cyan-950/60 to-blue-950/60">
@@ -416,11 +440,17 @@ export function ChaseTrack() {
           {ships.map((ship, i) => (
             <motion.div
               key={ship.id}
-              animate={{ left: `${6 + (Math.min(ship.pos, trackLen) / trackLen) * 82}%`, top: ship.isCaptain ? "18%" : `${42 + (i % 3) * 18}%` }}
+              animate={{
+                left: `${6 + (Math.min(ship.pos, trackLen) / trackLen) * 82}%`,
+                top: ship.isCaptain ? "18%" : `${42 + (i % 3) * 18}%`,
+              }}
               transition={{ type: "spring", stiffness: 80, damping: 14 }}
               className="absolute -translate-x-1/2"
             >
-              <span className={`text-xl ${ship.isCaptain ? "drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]" : ""}`} aria-label={`${ship.name} at position ${ship.pos}`}>
+              <span
+                className={`text-xl ${ship.isCaptain ? "drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]" : ""}`}
+                aria-label={`${ship.name} at position ${ship.pos}`}
+              >
                 {ship.isCaptain ? "🚢" : ship.avatar}
               </span>
             </motion.div>

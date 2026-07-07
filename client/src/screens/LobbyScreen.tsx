@@ -70,7 +70,10 @@ export function LobbyScreen() {
         >
           {game.roomCode}
         </motion.button>
-        <button onClick={copyLink} className="mt-2 text-xs text-neon-cyan underline underline-offset-2">
+        <button
+          onClick={copyLink}
+          className="mt-2 text-xs text-neon-cyan underline underline-offset-2"
+        >
           {copied ? "✅ Link copied — send it to yer crew!" : "📋 Copy invite link"}
         </button>
       </div>
@@ -130,7 +133,8 @@ export function LobbyScreen() {
         <div>
           <div className="flex items-center justify-between">
             <SectionTitle>
-              Rounds ({pickedRounds.length === 0 ? "random" : `${pickedRounds.length}/${roundCount}`})
+              Rounds (
+              {pickedRounds.length === 0 ? "random" : `${pickedRounds.length}/${roundCount}`})
             </SectionTitle>
             {isHost && (
               <button className="btn-ghost !min-h-0 !px-3 !py-1 !text-xs" onClick={randomise}>
@@ -148,7 +152,11 @@ export function LobbyScreen() {
                   disabled={!isHost}
                   onClick={() => toggleRound(r)}
                   className={`neon-card flex items-center gap-2 p-2.5 text-left transition ${
-                    picked ? "border-neon-cyan/70 shadow-neon-cyan" : pickedRounds.length > 0 ? "opacity-50" : ""
+                    picked
+                      ? "border-neon-cyan/70 shadow-neon-cyan"
+                      : pickedRounds.length > 0
+                        ? "opacity-50"
+                        : ""
                   } ${isHost ? "" : "pointer-events-none"}`}
                 >
                   <span className="text-xl" aria-hidden>

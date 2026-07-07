@@ -62,7 +62,12 @@ export function MissionCard() {
                   <button
                     key={p.id}
                     className="rounded-full border border-neon-purple/50 px-2.5 py-1 text-xs font-bold hover:bg-neon-purple/20"
-                    onClick={() => socket.emit("mission:setup", { targetId: p.id, optionIndex: mission.optionIndex })}
+                    onClick={() =>
+                      socket.emit("mission:setup", {
+                        targetId: p.id,
+                        optionIndex: mission.optionIndex,
+                      })
+                    }
                   >
                     {p.avatar} {p.nickname}
                   </button>
@@ -76,7 +81,9 @@ export function MissionCard() {
                 <button
                   key={i}
                   className="rounded-xl border border-neon-purple/50 px-2.5 py-1.5 text-left text-xs font-bold hover:bg-neon-purple/20"
-                  onClick={() => socket.emit("mission:setup", { targetId: mission.targetId, optionIndex: i })}
+                  onClick={() =>
+                    socket.emit("mission:setup", { targetId: mission.targetId, optionIndex: i })
+                  }
                 >
                   {String.fromCharCode(65 + i)}. {opt}
                 </button>

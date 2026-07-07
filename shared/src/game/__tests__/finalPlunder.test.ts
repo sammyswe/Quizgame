@@ -34,7 +34,12 @@ describe("resolveFinalQuestion", () => {
     const res = resolveFinalQuestion({
       correctIndex: 0,
       players: [
-        player("rat", { rank: 4, score: 100, choiceIndex: 0, action: { actionId: "betrayTheCrew", targetId: "leader" } }),
+        player("rat", {
+          rank: 4,
+          score: 100,
+          choiceIndex: 0,
+          action: { actionId: "betrayTheCrew", targetId: "leader" },
+        }),
         player("leader", { rank: 1, score: 1000, choiceIndex: 1 }),
         player("mid", { rank: 2, score: 500, choiceIndex: 1 }),
         player("mid2", { rank: 3, score: 400, choiceIndex: 1 }),
@@ -49,7 +54,12 @@ describe("resolveFinalQuestion", () => {
     const res = resolveFinalQuestion({
       correctIndex: 0,
       players: [
-        player("rat", { rank: 1, score: 500, choiceIndex: 0, action: { actionId: "betrayTheCrew", targetId: "poor" } }),
+        player("rat", {
+          rank: 1,
+          score: 500,
+          choiceIndex: 0,
+          action: { actionId: "betrayTheCrew", targetId: "poor" },
+        }),
         player("poor", { rank: 2, score: 100, choiceIndex: 1 }),
       ],
     });
@@ -62,8 +72,18 @@ describe("resolveFinalQuestion", () => {
     const res = resolveFinalQuestion({
       correctIndex: 0,
       players: [
-        player("rat", { rank: 3, score: 200, choiceIndex: 0, action: { actionId: "betrayTheCrew", targetId: "leader" } }),
-        player("leader", { rank: 1, score: 1000, choiceIndex: 1, action: { actionId: "captainsShield" } }),
+        player("rat", {
+          rank: 3,
+          score: 200,
+          choiceIndex: 0,
+          action: { actionId: "betrayTheCrew", targetId: "leader" },
+        }),
+        player("leader", {
+          rank: 1,
+          score: 1000,
+          choiceIndex: 1,
+          action: { actionId: "captainsShield" },
+        }),
         player("mid", { rank: 2, score: 500, choiceIndex: 1 }),
       ],
     });
@@ -75,13 +95,19 @@ describe("resolveFinalQuestion", () => {
   it("all-in plunder doubles on success and bleeds unprotected points on failure", () => {
     const win = resolveFinalQuestion({
       correctIndex: 0,
-      players: [player("g", { rank: 2, choiceIndex: 0, action: { actionId: "allInPlunder" } }), player("x", { rank: 1, choiceIndex: 0 })],
+      players: [
+        player("g", { rank: 2, choiceIndex: 0, action: { actionId: "allInPlunder" } }),
+        player("x", { rank: 1, choiceIndex: 0 }),
+      ],
     });
     expect(win.scoreDelta.g).toBe(SCORING.FINAL_CORRECT * SCORING.ALL_IN_MULTIPLIER);
 
     const lose = resolveFinalQuestion({
       correctIndex: 0,
-      players: [player("g", { rank: 2, score: 500, choiceIndex: 1, action: { actionId: "allInPlunder" } }), player("x", { rank: 1, choiceIndex: 0 })],
+      players: [
+        player("g", { rank: 2, score: 500, choiceIndex: 1, action: { actionId: "allInPlunder" } }),
+        player("x", { rank: 1, choiceIndex: 0 }),
+      ],
     });
     expect(lose.scoreDelta.g).toBe(-SCORING.ALL_IN_PENALTY);
   });
@@ -89,7 +115,10 @@ describe("resolveFinalQuestion", () => {
   it("last cannon adds its bonus on a correct answer", () => {
     const res = resolveFinalQuestion({
       correctIndex: 0,
-      players: [player("d", { rank: 2, choiceIndex: 0, action: { actionId: "lastCannon" } }), player("x", { rank: 1, choiceIndex: 1 })],
+      players: [
+        player("d", { rank: 2, choiceIndex: 0, action: { actionId: "lastCannon" } }),
+        player("x", { rank: 1, choiceIndex: 1 }),
+      ],
     });
     expect(res.scoreDelta.d).toBe(SCORING.FINAL_CORRECT + SCORING.LAST_CANNON_BONUS);
   });
@@ -98,7 +127,12 @@ describe("resolveFinalQuestion", () => {
     const res = resolveFinalQuestion({
       correctIndex: 0,
       players: [
-        player("flag", { rank: 3, score: 300, choiceIndex: 0, action: { actionId: "raiseTheBlackFlag" } }),
+        player("flag", {
+          rank: 3,
+          score: 300,
+          choiceIndex: 0,
+          action: { actionId: "raiseTheBlackFlag" },
+        }),
         player("v1", { rank: 1, score: 1000, choiceIndex: 1 }),
         player("v2", { rank: 2, score: 500, choiceIndex: 1 }),
       ],

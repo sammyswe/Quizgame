@@ -43,7 +43,8 @@ export const MISSIONS: Record<MissionId, MissionDef> = {
     id: "loudLiar",
     name: "Loud Liar",
     icon: "📢",
-    description: "Speak first and pull someone off the correct answer. (v1: same check as False Friend)",
+    description:
+      "Speak first and pull someone off the correct answer. (v1: same check as False Friend)",
     deceptive: true,
     implemented: false,
   },

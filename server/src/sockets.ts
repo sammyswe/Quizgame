@@ -76,7 +76,8 @@ export function attachSockets(io: Server): void {
       if (typeof cb !== "function") return;
       const code = typeof roomCode === "string" ? roomCode.trim().toUpperCase() : "";
       const name = typeof nickname === "string" ? nickname.trim() : "";
-      if (!isValidRoomCode(code)) return cb({ ok: false, error: "That room code doesn't look right." });
+      if (!isValidRoomCode(code))
+        return cb({ ok: false, error: "That room code doesn't look right." });
       if (!name) return cb({ ok: false, error: "Every pirate needs a name!" });
       const result = joinRoom(code, name);
       if ("error" in result) return cb({ ok: false, error: result.error });
@@ -256,7 +257,8 @@ export function attachSockets(io: Server): void {
     socket.on("debug:autoAnswer", () => {
       const room = currentRoom();
       if (!room || !DEBUG_ENABLED || room.phase !== "question") return;
-      const optionCount = room.currentQuestion?.options.length ?? room.currentObscure?.options.length ?? 4;
+      const optionCount =
+        room.currentQuestion?.options.length ?? room.currentObscure?.options.length ?? 4;
       for (const p of room.players.values()) {
         if (room.answers.has(p.id)) continue;
         const round = room.roundPlan[room.roundIndex];
@@ -281,7 +283,10 @@ export function attachSockets(io: Server): void {
               answers: [...room.answers.entries()],
               effects: room.effects,
               correctIndex: room.currentQuestion?.correctIndex,
-              missions: [...room.players.values()].map((p) => ({ id: p.nickname, mission: p.mission })),
+              missions: [...room.players.values()].map((p) => ({
+                id: p.nickname,
+                mission: p.mission,
+              })),
             },
           }),
         ),
@@ -306,7 +311,10 @@ export function attachSockets(io: Server): void {
           [...room.players.values()].find((p) => p.connected);
         if (nextHost) {
           room.hostId = nextHost.id;
-          io.to(room.code).emit("toast", { icon: "🫡", text: `${nextHost.nickname} is now the host.` });
+          io.to(room.code).emit("toast", {
+            icon: "🫡",
+            text: `${nextHost.nickname} is now the host.`,
+          });
         }
       }
       broadcastRoom(io, room);

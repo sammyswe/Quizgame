@@ -74,19 +74,29 @@ export function resolveLootDrop(
 
     if (lostAmount > 0) {
       events.push(
-        ev("lootPlundered", `${p.nickname} loses ${lostAmount} loot!`, `${lostAmount} loot plundered from the wrong islands. ${kept} survived.${note}`, {
-          icon: "🏴‍☠️",
-          playerIds: [p.id],
-          pointsDelta: { [p.id]: gain },
-        }),
+        ev(
+          "lootPlundered",
+          `${p.nickname} loses ${lostAmount} loot!`,
+          `${lostAmount} loot plundered from the wrong islands. ${kept} survived.${note}`,
+          {
+            icon: "🏴‍☠️",
+            playerIds: [p.id],
+            pointsDelta: { [p.id]: gain },
+          },
+        ),
       );
     } else {
       events.push(
-        ev("scoreChanged", `${p.nickname} kept it all!`, `Every coin landed on the true island: +${gain}.${note}`, {
-          icon: "💰",
-          playerIds: [p.id],
-          pointsDelta: { [p.id]: gain },
-        }),
+        ev(
+          "scoreChanged",
+          `${p.nickname} kept it all!`,
+          `Every coin landed on the true island: +${gain}.${note}`,
+          {
+            icon: "💰",
+            playerIds: [p.id],
+            pointsDelta: { [p.id]: gain },
+          },
+        ),
       );
     }
   }
@@ -105,19 +115,29 @@ export function resolveLootDrop(
       addDelta(lootDelta, b.id, SCORING.PACT_BONUS);
       chests.push({ playerId: a.id, source: "honour" });
       events.push(
-        ev("scoreChanged", "Trust pact honoured! 🤝", `${a.nickname} and ${b.nickname} both trusted the true island: +${SCORING.PACT_BONUS} each, and an Honour Chest.`, {
-          icon: "🤝",
-          playerIds: [a.id, b.id],
-          pointsDelta: { [a.id]: SCORING.PACT_BONUS, [b.id]: SCORING.PACT_BONUS },
-        }),
+        ev(
+          "scoreChanged",
+          "Trust pact honoured! 🤝",
+          `${a.nickname} and ${b.nickname} both trusted the true island: +${SCORING.PACT_BONUS} each, and an Honour Chest.`,
+          {
+            icon: "🤝",
+            playerIds: [a.id, b.id],
+            pointsDelta: { [a.id]: SCORING.PACT_BONUS, [b.id]: SCORING.PACT_BONUS },
+          },
+        ),
       );
     } else if (aBest === correctIndex || bBest === correctIndex) {
       const sucker = aBest === correctIndex ? b : a;
       events.push(
-        ev("missionFailed", "Pact broken!", `${sucker.nickname} followed the pact to the wrong island. Trust no one.`, {
-          icon: "💔",
-          playerIds: [a.id, b.id],
-        }),
+        ev(
+          "missionFailed",
+          "Pact broken!",
+          `${sucker.nickname} followed the pact to the wrong island. Trust no one.`,
+          {
+            icon: "💔",
+            playerIds: [a.id, b.id],
+          },
+        ),
       );
     }
   }
@@ -129,10 +149,15 @@ export function resolveLootDrop(
     if (biggestLoser) {
       chests.push({ playerId: biggestLoser.id, source: "sunken" });
       events.push(
-        ev("chestEarned", "Sunken Chest surfaces! 🌊", `${biggestLoser.nickname} lost the most loot (${maxLost}) — the sea sends back a mystery chest.`, {
-          icon: "🌊",
-          playerIds: [biggestLoser.id],
-        }),
+        ev(
+          "chestEarned",
+          "Sunken Chest surfaces! 🌊",
+          `${biggestLoser.nickname} lost the most loot (${maxLost}) — the sea sends back a mystery chest.`,
+          {
+            icon: "🌊",
+            playerIds: [biggestLoser.id],
+          },
+        ),
       );
     }
   }

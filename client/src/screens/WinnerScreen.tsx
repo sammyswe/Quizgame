@@ -9,7 +9,8 @@ export function WinnerScreen() {
   const isHost = useGameStore((s) => s.isHost());
   const leave = useGameStore((s) => s.leave);
   const sorted = useMemo(
-    () => (game ? [...game.players].sort((a, b) => b.score + b.roundLoot - (a.score + a.roundLoot)) : []),
+    () =>
+      game ? [...game.players].sort((a, b) => b.score + b.roundLoot - (a.score + a.roundLoot)) : [],
     [game],
   );
   if (!game) return null;
