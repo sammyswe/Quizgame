@@ -1,0 +1,23 @@
+---
+description: UI/UX rules for Treasure Trap screens and components
+globs: ["client/**"]
+alwaysApply: false
+---
+
+# UI / UX rules
+
+- Visual direction: **neon pirate casino** — dark navy/purple backgrounds, neon cyan/gold/
+  pink/green glows, gold coins, treasure chests, map motifs, slot-machine item reveals.
+  It must feel like an arcade party game, never an admin dashboard.
+- Mobile-first, portrait-friendly, iPhone-native feel. Max content width ~28rem, big
+  tap targets (min 52px), readable text, strong contrast.
+- The UI teaches the game: short labels, icons, and animated sequencing instead of rules pages.
+- Animations (Framer Motion + Tailwind keyframes) must clarify game events, not hide them.
+  Respect `prefers-reduced-motion` (global fallback lives in `styles/index.css`).
+- Never rely on colour alone for meaning — pair with icons/text (✅/💭, 🔒, etc.).
+- Timers must always be visible during timed phases (`TimerBar` fed by server `timerEndsAt`).
+- Private information (missions, clues) must be clearly marked "only you can see this".
+- Score changes only appear through the reveal queue (`RevealScreen`) or animated counters —
+  never teleport numbers silently.
+- Fun pirate copy everywhere: "Create a Voyage", "Mutiny!", "You have been absolutely
+  robbed." Keep it 9+ friendly.

@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-abyss text-slate-100 font-body antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(192, 132, 252, 0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 110%, rgba(34, 211, 238, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 10% 110%, rgba(244, 114, 182, 0.1), transparent);
+  background-attachment: fixed;
+  overscroll-behavior: none;
+}
+
+@layer components {
+  .neon-card {
+    @apply rounded-2xl border border-white/10 bg-card/80 backdrop-blur-sm;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 font-display text-lg tracking-wide transition
+      active:scale-95 disabled:opacity-40 disabled:pointer-events-none select-none min-h-[52px];
+  }
+
+  .btn-gold {
+    @apply btn bg-gradient-to-b from-amber-300 to-amber-500 text-amber-950 shadow-neon-gold;
+  }
+
+  .btn-cyan {
+    @apply btn bg-gradient-to-b from-cyan-300 to-cyan-500 text-cyan-950 shadow-neon-cyan;
+  }
+
+  .btn-pink {
+    @apply btn bg-gradient-to-b from-pink-300 to-pink-500 text-pink-950 shadow-neon-pink;
+  }
+
+  .btn-ghost {
+    @apply btn border border-white/20 bg-white/5 text-slate-100 hover:bg-white/10;
+  }
+
+  .input {
+    @apply w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-lg text-slate-100
+      placeholder:text-slate-500 outline-none focus:border-cyan-300/60 focus:shadow-neon-cyan transition;
+  }
+
+  .title-glow {
+    text-shadow:
+      0 0 18px rgba(251, 191, 36, 0.55),
+      0 0 60px rgba(251, 191, 36, 0.25);
+  }
+
+  .text-outline {
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

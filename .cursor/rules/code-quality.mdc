@@ -1,0 +1,21 @@
+---
+description: Code quality standards for all TypeScript in this repo
+alwaysApply: true
+---
+
+# Code quality
+
+- Use strict TypeScript everywhere; never weaken `tsconfig.base.json`.
+- Keep shared types centralised in `shared/src/types/index.ts`. Client and server import
+  from `@treasure-trap/shared` — never duplicate type definitions.
+- Prefer readable game logic over clever abstractions. Round resolvers should read
+  top-to-bottom like the rules of the game.
+- Never add unnecessary complexity: no new dependencies, layers, or patterns unless a
+  concrete current requirement demands them.
+- Do not hardcode fragile magic values in game logic. Scoring, item odds, timing windows,
+  and rarity tables live in `shared/src/config/*` as named constants.
+- Pure logic goes in `shared/src/game/` (no IO, no React, no sockets) so it can be unit
+  tested. The server orchestrates; the shared modules decide.
+- Clients send intents (`answer:submit`, `item:use`...); only the server mutates game state.
+- Never expose `correctIndex` or other players' private state to clients during a question.
+- Run `pnpm typecheck && pnpm lint && pnpm test` before finishing any change.

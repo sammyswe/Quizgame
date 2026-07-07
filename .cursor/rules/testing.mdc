@@ -1,0 +1,25 @@
+---
+description: Testing requirements and conventions
+globs: ["**/*.test.ts", "shared/**", "client/e2e/**"]
+alwaysApply: false
+---
+
+# Testing
+
+- Unit tests use Vitest and live in `shared/src/game/__tests__/`. Run with `pnpm test`.
+- Required coverage areas (keep these green, extend when mechanics change):
+  - Chest rarity odds by leaderboard position (tables sum to 1, buckets map correctly).
+  - Scores can never go below zero (`applyDelta`, `clampScore`).
+  - Correct-answer scoring incl. Rum Rush / double reward multipliers.
+  - Loot Drop allocation normalisation and scoring, confidence tokens, pacts, Sunken Chest.
+  - The full Split or Plunder outcome matrix (all 9 combinations + eligibility rules).
+  - Item effects for at least 8 items (copycat, doubloon, backstab, shipwreck, black spot,
+    treasure switch, sneak's map, crown heist, curse reversal, fear shot...).
+  - Mutiny accusation correct/wrong outcomes incl. Mutiny Bait.
+  - Final Plunder protected/unprotected maths and steal caps.
+- Pure functions take an optional `rng: () => number` parameter — pass a stub for
+  deterministic tests; use statistical bounds for odds tests.
+- E2E: Playwright smoke test in `client/e2e/` (app loads → create room → join → start game).
+  Run with `pnpm test:e2e` (requires `pnpm exec playwright install chromium` once).
+- Never delete failing tests to make CI green — fix the logic or update the test with the
+  intended rule change, documented in the commit message.

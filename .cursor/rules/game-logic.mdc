@@ -1,0 +1,26 @@
+---
+description: Rules for changing game mechanics, items, missions, scoring
+globs: ["shared/**", "server/**"]
+alwaysApply: false
+---
+
+# Game logic rules
+
+- **All new mechanics require counterplay.** Before adding an attack, decide and document
+  its counter (in the config `counterplay` field and docs/GAME_DESIGN.md). Examples:
+  traps ↔ accusations, steals ↔ banking/protection, boosts ↔ answering wrong,
+  leader attacks ↔ protected score, curses ↔ not attacking into them.
+- **All items must be distinct.** No two items may feel like the same move with different
+  numbers. Keep items simple, readable, single-use.
+- Chest rarity odds are position-based (Mario Kart style): lower-ranked players get better
+  odds. The tables live in `shared/src/config/chests.ts` and must each sum to 1.
+- Keep game mechanics easy to understand — if a mechanic needs a paragraph to explain in
+  the UI, simplify it.
+- Scores never go below `SCORING.MIN_SCORE` (0). Use `applyDelta`/`clampScore`.
+- Steals and attacks target unbanked (`roundLoot`) or unprotected (Final Plunder) points,
+  never a player's whole score.
+- Every score change must emit a `RevealEvent` — the reveal queue is the only way players
+  learn what happened.
+- Secret missions must only be visible to the assigned player (private state channel).
+- Round resolvers in `shared/src/game/` stay pure: inputs in, `{events, deltas, chests}` out.
+- Add or update Vitest tests in `shared/src/game/__tests__/` for any scoring/item change.
