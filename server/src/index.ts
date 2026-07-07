@@ -32,3 +32,14 @@ attachSockets(io);
 server.listen(PORT, () => {
   console.log(`🏴‍☠️ Treasure Trap server sailing on port ${PORT}`);
 });
+
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `\n❌ Port ${PORT} is already in use. Another Treasure Trap server (or another app) is still running.\n` +
+        `   Fix: run \`pnpm predev\` or \`node scripts/kill-dev-ports.mjs\`, then try again.\n`,
+    );
+    process.exit(1);
+  }
+  throw err;
+});

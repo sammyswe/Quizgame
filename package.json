@@ -5,6 +5,8 @@
   "version": "0.1.0",
   "description": "Treasure Trap — a neon pirate casino party quiz for 2-8 players",
   "scripts": {
+    "predev": "node scripts/kill-dev-ports.mjs",
+    "dev:stop": "node scripts/kill-dev-ports.mjs",
     "dev": "concurrently -n server,client -c yellow,cyan \"pnpm dev:server\" \"pnpm dev:client\"",
     "dev:client": "pnpm --filter @treasure-trap/client dev",
     "dev:server": "pnpm --filter @treasure-trap/server dev",
