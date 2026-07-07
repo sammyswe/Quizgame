@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { RARITY_META } from "@treasure-trap/shared";
 import { useGameStore } from "../store/gameStore";
+import { EmojiBurst } from "./fx";
+import { sfx } from "../lib/sfx";
 
 /**
  * Chest opening: shake → rarity wheel spin → glow → item pop → explanation.
@@ -15,8 +17,16 @@ export function ChestModal() {
   useEffect(() => {
     if (!reveal) return;
     setStage("shake");
+    sfx.chest();
     const t1 = setTimeout(() => setStage("spin"), 900);
-    const t2 = setTimeout(() => setStage("pop"), 2300);
+    const t2 = setTimeout(() => {
+      setStage("pop");
+      if (reveal.rarity === "legendary" || reveal.rarity === "epic") {
+        sfx.legendary();
+      } else {
+        sfx.coins();
+      }
+    }, 2300);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -62,13 +72,19 @@ export function ChestModal() {
               initial={{ scale: 0.3, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 16 }}
-              className="flex w-full flex-col items-center gap-3 rounded-3xl border p-6"
+              className="relative flex w-full flex-col items-center gap-3 rounded-3xl border p-6"
               style={{
                 borderColor: meta.color,
                 boxShadow: `0 0 24px ${meta.glow}88, 0 0 80px ${meta.glow}44`,
                 background: "rgba(13,18,51,0.95)",
               }}
             >
+              <EmojiBurst
+                emoji={reveal.rarity === "legendary" ? "⭐" : "✨"}
+                count={12}
+                distance={130}
+                duration={1}
+              />
               <div
                 className="font-display text-sm uppercase tracking-[0.3em]"
                 style={{ color: meta.color }}

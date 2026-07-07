@@ -17,6 +17,7 @@ export function TimerBar({ endsAt, className = "" }: { endsAt: number; className
   const [now, setNow] = useState(Date.now());
   const totalRef = useRef<number>(0);
   const endsRef = useRef<number>(0);
+  const lastTickRef = useRef<number>(-1);
   if (endsAt !== endsRef.current) {
     endsRef.current = endsAt;
     totalRef.current = Math.max(1, endsAt - Date.now());
@@ -25,23 +26,38 @@ export function TimerBar({ endsAt, className = "" }: { endsAt: number; className
     const t = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(t);
   }, []);
-  if (!endsAt) return null;
+
   const remaining = Math.max(0, endsAt - now);
-  const pct = Math.min(100, (remaining / totalRef.current) * 100);
   const seconds = Math.ceil(remaining / 1000);
-  const urgent = seconds <= 5;
+  const urgent = seconds <= 5 && remaining > 0;
+
+  // Tick sound each of the final 5 seconds.
+  useEffect(() => {
+    if (!urgent || seconds === lastTickRef.current) return;
+    lastTickRef.current = seconds;
+    void import("../lib/sfx").then(({ sfx }) => sfx.tick());
+  }, [urgent, seconds]);
+
+  if (!endsAt) return null;
+  const pct = Math.min(100, (remaining / totalRef.current) * 100);
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+      <div
+        className={`h-3 flex-1 overflow-hidden rounded-full bg-white/10 ${urgent ? "animate-shake" : ""}`}
+      >
         <div
           className={`h-full rounded-full transition-[width] duration-200 ${
-            urgent ? "bg-neon-red shadow-neon-pink" : "bg-neon-cyan shadow-neon-cyan"
+            urgent
+              ? "bg-gradient-to-r from-rose-500 to-red-400 shadow-neon-pink"
+              : "bg-gradient-to-r from-cyan-400 to-sky-300 shadow-neon-cyan"
           }`}
           style={{ width: `${pct}%` }}
         />
       </div>
       <span
-        className={`w-9 text-right font-display text-lg tabular-nums ${urgent ? "text-neon-red animate-pulse" : "text-neon-cyan"}`}
+        className={`w-9 text-right font-display text-xl tabular-nums ${
+          urgent ? "animate-heartbeat text-neon-red" : "text-neon-cyan"
+        }`}
         aria-label={`${seconds} seconds remaining`}
       >
         {seconds}

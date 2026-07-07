@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { AnimatedNumber, Confetti, Screen } from "../components/ui";
+import { EmojiRain } from "../components/fx";
+import { sfx } from "../lib/sfx";
 
 export function WinnerScreen() {
   const game = useGameStore((s) => s.game);
@@ -13,6 +15,10 @@ export function WinnerScreen() {
       game ? [...game.players].sort((a, b) => b.score + b.roundLoot - (a.score + a.roundLoot)) : [],
     [game],
   );
+  useEffect(() => {
+    sfx.fanfare();
+  }, []);
+
   if (!game) return null;
   const winner = sorted.find((p) => p.id === game.winnerId) ?? sorted[0];
   const runnersUp = sorted.filter((p) => p.id !== winner?.id);
@@ -20,6 +26,7 @@ export function WinnerScreen() {
   return (
     <Screen className="items-center justify-center gap-6 text-center">
       <Confetti count={70} />
+      <EmojiRain emoji="🪙" count={28} duration={4} />
       <motion.div
         initial={{ scale: 0, rotate: -12 }}
         animate={{ scale: 1, rotate: 0 }}

@@ -2,6 +2,35 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useGameStore } from "../store/gameStore";
 import { Screen } from "../components/ui";
+import { sfx } from "../lib/sfx";
+
+/** Title letters drop in one by one with a spring, then idle-wave forever. */
+function BouncyWord({ word, delayOffset = 0 }: { word: string; delayOffset?: number }) {
+  return (
+    <span aria-hidden>
+      {word.split("").map((ch, i) => (
+        <motion.span
+          key={i}
+          className="inline-block"
+          initial={{ y: -60, opacity: 0, rotate: -12 }}
+          animate={{ y: [0, -4, 0], opacity: 1, rotate: 0 }}
+          transition={{
+            y: {
+              delay: delayOffset + i * 0.06 + 1,
+              repeat: Infinity,
+              repeatDelay: 2.4,
+              duration: 0.5,
+            },
+            opacity: { delay: delayOffset + i * 0.06, type: "spring", stiffness: 300, damping: 14 },
+            rotate: { delay: delayOffset + i * 0.06, type: "spring", stiffness: 300, damping: 14 },
+          }}
+        >
+          {ch}
+        </motion.span>
+      ))}
+    </span>
+  );
+}
 
 export function LandingScreen() {
   const [mode, setMode] = useState<"landing" | "create" | "join">("landing");
@@ -39,17 +68,20 @@ export function LandingScreen() {
         className="flex flex-col items-center gap-3"
       >
         <motion.div
-          className="text-7xl"
-          animate={{ y: [0, -10, 0], rotate: [0, -3, 3, 0] }}
+          className="text-7xl drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]"
+          animate={{ y: [0, -10, 0], rotate: [0, -4, 4, 0] }}
           transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
           aria-hidden
         >
           🏴‍☠️
         </motion.div>
-        <h1 className="font-display text-6xl leading-none text-neon-gold title-glow">
-          TREASURE
+        <h1
+          className="font-display text-6xl leading-none text-neon-gold title-glow"
+          aria-label="Treasure Trap"
+        >
+          <BouncyWord word="TREASURE" />
           <br />
-          TRAP
+          <BouncyWord word="TRAP" delayOffset={0.45} />
         </h1>
         <p className="max-w-xs text-sm text-slate-300">
           The neon pirate casino party quiz. Answer trivia, bluff with fake maps, betray your
@@ -70,12 +102,28 @@ export function LandingScreen() {
           transition={{ delay: 0.15 }}
           className="flex w-full max-w-xs flex-col gap-3"
         >
-          <button className="btn-gold w-full text-xl" onClick={() => setMode("create")}>
+          <motion.button
+            whileHover={{ scale: 1.04, rotate: -0.5 }}
+            whileTap={{ scale: 0.94 }}
+            className="btn-gold w-full text-xl"
+            onClick={() => {
+              sfx.select();
+              setMode("create");
+            }}
+          >
             ⚓ Create a Voyage
-          </button>
-          <button className="btn-cyan w-full text-xl" onClick={() => setMode("join")}>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.04, rotate: 0.5 }}
+            whileTap={{ scale: 0.94 }}
+            className="btn-cyan w-full text-xl"
+            onClick={() => {
+              sfx.select();
+              setMode("join");
+            }}
+          >
             🦜 Join a Crew
-          </button>
+          </motion.button>
         </motion.div>
       ) : (
         <motion.form

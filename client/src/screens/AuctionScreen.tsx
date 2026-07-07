@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { PlayerChip, Screen, TimerBar } from "../components/ui";
+import { sfx } from "../lib/sfx";
 
 export function AuctionScreen() {
   const game = useGameStore((s) => s.game);
@@ -20,6 +21,7 @@ export function AuctionScreen() {
   const bidsIn = new Set(game.auction.bidsIn);
 
   const submit = () => {
+    sfx.lock();
     socket.emit("auction:bid", bid);
     setSent(true);
   };

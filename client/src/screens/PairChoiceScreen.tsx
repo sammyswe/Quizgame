@@ -4,6 +4,7 @@ import type { PlunderChoice } from "@treasure-trap/shared";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { Screen, TimerBar } from "../components/ui";
+import { sfx } from "../lib/sfx";
 
 const CHOICES: Array<{
   id: PlunderChoice;
@@ -48,6 +49,11 @@ export function PairChoiceScreen() {
 
   const choose = (c: PlunderChoice) => {
     setPicked(c);
+    if (c === "plunder") {
+      sfx.boom();
+    } else {
+      sfx.lock();
+    }
     socket.emit("pair:choose", c);
   };
 

@@ -34,7 +34,9 @@ function pidsOnPort(port) {
 
   // lsof is the most reliable on macOS/Linux dev machines.
   try {
-    const out = execSync(`lsof -ti :${port} -sTCP:LISTEN 2>/dev/null || true`, { encoding: "utf8" });
+    const out = execSync(`lsof -ti :${port} -sTCP:LISTEN 2>/dev/null || true`, {
+      encoding: "utf8",
+    });
     for (const line of out.trim().split("\n")) {
       const pid = Number(line.trim());
       if (pid > 0) pids.add(pid);

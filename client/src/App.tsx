@@ -1,5 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import { useGameStore } from "./store/gameStore";
+import { Background } from "./components/Background";
+import { isMuted, setMuted } from "./lib/sfx";
 import { LandingScreen } from "./screens/LandingScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { RoundIntroScreen } from "./screens/RoundIntroScreen";
@@ -74,24 +77,44 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-full">
-      {inGame && <Hud />}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={screenKey}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.25 }}
-          className="min-h-full"
-        >
-          {screen}
-        </motion.div>
-      </AnimatePresence>
+    <div className="relative min-h-full">
+      <Background />
+      <div className="relative z-10 min-h-full">
+        {inGame && <Hud />}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={screenKey}
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -24, scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 260, damping: 24 }}
+            className="min-h-full"
+          >
+            {screen}
+          </motion.div>
+        </AnimatePresence>
+      </div>
       {game && <ItemDrawer />}
       <ChestModal />
       <Toasts />
+      <MuteButton />
       <DebugPanel />
     </div>
+  );
+}
+
+function MuteButton() {
+  const [muted, setMutedState] = useState(isMuted());
+  return (
+    <button
+      onClick={() => {
+        setMuted(!muted);
+        setMutedState(!muted);
+      }}
+      className="fixed bottom-20 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/40 text-base opacity-70 backdrop-blur transition hover:opacity-100"
+      aria-label={muted ? "Unmute sounds" : "Mute sounds"}
+    >
+      {muted ? "🔇" : "🔊"}
+    </button>
   );
 }

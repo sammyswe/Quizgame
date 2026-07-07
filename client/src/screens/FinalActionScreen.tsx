@@ -4,6 +4,7 @@ import { FINAL_ACTIONS, type FinalActionId } from "@treasure-trap/shared";
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { PlayerChip, Screen, TimerBar } from "../components/ui";
+import { sfx } from "../lib/sfx";
 
 export function FinalActionScreen() {
   const game = useGameStore((s) => s.game);
@@ -24,8 +25,10 @@ export function FinalActionScreen() {
   const pick = (id: FinalActionId) => {
     const def = FINAL_ACTIONS[id];
     if (def.needsTarget) {
+      sfx.select();
       setPicking(id);
     } else {
+      sfx.lock();
       socket.emit("final:action", { actionId: id });
       setChosen(id);
       setPicking(undefined);

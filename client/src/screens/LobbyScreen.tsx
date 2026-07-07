@@ -10,6 +10,7 @@ import {
 import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { Screen, SectionTitle } from "../components/ui";
+import { sfx } from "../lib/sfx";
 
 /** Lobby + game setup. The host configures the voyage; the crew watches it build. */
 export function LobbyScreen() {
@@ -174,13 +175,18 @@ export function LobbyScreen() {
       )}
 
       {isHost ? (
-        <button
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.94 }}
           className="btn-gold w-full text-2xl"
           disabled={game.players.length < 2}
-          onClick={() => socket.emit("game:start")}
+          onClick={() => {
+            sfx.drum();
+            socket.emit("game:start");
+          }}
         >
           ⚔️ Set Sail!
-        </button>
+        </motion.button>
       ) : (
         <p className="animate-shimmer text-center font-display text-lg text-neon-cyan">
           Waiting for the captain to set sail...

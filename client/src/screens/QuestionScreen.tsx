@@ -5,6 +5,8 @@ import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { PlayerChip, Screen, TimerBar } from "../components/ui";
 import { MissionCard } from "../components/MissionCard";
+import { EmojiBurst, LockStamp } from "../components/fx";
+import { sfx } from "../lib/sfx";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 const ISLAND_ICONS = ["🏝️", "🌋", "🗿", "🪸"];
@@ -40,16 +42,22 @@ export function QuestionScreen() {
 
       <motion.h1
         key={game.question.id}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="neon-card px-4 py-4 text-center font-display text-2xl leading-snug text-outline"
+        initial={{ opacity: 0, y: -30, scale: 0.9, rotate: -1.5 }}
+        animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 220, damping: 18 }}
+        className="neon-card border-2 border-neon-gold/30 px-4 py-4 text-center font-display text-2xl leading-snug text-outline shadow-neon-gold"
       >
         {game.question.prompt}
       </motion.h1>
 
-      <p className="text-center text-xs text-neon-cyan/80">
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 1, 0.6, 1] }}
+        transition={{ duration: 2.4, delay: 0.5 }}
+        className="text-center text-xs font-bold text-neon-cyan/90"
+      >
         🗣️ Talk it out. Persuade. Lie. This is the fun part.
-      </p>
+      </motion.p>
 
       {isLootDrop ? <LootAllocator /> : <ChoiceGrid />}
 
@@ -62,73 +70,128 @@ export function QuestionScreen() {
 
 // ---------------------------------------------------------------------------
 
+const ANSWER_STYLES = [
+  { border: "border-neon-cyan/70", glow: "shadow-neon-cyan", text: "text-neon-cyan", island: "🏝️" },
+  { border: "border-neon-gold/70", glow: "shadow-neon-gold", text: "text-neon-gold", island: "🌋" },
+  { border: "border-neon-pink/70", glow: "shadow-neon-pink", text: "text-neon-pink", island: "🗿" },
+  {
+    border: "border-neon-green/70",
+    glow: "shadow-neon-green",
+    text: "text-neon-green",
+    island: "🪸",
+  },
+  {
+    border: "border-neon-purple/70",
+    glow: "shadow-neon-purple",
+    text: "text-neon-purple",
+    island: "⚓",
+  },
+  { border: "border-white/50", glow: "", text: "text-white", island: "🌊" },
+];
+
 function ChoiceGrid() {
   const game = useGameStore((s) => s.game);
   const priv = useGameStore((s) => s.priv);
   const me = useGameStore((s) => s.me());
   const [choice, setChoice] = useState<number | undefined>();
-  const [locked, setLocked] = useState(false);
+  const [burstAt, setBurstAt] = useState<number | undefined>();
 
   useEffect(() => {
     setChoice(undefined);
-    setLocked(false);
+    setBurstAt(undefined);
   }, [game?.question?.id]);
 
   if (!game?.question) return null;
   const disabled = new Set(priv?.disabledOptions ?? []);
   const hardLocked = Boolean(priv?.answerLocked) && Boolean(me?.hasAnswered);
-  const colors = [
-    "border-neon-cyan/60 hover:shadow-neon-cyan",
-    "border-neon-gold/60 hover:shadow-neon-gold",
-    "border-neon-pink/60 hover:shadow-neon-pink",
-    "border-neon-green/60 hover:shadow-neon-green",
-    "border-neon-purple/60 hover:shadow-neon-purple",
-    "border-white/40",
-  ];
+  const twoCol = game.question.options.length > 4;
 
   const submit = (i: number) => {
     if (hardLocked) return;
+    const changing = choice !== undefined;
     setChoice(i);
-    setLocked(true);
+    setBurstAt(i);
+    setTimeout(() => setBurstAt(undefined), 900);
+    if (changing) {
+      sfx.select();
+    } else {
+      sfx.lock();
+    }
     socket.emit("answer:submit", { choiceIndex: i });
   };
 
   return (
-    <div
-      className={`grid gap-2.5 ${game.question.options.length > 4 ? "grid-cols-2" : "grid-cols-1"}`}
-    >
+    <div className={`grid gap-3 ${twoCol ? "grid-cols-2" : "grid-cols-1"}`}>
       {game.question.options.map((opt, i) => {
+        const style = ANSWER_STYLES[i % ANSWER_STYLES.length] ?? ANSWER_STYLES[0]!;
         const isMine = choice === i;
         const isDisabled = disabled.has(i);
+        const dimmed = choice !== undefined && !isMine;
         return (
           <motion.button
-            key={i}
-            whileTap={{ scale: 0.97 }}
+            key={`${game.question?.id}-${i}`}
+            initial={{ opacity: 0, x: i % 2 === 0 ? -60 : 60, rotate: i % 2 === 0 ? -2 : 2 }}
+            animate={{
+              opacity: dimmed ? 0.45 : 1,
+              x: 0,
+              rotate: 0,
+              scale: isMine ? 1.03 : 1,
+            }}
+            transition={{ type: "spring", stiffness: 260, damping: 20, delay: i * 0.08 }}
+            whileHover={{
+              scale: isMine ? 1.03 : 1.02,
+              rotate: isMine ? 0 : i % 2 === 0 ? -0.5 : 0.5,
+            }}
+            whileTap={{ scale: 0.94, rotate: 0 }}
             disabled={isDisabled || hardLocked}
             onClick={() => submit(i)}
-            className={`neon-card relative flex min-h-[56px] items-center gap-3 border-2 px-4 py-3 text-left transition ${
-              colors[i % colors.length]
-            } ${isMine ? "bg-white/10 ring-2 ring-neon-gold shadow-neon-gold" : ""} ${
-              isDisabled ? "opacity-25 line-through" : ""
-            }`}
+            className={`neon-card relative flex min-h-[64px] items-center gap-3 overflow-visible border-2 px-4 py-3.5 text-left transition-colors ${style.border} ${
+              isMine
+                ? `bg-white/10 ${style.glow} animate-ring-pulse`
+                : `hover:bg-white/5 ${dimmed ? "" : style.glow.replace("shadow", "hover:shadow")}`
+            } ${isDisabled ? "opacity-20" : ""}`}
             aria-pressed={isMine}
           >
-            <span className="font-display text-lg text-neon-gold">{LETTERS[i]}</span>
-            <span className="flex-1 text-base font-bold">{opt}</span>
-            {isMine && <span aria-hidden>🔒</span>}
+            {/* Letter coin */}
+            <motion.span
+              animate={isMine ? { rotate: [0, -12, 12, 0], scale: [1, 1.25, 1] } : {}}
+              transition={{ duration: 0.45 }}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 bg-black/40 font-display text-xl ${style.border} ${style.text}`}
+              aria-hidden
+            >
+              {isMine ? "✓" : LETTERS[i]}
+            </motion.span>
+            <span
+              className={`flex-1 text-base font-black leading-snug ${isDisabled ? "line-through" : ""}`}
+            >
+              {opt}
+            </span>
+            <span className="text-xl opacity-70" aria-hidden>
+              {style.island}
+            </span>
             {isDisabled && (
-              <span className="text-xs" aria-label="Removed by spyglass">
-                🔭
+              <span
+                className="absolute -right-1 -top-2 rounded-full bg-black/80 px-1.5 py-0.5 text-xs"
+                aria-label="Removed by spyglass"
+              >
+                🔭💨
               </span>
             )}
+            {isMine && <LockStamp text={hardLocked ? "SABOTAGED" : "LOCKED IN"} />}
+            {burstAt === i && <EmojiBurst emoji="🪙" count={8} distance={70} />}
           </motion.button>
         );
       })}
-      {locked && (
-        <p className="text-center text-xs text-slate-400">
-          Locked in — but you can switch until the timer ends
-          {priv?.answerLocked ? " (unless sabotaged!)" : ""}.
-        </p>
+      {choice !== undefined && (
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center text-xs font-bold text-neon-cyan"
+        >
+          {hardLocked
+            ? "🪢 Sabotaged — no switching for you!"
+            : "⚓ Answer dropped! You can still switch until the timer runs out."}
+        </motion.p>
       )}
     </div>
   );
@@ -141,11 +204,13 @@ function LootAllocator() {
   const [alloc, setAlloc] = useState<number[]>([0, 0, 0, 0]);
   const [confident, setConfident] = useState(false);
   const [sent, setSent] = useState(false);
+  const [burst, setBurst] = useState(false);
 
   useEffect(() => {
     setAlloc([0, 0, 0, 0]);
     setConfident(false);
     setSent(false);
+    setBurst(false);
   }, [game?.question?.id]);
 
   const total = alloc.reduce((a, b) => a + b, 0);
@@ -156,63 +221,114 @@ function LootAllocator() {
     setAlloc((prev) => {
       const next = [...prev];
       const current = next[i] ?? 0;
-      next[i] = Math.max(0, Math.min(current + delta, current + remaining));
+      const value = Math.max(0, Math.min(current + delta, current + remaining));
+      if (value !== current) {
+        if (delta > 0) {
+          sfx.tap();
+        } else {
+          sfx.select();
+        }
+      }
+      next[i] = value;
       return next;
     });
     setSent(false);
   };
 
   const lockIn = () => {
+    sfx.lock();
+    setBurst(true);
+    setTimeout(() => setBurst(false), 900);
     socket.emit("answer:submit", { lootAllocation: alloc, confident });
     setSent(true);
   };
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="relative flex flex-col gap-2.5">
       <div className="flex items-center justify-between text-sm">
         <span className="font-bold text-slate-300">Split yer loot across the islands:</span>
-        <span
+        <motion.span
+          key={remaining}
+          initial={{ scale: 1.4 }}
+          animate={{ scale: 1 }}
           className={`font-display text-xl ${remaining === 0 ? "text-neon-green" : "text-neon-gold"}`}
         >
           🪙 {remaining} left
-        </span>
+        </motion.span>
       </div>
-      {game.question.options.map((opt, i) => (
-        <div key={i} className="neon-card flex items-center gap-2 border-2 border-white/10 p-2.5">
-          <span className="text-2xl" aria-hidden>
-            {ISLAND_ICONS[i]}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-bold">{opt}</div>
-            <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/10">
-              <motion.div
-                className="h-full rounded-full bg-neon-gold shadow-neon-gold"
-                animate={{ width: `${alloc[i] ?? 0}%` }}
-              />
+      {game.question.options.map((opt, i) => {
+        const amount = alloc[i] ?? 0;
+        const coinStack = Math.min(6, Math.ceil(amount / 20));
+        return (
+          <motion.div
+            key={`${game.question?.id}-${i}`}
+            initial={{ opacity: 0, x: i % 2 === 0 ? -50 : 50 }}
+            animate={{ opacity: 1, x: 0, scale: amount > 0 ? 1.01 : 1 }}
+            transition={{ type: "spring", stiffness: 240, damping: 20, delay: i * 0.07 }}
+            className={`neon-card relative flex items-center gap-2 border-2 p-2.5 transition-colors ${
+              amount > 0 ? "border-neon-gold/60 shadow-neon-gold bg-amber-400/5" : "border-white/10"
+            }`}
+          >
+            <motion.span
+              className="text-2xl"
+              animate={amount > 0 ? { y: [0, -3, 0] } : {}}
+              transition={{ repeat: Infinity, duration: 1.8 }}
+              aria-hidden
+            >
+              {ISLAND_ICONS[i]}
+            </motion.span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-black">{opt}</div>
+              <div className="mt-1.5 flex h-4 items-center gap-1">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 shadow-neon-gold"
+                    animate={{ width: `${amount}%` }}
+                    transition={{ type: "spring", stiffness: 180, damping: 20 }}
+                  />
+                </div>
+                <span className="w-12 text-xs" aria-hidden>
+                  {"🪙".repeat(coinStack)}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-lg font-black active:scale-90"
-              onClick={() => bump(i, -10)}
-              aria-label={`Remove 10 loot from ${opt}`}
-            >
-              −
-            </button>
-            <span className="w-8 text-center font-display text-lg text-neon-gold tabular-nums">
-              {alloc[i]}
-            </span>
-            <button
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-neon-gold/50 text-lg font-black text-neon-gold active:scale-90"
-              onClick={() => bump(i, 10)}
-              aria-label={`Add 10 loot to ${opt}`}
-            >
-              +
-            </button>
-          </div>
-        </div>
-      ))}
-      <label className="flex items-center justify-between gap-2 rounded-2xl border border-neon-pink/40 bg-pink-950/30 px-4 py-2.5">
+            <div className="flex items-center gap-1.5">
+              <motion.button
+                whileTap={{ scale: 0.8 }}
+                className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/20 text-xl font-black"
+                onClick={() => bump(i, -10)}
+                aria-label={`Remove 10 loot from ${opt}`}
+              >
+                −
+              </motion.button>
+              <motion.span
+                key={amount}
+                initial={{ scale: 1.5, color: "#fff" }}
+                animate={{ scale: 1, color: "#fbbf24" }}
+                className="w-9 text-center font-display text-xl tabular-nums"
+              >
+                {amount}
+              </motion.span>
+              <motion.button
+                whileTap={{ scale: 0.8 }}
+                className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-neon-gold/60 text-xl font-black text-neon-gold shadow-neon-gold"
+                onClick={() => bump(i, 10)}
+                aria-label={`Add 10 loot to ${opt}`}
+              >
+                +
+              </motion.button>
+            </div>
+          </motion.div>
+        );
+      })}
+      <motion.label
+        whileTap={{ scale: 0.98 }}
+        className={`flex items-center justify-between gap-2 rounded-2xl border-2 px-4 py-2.5 transition-colors ${
+          confident
+            ? "border-neon-pink bg-pink-500/20 shadow-neon-pink"
+            : "border-neon-pink/40 bg-pink-950/30"
+        }`}
+      >
         <span className="text-sm font-bold">
           😤 Confidence token{" "}
           <span className="text-slate-400">
@@ -224,14 +340,23 @@ function LootAllocator() {
           checked={confident}
           onChange={(e) => {
             setConfident(e.target.checked);
+            if (e.target.checked) sfx.alarm();
             setSent(false);
           }}
-          className="h-5 w-5 accent-pink-400"
+          className="h-6 w-6 accent-pink-400"
         />
-      </label>
-      <button className="btn-gold w-full" disabled={total === 0 || sent} onClick={lockIn}>
-        {sent ? "Loot placed! (tap islands to adjust)" : `Drop the Loot! (${total} placed)`}
-      </button>
+      </motion.label>
+      <div className="relative">
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          className="btn-gold w-full text-xl"
+          disabled={total === 0 || sent}
+          onClick={lockIn}
+        >
+          {sent ? "⚓ Loot placed! (tap +/− to adjust)" : `💰 Drop the Loot! (${total} placed)`}
+        </motion.button>
+        {burst && <EmojiBurst emoji="🪙" count={14} distance={110} />}
+      </div>
     </div>
   );
 }
