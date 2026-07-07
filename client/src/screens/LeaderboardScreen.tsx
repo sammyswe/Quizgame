@@ -67,7 +67,7 @@ export function LeaderboardScreen() {
           className="relative mx-auto rounded-full border-2 border-neon-gold bg-amber-400/15 px-5 py-1.5 font-display text-lg text-neon-gold shadow-neon-gold"
         >
           <EmojiBurst emoji="👑" count={6} distance={70} duration={1} />
-          NEW LEADER! {sorted[0]?.nickname} takes the helm!
+          👑 NEW LEADER: {sorted[0]?.nickname}!
         </motion.div>
       )}
 
@@ -179,15 +179,13 @@ export function LeaderboardScreen() {
             Final Plunder begins...
           </p>
         )}
-        <p className="mt-2 text-xs text-slate-500">
-          💡 Now's a good moment to open chests from your 🎒 bag.
-        </p>
+        <p className="mt-2 text-xs text-slate-500">💡 Got chests? Open them now → 🎒</p>
         {isHost && (
           <button
             className="btn-ghost mt-2 !min-h-0 !px-4 !py-2 !text-sm"
             onClick={() => socket.emit("phase:advance")}
           >
-            Sail on ⏭️
+            Next round ⏭️
           </button>
         )}
       </div>

@@ -289,7 +289,7 @@ export function RevealScreen() {
             className="btn-ghost !min-h-0 !px-3 !py-1.5 !text-xs"
             onClick={() => socket.emit("phase:advance")}
           >
-            Skip ahead ⏭️
+            Skip ⏭️
           </button>
         )}
       </div>

@@ -63,7 +63,7 @@ export function LobbyScreen() {
   return (
     <Screen className="gap-5">
       <div className="text-center">
-        <p className="text-sm text-slate-400">Voyage code</p>
+        <p className="text-sm text-slate-400">Room code</p>
         <motion.button
           onClick={copyLink}
           whileTap={{ scale: 0.96 }}
@@ -76,7 +76,7 @@ export function LobbyScreen() {
           onClick={copyLink}
           className="mt-2 text-xs text-neon-cyan underline underline-offset-2"
         >
-          {copied ? "✅ Link copied — send it to yer crew!" : "📋 Copy invite link"}
+          {copied ? "✅ Copied!" : "📋 Copy invite link"}
         </button>
       </div>
 
@@ -104,14 +104,14 @@ export function LobbyScreen() {
           ))}
           {game.players.length < 2 && (
             <div className="neon-card flex items-center justify-center border-dashed p-3 text-sm text-slate-500">
-              Waiting for pirates...
+              Waiting for friends...
             </div>
           )}
         </div>
       </div>
 
       <div>
-        <SectionTitle>Voyage length</SectionTitle>
+        <SectionTitle>Game length</SectionTitle>
         <div className="mt-2 grid grid-cols-3 gap-2">
           {(Object.keys(GAME_LENGTHS) as GameLength[]).map((l) => (
             <button
@@ -167,9 +167,7 @@ export function LobbyScreen() {
               );
             })}
           </div>
-          <p className="mt-1.5 text-[11px] text-slate-500">
-            Leave empty to let fate pick. Final Plunder always closes the show.
-          </p>
+          <p className="mt-1.5 text-[11px] text-slate-500">Pick rounds, or leave it random.</p>
         </div>
       )}
 
@@ -184,16 +182,16 @@ export function LobbyScreen() {
             socket.emit("game:start");
           }}
         >
-          ⚔️ Set Sail!
+          ⚔️ Start Game
         </motion.button>
       ) : (
         <p className="animate-shimmer text-center font-display text-lg text-neon-cyan">
-          Waiting for the captain to set sail...
+          Waiting for the host to start...
         </p>
       )}
       {isHost && game.players.length < 2 && (
         <p className="-mt-3 text-center text-xs text-slate-500">
-          You need at least 2 pirates. Share the link — or summon a bot from the 🧪 panel.
+          Need 2+ players — share the invite link.
         </p>
       )}
     </Screen>

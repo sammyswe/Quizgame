@@ -16,8 +16,13 @@ alwaysApply: false
   Respect `prefers-reduced-motion` (global fallback lives in `styles/index.css`).
 - Never rely on colour alone for meaning — pair with icons/text (✅/💭, 🔒, etc.).
 - Timers must always be visible during timed phases (`TimerBar` fed by server `timerEndsAt`).
-- Private information (missions, clues) must be clearly marked "only you can see this".
+- Private information (missions, clues) must be clearly marked "🔒 private / only you see this".
 - Score changes only appear through the reveal queue (`RevealScreen`) or animated counters —
   never teleport numbers silently.
-- Fun pirate copy everywhere: "Create a Voyage", "Mutiny!", "You have been absolutely
-  robbed." Keep it 9+ friendly.
+- Microcopy follows the 3 C's (clarity > concision > character): every label is as short as
+  possible, buttons name the outcome ("Place Bet", "Start Game" — never "Submit"), and each
+  screen asks the player for exactly ONE decision (Jackbox pacing principle).
+- Pirate flavour is welcome ("MUTINY!", "Fool's Gold") but never at the cost of clarity —
+  flavour lives in reveals and titles, instructions stay plain. Keep it 9+ friendly.
+- Round rules are taught by the intro screen in max 3 short bullets; everything else is
+  learned by playing (progressive disclosure). No walls of text, ever.

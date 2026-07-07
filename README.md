@@ -23,8 +23,8 @@ pnpm dev
 - Client: http://localhost:5173
 - Server: http://localhost:3001 (health check at `/health`)
 
-Open http://localhost:5173, **Create a Voyage**, then open a second browser window (or
-incognito) and **Join a Crew** with the room code. Solo? Use the 🧪 playtest panel
+Open http://localhost:5173, **Start a Game**, then open a second browser window (or
+incognito) and **Join with a Code** using the room code. Solo? Use the 🧪 playtest panel
 (bottom-left, dev only) to add bot pirates.
 
 ### All scripts
@@ -44,7 +44,7 @@ incognito) and **Join a Crew** with the room code. Solo? Use the 🧪 playtest p
 2. Find your LAN IP (`ip addr` / `ipconfig`), e.g. `192.168.1.42`.
 3. Friend opens `http://192.168.1.42:5173` on their laptop (same Wi-Fi).
 4. The Vite proxy forwards the socket connection to your server — no extra config.
-5. Create a voyage on one machine, join with the code on the other. Sail.
+5. Start a game on one machine, join with the code on the other. Sail.
 
 ## Deploying for remote friends
 

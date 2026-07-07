@@ -36,7 +36,7 @@ export function MissionCard() {
           </span>
           <span className="font-display text-neon-purple">SECRET MISSION</span>
           <span className="rounded-full bg-neon-purple/20 px-2 py-0.5 text-[10px] font-black uppercase text-neon-purple">
-            only you can see this
+            🔒 private
           </span>
         </div>
         <span className="text-slate-400">{expanded ? "▾" : "▸"}</span>
@@ -55,7 +55,7 @@ export function MissionCard() {
           )}
           {needsTarget && (
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="w-full text-xs text-slate-400">Pick your mark:</span>
+              <span className="w-full text-xs text-slate-400">Pick a target:</span>
               {game.players
                 .filter((p) => p.id !== playerId)
                 .map((p) => (
@@ -76,7 +76,7 @@ export function MissionCard() {
           )}
           {needsOption && game.question && (
             <div className="mt-2 flex flex-col gap-1.5">
-              <span className="text-xs text-slate-400">Pick the wrong answer to push:</span>
+              <span className="text-xs text-slate-400">Pick your trap answer:</span>
               {game.question.options.map((opt, i) => (
                 <button
                   key={i}

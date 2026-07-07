@@ -50,7 +50,7 @@ export function WinnerScreen() {
         <div className="font-display text-4xl text-neon-gold">
           👑 🪙 <AnimatedNumber value={winner?.score ?? 0} />
         </div>
-        <p className="text-sm text-slate-300">wins the voyage and eternal bragging rights.</p>
+        <p className="text-sm text-slate-300">wins it all! 🎉</p>
       </motion.div>
 
       <div className="flex w-full max-w-xs flex-col gap-1.5">
@@ -73,11 +73,11 @@ export function WinnerScreen() {
       <div className="flex w-full max-w-xs flex-col gap-2">
         {isHost && (
           <button className="btn-gold w-full" onClick={() => socket.emit("game:playAgain")}>
-            ⚓ Sail Again (same crew)
+            ⚓ Play Again
           </button>
         )}
         <button className="btn-ghost w-full" onClick={leave}>
-          Abandon ship 🏝️
+          Leave 🏝️
         </button>
       </div>
     </Screen>

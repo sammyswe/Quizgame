@@ -41,15 +41,15 @@ export function FinalActionScreen() {
       <div className="text-center">
         <h1 className="font-display text-4xl text-neon-red title-glow">🏴‍☠️ FINAL PLUNDER</h1>
         <p className="text-sm text-slate-300">
-          Question {game.finalPlunder.questionNumber} of {game.finalPlunder.totalQuestions} — choose
-          your secret move. Part of your gold is protected. The rest? Fair game.
+          Q{game.finalPlunder.questionNumber} of {game.finalPlunder.totalQuestions} · pick your
+          secret move
         </p>
       </div>
 
       {picking ? (
         <div className="neon-card border-neon-pink/50 p-4">
           <p className="mb-2 text-center text-sm font-bold">
-            {FINAL_ACTIONS[picking].icon} {FINAL_ACTIONS[picking].name} — choose your target:
+            {FINAL_ACTIONS[picking].icon} {FINAL_ACTIONS[picking].name} — pick a target
           </p>
           <div className="flex flex-col gap-1.5">
             {game.players

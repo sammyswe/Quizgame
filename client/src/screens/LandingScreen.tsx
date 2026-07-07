@@ -84,14 +84,12 @@ export function LandingScreen() {
           <BouncyWord word="TRAP" delayOffset={0.45} />
         </h1>
         <p className="max-w-xs text-sm text-slate-300">
-          The neon pirate casino party quiz. Answer trivia, bluff with fake maps, betray your
-          friends, and become the <span className="font-black text-neon-gold">richest pirate</span>{" "}
-          at the table.
+          Answer trivia. Betray your friends. Get{" "}
+          <span className="font-black text-neon-gold">rich</span>.
         </p>
         <div className="flex gap-1.5 text-xs text-slate-500">
           <span className="rounded-full border border-white/10 px-2 py-0.5">2–8 players</span>
-          <span className="rounded-full border border-white/10 px-2 py-0.5">ages 9+</span>
-          <span className="rounded-full border border-white/10 px-2 py-0.5">zero mercy</span>
+          <span className="rounded-full border border-white/10 px-2 py-0.5">~20 min</span>
         </div>
       </motion.div>
 
@@ -111,7 +109,7 @@ export function LandingScreen() {
               setMode("create");
             }}
           >
-            ⚓ Create a Voyage
+            ⚓ Start a Game
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.04, rotate: 0.5 }}
@@ -122,7 +120,7 @@ export function LandingScreen() {
               setMode("join");
             }}
           >
-            🦜 Join a Crew
+            🦜 Join with a Code
           </motion.button>
         </motion.div>
       ) : (
@@ -148,7 +146,7 @@ export function LandingScreen() {
           )}
           <input
             className="input text-center"
-            placeholder="Yer pirate name"
+            placeholder="Your name"
             value={nickname}
             maxLength={16}
             autoFocus
@@ -166,11 +164,7 @@ export function LandingScreen() {
               (effectiveMode === "join" && code.length < 4)
             }
           >
-            {busy
-              ? "Hoisting sails..."
-              : effectiveMode === "create"
-                ? "⚓ Create a Voyage"
-                : "🦜 Join the Crew"}
+            {busy ? "Loading..." : effectiveMode === "create" ? "⚓ Start" : "🦜 Join"}
           </button>
           <button
             type="button"
@@ -179,7 +173,7 @@ export function LandingScreen() {
           >
             ← Back
           </button>
-          {!connected && <p className="text-xs text-slate-500">Connecting to the high seas...</p>}
+          {!connected && <p className="text-xs text-slate-500">Connecting...</p>}
         </motion.form>
       )}
     </Screen>

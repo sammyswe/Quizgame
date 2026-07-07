@@ -3,10 +3,10 @@ import type { ItemDef } from "@treasure-trap/shared";
 import { RARITY_STYLES } from "../../lib/rarityStyles";
 
 const TIMING_LABELS: Record<string, string> = {
-  prep: "⏳ before the question",
-  question: "❓ during the question",
-  lock: "🔒 at answer lock",
-  reveal: "🎭 at the reveal",
+  prep: "⏳ before question",
+  question: "❓ during question",
+  lock: "🔒 on lock-in",
+  reveal: "🎭 at reveal",
   final: "🏴‍☠️ late game",
 };
 

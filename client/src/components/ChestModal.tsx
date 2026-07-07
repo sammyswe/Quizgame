@@ -181,9 +181,8 @@ export function ChestModal() {
               <div className="w-full">
                 <ItemCard def={reveal.itemDef} />
               </div>
-              <p className="text-xs italic text-slate-500">Counter: {reveal.itemDef.counterplay}</p>
               <motion.button whileTap={{ scale: 0.94 }} className="btn-gold w-full" onClick={clear}>
-                Stash it! 💰
+                Keep it 💰
               </motion.button>
             </motion.div>
           )}

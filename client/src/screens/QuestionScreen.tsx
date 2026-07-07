@@ -51,15 +51,6 @@ export function QuestionScreen() {
         {game.question.prompt}
       </motion.h1>
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 1, 1, 0.6, 1] }}
-        transition={{ duration: 2.4, delay: 0.5 }}
-        className="text-center text-xs font-bold text-neon-cyan/90"
-      >
-        🗣️ Talk it out. Persuade. Lie. This is the fun part.
-      </motion.p>
-
       {isLootDrop ? <LootAllocator /> : <ChoiceGrid />}
 
       <AnswerStatusRow />
@@ -189,9 +180,7 @@ function ChoiceGrid() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center text-xs font-bold text-neon-cyan"
         >
-          {hardLocked
-            ? "🪢 Sabotaged — no switching for you!"
-            : "⚓ Answer dropped! You can still switch until the timer runs out."}
+          {hardLocked ? "🪢 Sabotaged — answer locked!" : "Tap another answer to switch"}
         </motion.p>
       )}
     </div>
@@ -247,7 +236,7 @@ function LootAllocator() {
   return (
     <div className="relative flex flex-col gap-2.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-bold text-slate-300">Split yer loot across the islands:</span>
+        <span className="font-bold text-slate-300">Bet your gold on the islands</span>
         <motion.span
           key={remaining}
           initial={{ scale: 1.4 }}
@@ -331,9 +320,9 @@ function LootAllocator() {
         }`}
       >
         <span className="text-sm font-bold">
-          😤 Confidence token{" "}
+          😤 Double or nothing{" "}
           <span className="text-slate-400">
-            (+{SCORING.CONFIDENCE_BONUS} if half+ survives, −{SCORING.CONFIDENCE_PENALTY} if not)
+            (+{SCORING.CONFIDENCE_BONUS} / −{SCORING.CONFIDENCE_PENALTY})
           </span>
         </span>
         <input
@@ -354,7 +343,7 @@ function LootAllocator() {
           disabled={total === 0 || sent}
           onClick={lockIn}
         >
-          {sent ? "⚓ Loot placed! (tap +/− to adjust)" : `💰 Drop the Loot! (${total} placed)`}
+          {sent ? "⚓ Bet placed!" : `💰 Place Bet (${total})`}
         </motion.button>
         {burst && <EmojiBurst emoji="🪙" count={14} distance={110} />}
       </div>
@@ -403,10 +392,9 @@ function FalseMapBanner() {
   const captains = game.players.filter((p) => game.falseMap?.captainIds.includes(p.id));
   return (
     <div className="rounded-2xl border border-neon-pink/50 bg-pink-950/30 px-4 py-3 text-center text-sm shadow-neon-pink">
-      <span className="font-display text-neon-pink">TWO CAPTAINS, TWO MAPS 🗺️</span>
+      <span className="font-display text-neon-pink">🗺️ ONE MAP IS FALSE</span>
       <p className="mt-1">
-        {captains.map((c) => `${c.avatar} ${c.nickname}`).join(" and ")} hold private maps.{" "}
-        <b>One map is FALSE.</b> Someone's map smells fake...
+        {captains.map((c) => `${c.avatar} ${c.nickname}`).join(" and ")} have clues — one is lying.
       </p>
     </div>
   );
@@ -422,7 +410,7 @@ function PrivateClueBanner() {
       className="rounded-2xl border border-neon-purple/60 bg-purple-950/40 px-4 py-3 text-sm shadow-neon-purple"
     >
       <span className="rounded-full bg-neon-purple/20 px-2 py-0.5 text-[10px] font-black uppercase text-neon-purple">
-        Private — only you can see this
+        🔒 Only you see this
       </span>
       <p className="mt-1.5 font-bold">{priv.privateClue}</p>
     </motion.div>
@@ -443,13 +431,12 @@ function AccusePanel() {
     <div className="pt-1">
       {!open ? (
         <button className="btn-pink w-full" disabled={tokens <= 0} onClick={() => setOpen(true)}>
-          ⚔️ MUTINY! Accuse a deceiver ({tokens} token{tokens === 1 ? "" : "s"})
+          ⚔️ Accuse a liar ({tokens} left)
         </button>
       ) : (
         <div className="neon-card border-neon-pink/50 p-3">
           <p className="mb-2 text-center text-sm font-bold">
-            Who's scheming? Correct: +{SCORING.ACCUSATION_CORRECT} & their plot burns. Wrong: they
-            profit.
+            Right: +{SCORING.ACCUSATION_CORRECT}. Wrong: they profit.
           </p>
           <div className="flex flex-col gap-1.5">
             {game.players
@@ -463,11 +450,11 @@ function AccusePanel() {
                     setOpen(false);
                   }}
                 >
-                  {p.avatar} Accuse {p.nickname}!
+                  {p.avatar} {p.nickname}
                 </button>
               ))}
             <button className="btn-ghost !text-sm" onClick={() => setOpen(false)}>
-              Never mind
+              Cancel
             </button>
           </div>
         </div>
@@ -498,16 +485,12 @@ function PactPanel() {
           disabled={offered}
           onClick={() => setOpen(true)}
         >
-          🤝{" "}
-          {offered
-            ? "Pact offered..."
-            : `Offer a trust pact (+${SCORING.PACT_BONUS} each if you both nail it)`}
+          🤝 {offered ? "Pact offered..." : "Team up with someone"}
         </button>
       ) : (
         <div className="neon-card p-3">
           <p className="mb-2 text-center text-xs text-slate-300">
-            If you BOTH put your biggest pile on the true island, +{SCORING.PACT_BONUS} each and an
-            Honour Chest. If one of you is wrong... awkward.
+            Both bet big on the right island: +{SCORING.PACT_BONUS} each. Pick a partner:
           </p>
           <div className="flex flex-wrap justify-center gap-1.5">
             {game.players
@@ -565,10 +548,9 @@ export function ChaseTrack() {
     <div className="neon-card border-neon-cyan/40 p-3">
       <div className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-400">
         <span>
-          🌊 The chase — Q{Math.min(chase.questionNumber, chase.totalQuestions)}/
-          {chase.totalQuestions}
+          🌊 Q{Math.min(chase.questionNumber, chase.totalQuestions)}/{chase.totalQuestions}
         </span>
-        <span>Catch the Captain! ⚓</span>
+        <span>Catch the Captain ⚓</span>
       </div>
       <div className="relative h-14 overflow-hidden rounded-xl bg-gradient-to-r from-cyan-950/60 to-blue-950/60">
         <div className="absolute inset-x-2 top-1/2 h-0.5 -translate-y-1/2 bg-cyan-400/20" />

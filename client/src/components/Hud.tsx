@@ -58,7 +58,7 @@ export function Hud() {
                   <AnimatedNumber value={me.roundLoot} />
                 </div>
                 <div className="whitespace-nowrap text-[10px] uppercase tracking-wide text-slate-500">
-                  unbanked
+                  this round
                 </div>
               </div>
             )}
@@ -73,7 +73,7 @@ export function Hud() {
                 🪙 <AnimatedNumber value={me.score} />
               </div>
               <div className="whitespace-nowrap text-[10px] uppercase tracking-wide text-slate-500">
-                banked gold
+                your gold
               </div>
             </motion.div>
           </div>

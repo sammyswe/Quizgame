@@ -47,9 +47,7 @@ export function AuctionScreen() {
       </motion.div>
 
       <div className="w-full max-w-xs">
-        <p className="mb-2 text-sm font-bold text-slate-300">
-          Secret bid — highest bidder pays & wins. You have 🪙 {budget}.
-        </p>
+        <p className="mb-2 text-sm font-bold text-slate-300">Your secret bid · 🪙 {budget} max</p>
         <div className="flex items-center gap-3">
           <input
             type="range"
@@ -69,11 +67,7 @@ export function AuctionScreen() {
           </span>
         </div>
         <button className="btn-gold mt-3 w-full" onClick={submit} disabled={sent}>
-          {sent
-            ? `Bid sealed: ${bid} 🤐`
-            : bid === 0
-              ? "Bid nothing (coward)"
-              : `Seal secret bid: ${bid}`}
+          {sent ? `Bid locked: ${bid} 🤐` : bid === 0 ? "Skip this one" : `Bid ${bid}`}
         </button>
       </div>
 

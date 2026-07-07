@@ -126,7 +126,7 @@ export function ItemDrawer() {
                               </span>
                               <span className="text-[11px] text-slate-400">{src.blurb}</span>
                               <span className="mt-1 rounded-full bg-neon-gold/20 px-2 py-0.5 text-[11px] font-bold text-neon-gold">
-                                Open the Chest!
+                                Tap to open
                               </span>
                             </button>
                           );
@@ -153,7 +153,7 @@ export function ItemDrawer() {
                       </div>
                       {!inQuestion && (
                         <p className="mt-2 text-center text-xs text-slate-500">
-                          ⛓️ Power-ups unlock while a question is live.
+                          ⛓️ Usable during questions
                         </p>
                       )}
                     </div>
@@ -161,9 +161,9 @@ export function ItemDrawer() {
 
                   {count === 0 && (
                     <p className="py-8 text-center text-slate-400">
-                      Empty bag, sad pirate. 🥲
+                      No treasure yet 🥲
                       <br />
-                      Earn chests by losing loot, winning streaks, and scheming.
+                      <span className="text-xs">Win streaks and big plays earn chests.</span>
                     </p>
                   )}
                 </div>
@@ -198,7 +198,7 @@ export function ItemDrawer() {
       return (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-slate-300">
-            {def.icon} <b>{def.name}</b> — choose the answer to booby-trap:
+            {def.icon} <b>{def.name}</b> — pick the trap answer:
           </p>
           {options.map((opt, i) => (
             <button
@@ -229,11 +229,9 @@ export function ItemDrawer() {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-sm text-slate-300">
-          {def.icon} <b>{def.name}</b> — pick your target:
+          {def.icon} <b>{def.name}</b> — pick a target:
         </p>
-        {candidates.length === 0 && (
-          <p className="text-sm text-slate-500">No legal targets right now.</p>
-        )}
+        {candidates.length === 0 && <p className="text-sm text-slate-500">No targets right now.</p>}
         {candidates.map((p) => (
           <button
             key={p.id}

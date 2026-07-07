@@ -17,21 +17,21 @@ const CHOICES: Array<{
     id: "split",
     icon: "🤝",
     name: "Split",
-    blurb: "Share the pot fairly. Trust wins... if they trust too.",
+    blurb: "Share the pot 50/50.",
     cls: "border-neon-green/60 shadow-neon-green",
   },
   {
     id: "plunder",
     icon: "🗡️",
     name: "Plunder",
-    blurb: "Take almost everything. Unless they guard. Or plunder too.",
+    blurb: "Steal the pot. Risky.",
     cls: "border-neon-pink/60 shadow-neon-pink",
   },
   {
     id: "guard",
     icon: "🛡️",
     name: "Guard",
-    blurb: "Block a plunder for a counter-bonus. Paranoia pays. Sometimes.",
+    blurb: "Block a plunder for a bonus.",
     cls: "border-neon-cyan/60 shadow-neon-cyan",
   },
 ];
@@ -64,19 +64,12 @@ export function PairChoiceScreen() {
       </div>
       <h1 className="font-display text-4xl text-neon-gold title-glow">⚖️ Split or Plunder</h1>
       {solo ? (
-        <p className="text-slate-300">
-          You sail alone this round — your fate rests on your answer. 🐺
-        </p>
+        <p className="text-slate-300">You play solo this round. 🐺</p>
       ) : partner ? (
         <p className="text-base">
-          Your partner in crime:{" "}
-          <b>
-            {partner.avatar} {partner.nickname}
-          </b>
+          You + {partner.avatar} <b>{partner.nickname}</b> · pot 🪙 {myPair?.potSize}
           <br />
-          <span className="text-sm text-slate-400">
-            The pot: 🪙 {myPair?.potSize}. Choose in secret. Look them in the eye.
-          </span>
+          <span className="text-sm text-slate-400">Pick your move in secret.</span>
         </p>
       ) : (
         <p className="text-slate-400">Watching the drama unfold...</p>
@@ -108,11 +101,7 @@ export function PairChoiceScreen() {
               </div>
             </motion.button>
           ))}
-          {picked && (
-            <p className="text-sm text-neon-cyan">
-              Choice sealed 🤐 — you can still switch until time runs out.
-            </p>
-          )}
+          {picked && <p className="text-sm text-neon-cyan">Locked 🤐 — tap another to switch</p>}
         </div>
       )}
     </Screen>
