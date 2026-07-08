@@ -27,11 +27,19 @@ export class AssetManager {
     return { key: PROC.island };
   }
 
-  enemyShip(): { key: string } {
+  enemyShip(): { key: string; frame?: string } {
+    // dark magenta raider from the Higgsfield ship sheet (row 3)
+    if (this.useHf(HF.ships) && this.scene.textures.get(HF.ships).has("q14")) {
+      return { key: HF.ships, frame: "q14" };
+    }
     return { key: PROC.shipEnemy };
   }
 
-  playerShip(): { key: string } {
+  playerShip(): { key: string; frame?: string } {
+    // blue/gold player ship from the Higgsfield ship sheet (row 0)
+    if (this.useHf(HF.ships) && this.scene.textures.get(HF.ships).has("q0")) {
+      return { key: HF.ships, frame: "q0" };
+    }
     return { key: PROC.shipPlayer };
   }
 

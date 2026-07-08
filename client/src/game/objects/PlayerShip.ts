@@ -4,9 +4,11 @@ import type { AssetManager } from "../systems/AssetManager";
 /** The local player's ship, moored at the dock, bobbing on the waves. */
 export class PlayerShip extends Phaser.GameObjects.Image {
   constructor(scene: Phaser.Scene, x: number, y: number, assets: AssetManager) {
-    super(scene, x, y, assets.playerShip().key);
+    const tex = assets.playerShip();
+    super(scene, x, y, tex.key, tex.frame);
     scene.add.existing(this);
-    this.setDepth(500).setScale(0.62);
+    this.setDepth(500);
+    this.setScale(118 / this.width);
     scene.tweens.add({
       targets: this,
       y: y + 6,

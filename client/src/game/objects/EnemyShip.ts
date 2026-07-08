@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { PROC } from "../assets/spriteKeys";
+import { AssetManager } from "../systems/AssetManager";
 import type { VfxSystem } from "../systems/VfxSystem";
 
 /**
@@ -14,7 +15,9 @@ export class EnemyShip extends Phaser.GameObjects.Container {
     super(scene, x, y);
     scene.add.existing(this);
     this.setDepth(700);
-    this.ship = scene.add.image(0, 0, PROC.shipEnemy).setScale(0.7);
+    const tex = new AssetManager(scene).enemyShip();
+    this.ship = scene.add.image(0, 0, tex.key, tex.frame);
+    this.ship.setScale(134 / this.ship.width);
     this.add(this.ship);
     this.setAlpha(0);
   }

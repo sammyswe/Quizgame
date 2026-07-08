@@ -594,6 +594,7 @@ export class LootDropScene extends BaseScene {
     this.lockedLocal = false;
     this.flaggedPlayers.clear();
     this.lockBtn.setLockedState(false);
+    this.localAvatar?.setLocked(false);
     this.resetAllocations(false);
     this.islands.forEach((island) => island.resetForNewQuestion());
     this.camDirector.reset(500);

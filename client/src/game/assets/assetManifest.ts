@@ -20,17 +20,16 @@ export interface HiggsfieldEntry {
   grid?: { cols: number; rows: number };
 }
 
-/** filename (without extension) -> texture key + slicing info */
+/**
+ * filename (without extension) -> texture key + slicing info.
+ * The `-cut` files are chroma-keyed transparent versions of the raw
+ * generations (see scripts/chroma_key.py). Raw sheets live in ./raw and are
+ * intentionally not loaded.
+ */
 const FILE_MAP: Record<string, { key: string; grid?: { cols: number; rows: number } }> = {
   "a1-background": { key: HF.background },
-  "a2-islands": { key: HF.islands, grid: { cols: 2, rows: 2 } },
-  "a3-ships": { key: HF.ships, grid: { cols: 2, rows: 2 } },
-  "a4-coins": { key: HF.coins, grid: { cols: 3, rows: 3 } },
-  "a5-chests": { key: HF.chests, grid: { cols: 3, rows: 3 } },
-  "a6-avatars": { key: HF.avatars, grid: { cols: 4, rows: 2 } },
-  "a7-vfx": { key: HF.vfx, grid: { cols: 3, rows: 3 } },
-  "a8-lock-in": { key: HF.lockIn },
-  "a9-rarity": { key: HF.rarity, grid: { cols: 2, rows: 2 } },
+  "a2-islands-cut": { key: HF.islands, grid: { cols: 2, rows: 2 } },
+  "a3-ships-cut": { key: HF.ships, grid: { cols: 4, rows: 4 } },
 };
 
 export function higgsfieldAssets(): HiggsfieldEntry[] {
