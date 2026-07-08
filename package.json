@@ -1,0 +1,21 @@
+{
+  "name": "treasure-trap",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Treasure Trap - multiplayer pirate casino party game. Loot Drop vertical slice.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "build": "npm run build -w client",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
+    "start": "concurrently -n server,client -c blue,magenta \"npm run start -w server\" \"npm run preview -w client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
