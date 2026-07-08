@@ -1,0 +1,20 @@
+---
+description: Game feel principles — the player must always feel something happening
+globs:
+  - "client/src/**"
+---
+
+- Target feel: Brawl Stars / Clash Royale polish, Coin Master casino
+  excitement, chaotic party energy. If a moment feels flat, add anticipation
+  (wind-up), impact (shake/flash/sound) and follow-through (settle bounce).
+- Money must feel physical: coins arc, spin, land, stack and burst. Score
+  changes always animate (ticker roll + floating text), never teleport.
+- The camera is a storyteller: drift when idle, punch on lock-in, zoom for
+  reveals, shake on impacts, pull back for standings. Keep it subtle in
+  `reduced` mode.
+- Escalate drama with stakes: bigger losses -> angrier reactions and stronger
+  effects; big wins -> coin bursts and celebration.
+- Sound events accompany every meaningful action through `SoundEventBus`
+  (synth blips now, samples later — same event names).
+- Preserve type safety and 60fps: pool or self-destroy effect objects, avoid
+  per-frame allocations in `update()`.

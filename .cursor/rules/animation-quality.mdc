@@ -1,0 +1,21 @@
+---
+description: Animation standards — sequential reveals, juicy feedback, intensity modes
+globs:
+  - "client/src/game/**"
+---
+
+- Every reveal/outcome is a **sequential timeline** (RevealDirector pattern):
+  build tension, show the answer, punish wrong, celebrate right, then update
+  standings. Never apply results in a single frame.
+- Wrong answers are attacked (ships, cannons, shake, skulls, loot stolen),
+  not merely dimmed. Correct answers celebrate (gold glow, sparkles, payout
+  stream, ticker roll, floating text).
+- Prefer Back/Bounce/Sine eases for game feel; pair squash with stretch;
+  keep feedback tweens short (80-300ms) and ambient loops slow (1.5-5s).
+- All new effects must scale with `intensityScale()` and respect
+  `animationIntensity`: `reduced` minimises motion (no shake, no drift),
+  `chaos` exaggerates particles/shake/zoom.
+- Timelines must be cancellable (track timers, provide `cancel()`) because a
+  new server state can arrive mid-animation.
+- Character reactions accompany outcomes: avatars must visibly react (emote +
+  squash/tint) to lock-in, loss, gain, being targeted and winning.

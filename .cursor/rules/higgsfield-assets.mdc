@@ -1,0 +1,24 @@
+---
+description: Higgsfield asset workflow and documentation requirements
+alwaysApply: true
+---
+
+- When generating game art, check for the Higgsfield MCP connection first and
+  prefer it. Current status: it WAS available and used for this slice
+  (model `nano_banana_pro`); see `docs/HIGGSFIELD_PROMPTS.md`.
+- Keep the global art direction consistent (cartoon 2D mobile arcade, neon
+  pirate casino, thick outlines, Brawl Stars / Coin Master energy). Append it
+  to every prompt.
+- Ask for a "plain solid dark background for easy cutout" (models cannot emit
+  alpha), then run `python3 scripts/chroma_key.py <file>` to produce the
+  transparent `-cut` version. Keep raw generations in
+  `client/src/assets/higgsfield/loot-drop/raw/`.
+- Register every used file in `FILE_MAP` in
+  `client/src/game/assets/assetManifest.ts` (with grid info for sheets) and
+  in `client/src/assets/higgsfield/loot-drop/asset-manifest.json` (with job
+  id, prompt reference and usage/reason).
+- Never pretend Higgsfield was used when it wasn't. If it is unavailable or
+  fails, proceed with procedural art and add exact ready-to-run prompts to
+  `docs/HIGGSFIELD_ASSET_TODO.md`.
+- Higgsfield art never replaces the procedural fallback system — the game
+  must still boot with zero binary assets.
