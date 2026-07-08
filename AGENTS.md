@@ -50,3 +50,17 @@ assets, sound) in `game/systems/`, procedural art + manifest in
 the two-browser smoke tests (`node scripts/smoke-test.mjs`,
 `node scripts/smoke-test-interactions.mjs` with `npm run dev` running) and
 walk `docs/PLAYTEST_VISUAL_CHECKLIST.md`.
+
+## Agent skills (learnings from the Loot Drop rebuild)
+
+Persistent skills in `.cursor/skills/` — read the relevant one before starting:
+
+| Skill | When to use |
+|-------|-------------|
+| `treasure-trap-loot-drop` | Any work in this repo's game scene or multiplayer |
+| `phaser-vertical-slice` | React shell + Phaser scene + bridge architecture |
+| `game-feel-and-juice` | Particles, camera, reveals, physical interactions |
+| `higgsfield-2d-game-assets` | MCP art generation + procedural fallback pipeline |
+
+These complement `.cursor/rules/*.mdc` (lint-style constraints) with
+workflows and patterns learned from the vertical slice pass.
