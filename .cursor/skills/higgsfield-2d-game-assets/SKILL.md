@@ -1,6 +1,6 @@
 ---
 name: higgsfield-2d-game-assets
-description: Generate 2D mobile game assets with Higgsfield MCP — sprite sheets, backgrounds, chroma-key pipeline, procedural fallbacks. Use when creating art for Phaser/Pixi game scenes or documenting asset prompts.
+description: Generate Treasure Trap 2D art and animation assets with Higgsfield, provenance, mobile readability and fallbacks.
 ---
 
 # Higgsfield 2D game assets
@@ -13,7 +13,8 @@ breaks if MCP is down or files are missing.
 1. **Check MCP** — `balance` on Higgsfield server; `models_explore` or cost
    preflight to find a working model (`nano_banana_pro` worked at 2 credits).
 2. **Generate** with consistent global art direction appended to every prompt.
-3. **Save** to `client/src/assets/higgsfield/<feature>/`.
+3. **Write a complete event brief** from `docs/context/ANIMATION_AND_ASSETS.md`.
+4. **Save** to `client/src/assets/higgsfield/<feature>/`.
 4. **Chroma-key** solid backgrounds (models don't emit alpha):
 
    ```bash
@@ -21,19 +22,18 @@ breaks if MCP is down or files are missing.
    # → path/to/sheet-cut.png (flood-fill from edges)
    ```
 
-5. **Register** in `assetManifest.ts` `FILE_MAP` with grid slicing info.
-6. **Resolve at runtime** via `AssetManager` — prefer HF when loaded, else PROC.
-7. **Document** job IDs in `asset-manifest.json` + prompts in
+6. **Register** in the active React asset map/component and feature `asset-manifest.json`.
+7. **Resolve at runtime** with a fallback; dynamic state stays outside baked video.
+8. **Document** job IDs in `asset-manifest.json` + prompts in
    `docs/HIGGSFIELD_PROMPTS.md`. If MCP unavailable, write
    `docs/HIGGSFIELD_ASSET_TODO.md` with exact prompts — never pretend it ran.
 
-## Global art direction (append to every prompt)
+## Prompt context (append the matching zone suffix)
 
-> Cartoon 2D mobile arcade game art, neon pirate casino theme, bold shapes,
-> thick outlines, glossy highlights, vivid colours, readable on small screens,
-> Brawl Stars / Coin Master inspired energy, dark ocean background, glowing
-> gold treasure, cyan and magenta neon accents, funny chaotic pirate mood,
-> clean sprite-friendly composition.
+Default: cartoon pirate excursion, warm storybook sea, expressive fleet, chunky silhouettes,
+thick outlines and mobile readability. Neon casino/slot-machine treatment is reserved for
+loot-box, jackpot and approved high-stakes reward beats. Copy the exact suffixes from
+`docs/context/ANIMATION_AND_ASSETS.md`; include mechanic trigger, source, target and meaning.
 
 ## Prompt tweaks that work
 
@@ -49,7 +49,7 @@ breaks if MCP is down or files are missing.
 
 | Asset | Higgsfield shines | Procedural is fine |
 |-------|-------------------|-------------------|
-| Full background | ✅ | gradient ocean |
+| Full excursion background | ✅ | gradient ocean |
 | Island/ship sprites | ✅ (if chroma-keyed) | chunky Graphics shapes |
 | Individual coins/chips | ✅ single sprites | circles with gloss |
 | Particle VFX | reference only | additive spark/coin textures |
@@ -72,9 +72,9 @@ Scene code uses `{ key: HF.islands, frame: "q2" }` via `AssetManager`.
 
 ## Procedural fallback requirement
 
-`generatedTextures.ts` must define **every** texture key the scene references.
-Boot scene calls `generateAllTextures()` before Preload. Game runs with an
-empty `higgsfield/` folder.
+The active client must render a coherent fallback for every optional asset and continue when
+the `higgsfield/` folder is unavailable. Do not add production registrations only to archived
+Phaser manifests.
 
 ## Honesty rule
 

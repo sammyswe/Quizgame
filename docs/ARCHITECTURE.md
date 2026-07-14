@@ -1,4 +1,6 @@
-# Architecture
+# Architecture (historical v0.1)
+
+> **Superseded:** Active root runtime architecture: `docs/context/ARCHITECTURE.md`.
 
 ## Overview
 

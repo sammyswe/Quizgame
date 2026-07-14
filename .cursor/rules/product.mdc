@@ -5,9 +5,10 @@ alwaysApply: true
 
 # Product vision
 
-Treasure Trap is a neon pirate casino party quiz where friends answer trivia, split loot,
-bluff with fake maps, betray each other for treasure, open Mario Kart-style mystery chests,
-and survive a chaotic final plunder to become the richest pirate at the table.
+Treasure Trap is a cartoon pirate excursion party quiz where friends sail as a fleet, answer
+trivia at four islands, bluff, mutiny, use pirate power-ups and survive special rounds.
+Casino spectacle is concentrated in loot-box/jackpot rewards and selected high-stakes peaks;
+it is not the global visual skin.
 
 Target: Gen Z / party players, suitable for ages 9+. Tone: cheeky, fast, dramatic, funny.
 
@@ -22,5 +23,11 @@ Target: Gen Z / party players, suitable for ages 9+. Tone: cheeky, fast, dramati
 - Easy to learn, deep to master: the UI teaches the game (short labels, icons, animated
   sequencing). No long rules screens.
 - Both helping AND betrayal must be viable strategies.
+- The confirmed structure is 10 regular questions followed by a special round. Match length
+  counts regular questions; Loot Drop is the first and only current special-round polish target.
+- Mutiny/marooning start after question 5. Mutiny choices remain secret until reveal.
+- Item acquisition is position/score-gap aware; every attack is bounded and documents counterplay.
+- Use LOCKED/PILOT/IDEA/REJECTED from `docs/context/STATUS.md`; existing code does not by itself
+  make a mechanic confirmed.
 - No accounts, no payments, no databases, no auth for the prototype.
 - Scores never go below zero. Attacks must never destroy an entire player's game.

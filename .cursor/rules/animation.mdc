@@ -6,12 +6,13 @@ alwaysApply: false
 
 # Animation rules
 
-- Read docs/ANIMATION_DIRECTION.md before adding or changing animations.
+- Read `docs/context/VISUAL_DIRECTION.md` and
+  `docs/context/ANIMATION_AND_ASSETS.md` before changing animations.
 - Use the shared presets in `client/src/lib/animationPresets.ts` (SLAM, POP, SETTLE,
   SCREEN, STAGGER) — do not invent new spring constants inline without reason.
 - Animations must clarify game events, not hide them. Every effect answers
   "what just happened?". Decorative-only animation belongs in ambient layers.
-- Reuse the game-feel toolkit before building new effects: EmojiBurst, ImpactFlash,
+- Reuse the game-feel toolkit before building new effects: ImpactFlash,
   FloatingText, Shaker, CannonBlast, LockStamp, SceneBackdrop, PirateAvatar,
   ItemCard, ItemUseOverlay (see docs/GAME_FEEL.md for the full table).
 - All particle counts go through `particleCount(base, intensity)` and all screen shake
@@ -26,5 +27,7 @@ alwaysApply: false
   to be watched.
 - Sounds: fire named events via `playSound()` from `client/src/lib/soundEvents.ts`,
   not raw `sfx.*` calls, in new code.
+- Higgsfield is the preferred authored asset source. Record exact prompt/model/job/path and
+  provide a runtime fallback; do not claim generation that did not complete.
 - Keep `prefers-reduced-motion` working: the global CSS collapse must not be removed,
   and critical information must never be motion-only.

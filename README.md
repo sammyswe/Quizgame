@@ -1,8 +1,8 @@
 # 🏴‍☠️ Treasure Trap
 
-**The neon pirate casino party quiz.** Answer trivia, split loot across glowing islands,
-bluff with fake maps, betray your friends, open Mario Kart-style mystery chests, and
-survive the Final Plunder to become the richest pirate at the table.
+**The cartoon pirate excursion party quiz.** Sail as a fleet, race toward answer islands,
+bluff, mutiny, fire pirate power-ups and open Mario Kart-style mystery chests. The voyage is
+warm and adventurous; loot-box rewards erupt into jewel-bright casino spectacle.
 
 2–8 players · separate laptops/phones · one room code · ages 9+ · zero mercy.
 
@@ -65,14 +65,15 @@ is not enough for the server**. Split it:
 Copy `.env.example` / `client/.env.example` as starting points. Send friends the client
 URL — room codes do the rest (invite links use `?room=CODE`).
 
-## How a game flows (arcade mode)
+## How a game flows (current arcade pilot)
 
-1. **Lobby** — host picks the length: **Test (10)**, Short (30), Medium (50) or Long (70) rounds.
+1. **Lobby** — host picks the length: **Test (10)**, Short (30), Medium (50) or Long (70).
 2. Every round is a fast trivia question with a **decaying pot** (answer instantly: 100 🪙,
    at the buzzer: 30 🪙). Streaks pay bonuses; 3 in a row earns a chest.
-3. **First 5 rounds**: your first correct answer triggers the 🎰 **jackpot chest ceremony**
-   and hands you a power-up.
-4. **Every 10th round is a special event** — the first is 💷 **Million Pound Drop**:
+3. **Current pilot:** your first correct answer in the first 5 rounds triggers the jackpot
+   chest. Confirmed final direction is one onboarding ceremony after question 5.
+4. **Current pilot:** every 10th numbered round is a special event. Confirmed final direction
+   is 10 regular questions followed by the special. The first is **Million Pound Drop**:
    stack 100 gold on trapdoors, wrong doors open, that gold is gone.
 5. **Mutiny is always on** — secretly demand the leader gets it right. Leader wrong: you
    profit. Leader right: you pay. Mutiny **alone** and you're **marooned** 🏝️ (skip a
@@ -92,21 +93,22 @@ URL — room codes do the rest (invite links use `?room=CODE`).
 ```
 shared/              types · config · pure game logic · Vitest tests
 server/              Socket.IO authoritative engine · rooms · bots · debug handlers
-client/              React screens · Zustand store · neon pirate UI · Playwright smoke
+client/              React screens · Zustand store · pirate excursion UI · Playwright smoke
 experiments/loot-drop/  archived Phaser 3 Loot Drop vertical slice (assets + systems)
-docs/                PRD · GAME_DESIGN · ARCHITECTURE · Phaser / Higgsfield notes
+docs/context/        canonical indexed product context and roadmap
+docs/                historical/deep design, Phaser and Higgsfield notes
 .cursor/             rules + skills for future Cursor work
 ```
 
 ## Docs
 
-- [docs/PRD.md](docs/PRD.md) — product requirements & principles
-- [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) — every round/item/mission + what's simplified
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how state flows
-- [docs/ANIMATION_DIRECTION.md](docs/ANIMATION_DIRECTION.md) — the motion identity
-- [docs/VISUAL_SYSTEM.md](docs/VISUAL_SYSTEM.md) — palette, typography, rarity language
-- [docs/GAME_FEEL.md](docs/GAME_FEEL.md) — the feedback toolkit and contract
-- [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md) — placeholder → professional art map
-- [docs/SELF_REVIEW.md](docs/SELF_REVIEW.md) — honest state of the prototype
-- [docs/ANIMATION_SELF_REVIEW.md](docs/ANIMATION_SELF_REVIEW.md) — visual overhaul review
-- [docs/PLAYTEST_NOTES.md](docs/PLAYTEST_NOTES.md) — log your playtests here
+- [docs/context/INDEX.md](docs/context/INDEX.md) — start here; task router and status registry
+- [docs/context/VISION.md](docs/context/VISION.md) — locked product and visual pillars
+- [docs/context/MECHANICS.md](docs/context/MECHANICS.md) — confirmed rules vs implementation
+- [docs/context/SPECIAL_ROUNDS.md](docs/context/SPECIAL_ROUNDS.md) — Loot Drop and event framework
+- [docs/context/ITEMS.md](docs/context/ITEMS.md) — item catalogue and Mario Kart principles
+- [docs/context/ANIMATION_AND_ASSETS.md](docs/context/ANIMATION_AND_ASSETS.md) — Higgsfield contract
+- [docs/context/ROADMAP.md](docs/context/ROADMAP.md) — route to public web playtests
+
+Older root-level design docs are preserved for history and may describe the superseded
+seven-round prototype. The context index takes precedence.

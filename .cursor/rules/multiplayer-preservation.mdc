@@ -3,20 +3,20 @@ description: Multiplayer must keep working; server stays authoritative
 alwaysApply: true
 ---
 
-- Never break: room creation, room joining by code, host start, player
-  nicknames, allocation sync, lock-in sync, reveal sync, disconnect handling.
-  Two browsers/laptops must be able to complete a full game.
-- The server (`server/src/room.ts`) is the single source of truth: it owns
+- Never break: room create/join/rejoin, 4-character codes, host migration/start, nicknames,
+  answers, secret mutiny, private item state, special allocation/lock, reveal or disconnect.
+  Two browsers/laptops must complete the active block/event loop.
+- The server (`server/src/engine.ts`) is the single source of truth: it owns
   phases, timers, allocations, scores and the correct answer. Clients render
   state and send intents; they never compute outcomes locally.
-- The socket contract lives in `shared/src/types.ts`
-  (`ClientToServerEvents` / `ServerToClientEvents`). Any protocol change
+- The socket contract lives in `shared/src/types/index.ts`
+  (`ClientEvents` / `ServerEvents`). Any protocol change
   updates that file first and both sides together.
 - Validate all client input server-side (`allocationsValid`, phase checks,
   lock checks). Exact loot splits stay private until reveal; only totals,
   lock status and confidence flags are public.
-- Client effects must tolerate out-of-order/late state: cancel running
-  timelines when a new question arrives, re-hydrate from
-  `GameEventBridge.lastRoomState` on scene (re)start.
-- After protocol or flow changes, run `node scripts/smoke-test.mjs` with the
-  dev servers up to prove the two-player loop end to end.
+- Client effects tolerate out-of-order/late state: cancel running timelines on phase/question
+  changes and rehydrate from Zustand/socket state after reconnect.
+- After protocol/flow changes, run the available root multiplayer smoke/e2e path with dev
+  servers up. If no script covers the changed path, add coverage rather than invoking the
+  archived experiment's smoke test.

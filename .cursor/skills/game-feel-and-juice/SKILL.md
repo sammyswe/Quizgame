@@ -5,20 +5,19 @@ description: Mobile arcade game feel — particles, camera, sequential reveals, 
 
 # Game feel & juice
 
-Target: **Brawl Stars / Clash Royale polish**, **Coin Master casino
-excitement**, chaotic party energy. The player must always feel something
-happening.
+Target: **Brawl Stars / Clash Royale polish** in a lively cartoon pirate excursion. Reserve
+**Coin Master casino excitement** for loot boxes, jackpots and selected high-stakes peaks.
 
 ## Every interaction needs feedback
 
 | Action | Minimum juice |
 |--------|----------------|
-| Tap / drag loot | Coin flies on bezier arc, island pulse, sparkle burst, sound |
+| Select answer island | Ship/wake commits toward island, island pulse, sound |
 | Invalid action | Shake, "NO LOOT LEFT!" pop — never silent ignore |
 | Hover island | Glow ramps up, island scales slightly |
 | Lock in | Button squash → slam → camera punch → shockwave sparkles |
-| Reveal wrong | Ships sail in, cannons, shake, splash, skull stamp, plunder stream |
-| Reveal right | Gold glow, payout coin stream, +N floating text, ticker roll |
+| Reveal wrong | Pirate-world consequence, impact/drop, comic loss sting, readable result |
+| Reveal right | Treasure return, fleet cheer, warm burst, payout roll |
 | Item on player | Target glow red, projectile, impact flash, scared jitter |
 
 **Banned:** numeric inputs, dropdowns, checkboxes, plain buttons with no
@@ -26,7 +25,7 @@ animation, results appearing in one frame.
 
 ## Reveal = sequential cinematic, not a state swap
 
-Use a **RevealDirector** with `delayedCall` steps (always cancellable):
+Use a cancellable staged sequence driven by received server state:
 
 ```
 0s   zoom in + revealStart sound
@@ -41,9 +40,9 @@ Use a **RevealDirector** with `delayedCall` steps (always cancellable):
 10.5s camera out + leaderboard slide + winner crown
 ```
 
-Server reveal window must be **longer** than the director timeline.
+Server reveal window must accommodate the client sequence without relying on it for outcomes.
 
-## CameraDirector patterns
+## Camera patterns
 
 - **Idle drift** — subtle breathing zoom while waiting (off in `reduced`).
 - **lockInPunch** — 120ms zoom yoyo on slam.
@@ -51,7 +50,7 @@ Server reveal window must be **longer** than the director timeline.
 - **shake** — cannon, plunder; scale strength with `intensityScale()`.
 - **reset** — return to neutral after reveal.
 
-## VfxSystem building blocks
+## VFX building blocks
 
 Reusable, self-destroying emitters:
 
@@ -59,7 +58,7 @@ Reusable, self-destroying emitters:
 - `plunderTrail(from, to, count)` — staggered bezier coins
 - `correctGlow`, `wrongFlash`, `scorePop`
 
-Respect `animationIntensity`: `reduced` 0.35×, `normal` 1×, `chaos` 1.9×.
+Respect active intensity helpers and `prefers-reduced-motion`.
 
 ## Physical money
 

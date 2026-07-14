@@ -1,18 +1,18 @@
 ---
-description: Engine choice and the React/Phaser boundary
+description: Active engine and client/server authority boundary
 alwaysApply: true
 ---
 
-- The gameplay engine is **Phaser 3 + TypeScript**. Do not introduce another
-  renderer (PixiJS, DOM animation libs, canvas hand-rolling) for gameplay.
-- React is only the shell: landing, lobby, room create/join, multiplayer
-  connection, game-over, debug panel, small HUD chips. React must never
-  render in-round gameplay visuals.
-- The only boundary between React/network and Phaser is
-  `client/src/game/GameEventBridge.ts`. Network pushes state in; the scene
-  emits player intents out. Do not import scene internals from React or vice
-  versa.
-- `PhaserGame.tsx` owns only canvas lifecycle (mount/destroy). Game state
-  never lives in React component state.
-- The rationale is documented in `docs/GAME_ENGINE_DECISION.md`; update it if
-  the engine decision ever changes.
+- The active root game is **React + Framer Motion + TypeScript**. `pnpm dev` does not run
+  Phaser. Do not invent imports from nonexistent `client/src/game/` paths.
+- Phaser code in `experiments/loot-drop/` is archived reference material, excluded from the
+  root app. Do not treat it as production or copy stale socket contracts from it.
+- The server (`server/src/engine.ts`) is authoritative. React renders public/private state and
+  sends intents; it never computes correct answers, random outcomes or score mutations.
+- Shared pure logic belongs in `shared/src/game/`; named values belong in `shared/src/config/`;
+  socket/state types belong in `shared/src/types/index.ts`.
+- Animation timelines must tolerate late/out-of-order state, cancel on phase/question changes
+  and reconstruct from current state after reconnect.
+- A future renderer migration requires an explicit architecture decision and preservation of
+  the complete two-device multiplayer loop. Do not start one as incidental visual cleanup.
+- Canonical architecture: `docs/context/ARCHITECTURE.md`.

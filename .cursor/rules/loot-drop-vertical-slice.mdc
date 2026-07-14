@@ -1,17 +1,17 @@
 ---
-description: Scope guard — Loot Drop is the only polished scene this phase
+description: Scope guard — Loot Drop is the only polished special round this phase
 alwaysApply: true
 ---
 
-- All polish effort goes into the Loot Drop round. Do not rebuild or
-  beautify the other six Treasure Trap rounds in this phase.
+- All special-round polish effort goes into Loot Drop. Do not start another special round
+  before its mechanic, multiplayer loop, wildcards and audiovisual gate pass playtesting.
 - Do not polish menus/lobby beyond functional-and-on-theme while the core
   scene still has open weaknesses (tracked in `docs/VISUAL_SELF_REVIEW.md`).
-- The required playable loop is: create room -> friend joins -> host starts ->
-  both see the animated scene -> allocate loot -> lock in -> synced reveal ->
-  scores update -> next question. Changes must keep this loop intact.
-- Loot Drop gameplay rules: 4 answer islands, 100 loot per player split in
-  steps of 10, lock-in commits, correct island pays 2x, loot on wrong islands
-  is plundered. Constants live in `shared/src/types.ts`.
-- The visual bar for the scene is `docs/LOOT_DROP_VISUAL_PRD.md`; check
-  changes against `docs/PLAYTEST_VISUAL_CHECKLIST.md`.
+- Required loop: create -> join -> start -> 10 regular questions -> wager prior-block loot ->
+  allocate to four ventures -> lock -> synced staged reveal -> scores -> next block.
+- The fixed 100-gold live allocator is a PILOT. Confirmed direction wagers points earned in the
+  preceding 10 regular questions; implement a server-owned block ledger before claiming parity.
+- The base fantasy is sending pirate crews/ships on island ventures. Casino intensity may peak
+  at lock/reveal, but the scene remains part of the cartoon excursion.
+- Poseidon's Rescue and Shark Attack are the first confirmed Loot Drop wildcards.
+- Canonical spec and gate: `docs/context/SPECIAL_ROUNDS.md`.

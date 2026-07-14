@@ -12,11 +12,11 @@ alwaysApply: true
   - Host migration when the host disconnects.
   - The authoritative-server model (clients send intents only).
   - The reveal event queue (no silent score changes).
-  - Position-based chest odds and the 15-item catalogue.
-  - Mutiny tokens and accusation flow.
+  - Score-gap/rank-aware power-up odds and the active arcade power-up catalogue.
+  - Secret mutiny declaration and private-state isolation.
   - The debug/playtest panel in dev mode (and its absence in production).
-- When simplifying a mechanic, keep it playable and document the intended final version in
-  `docs/GAME_DESIGN.md` with a TODO — never silently drop a mechanic.
+- When simplifying a mechanic, keep it playable and update the implementation mismatch/TODO in
+  `docs/context/MECHANICS.md` — never silently drop or relabel a mechanic.
 - Do not rename socket event names without updating both client and server plus
   `shared/src/types/index.ts` (`ClientEvents`/`ServerEvents`).
 - Keep `pnpm dev` working end-to-end: two browser windows must be able to play a full game

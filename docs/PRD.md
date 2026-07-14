@@ -1,4 +1,7 @@
-# Treasure Trap — Product Requirements (Prototype v0.1)
+# Treasure Trap — Product Requirements (historical prototype v0.1)
+
+> **Superseded:** Start at `docs/context/INDEX.md`. This file preserves the earlier seven-round,
+> globally neon-casino prototype and is not current product direction.
 
 ## One sentence
 

@@ -1,4 +1,7 @@
-# Game Engine Decision
+# Game Engine Decision (archived experiment)
+
+> **Not active:** The root game currently runs React + Framer Motion. Phaser reference code is
+> preserved under `experiments/loot-drop/`. See `docs/context/ARCHITECTURE.md`.
 
 ## Decision: Phaser 3 (+ TypeScript) for the Loot Drop scene
 

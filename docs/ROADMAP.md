@@ -1,4 +1,6 @@
-# Roadmap
+# Roadmap (historical v0.1)
+
+> **Superseded:** Active playtest/deployment roadmap: `docs/context/ROADMAP.md`.
 
 ## v0.1 (this repo) — Playable multiplayer prototype ✅
 

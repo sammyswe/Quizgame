@@ -1,9 +1,13 @@
 ---
 name: phaser-vertical-slice
-description: Build one incredible 2D game scene instead of a polished website — React shell + Phaser gameplay + event bridge. Use when turning a web app into a mobile-arcade-style game scene or scoping a vertical slice.
+description: Reference the archived Phaser vertical-slice pattern only when explicitly prototyping or evaluating a renderer migration.
 ---
 
 # Phaser vertical slice pattern
+
+> Scope warning: Treasure Trap's active root client is React + Framer Motion. The Phaser slice
+> lives in `experiments/loot-drop/`. Do not apply this skill to ordinary production work or
+> create `client/src/game/` without an explicit architecture-migration decision.
 
 Learned from Treasure Trap Loot Drop: **do not spread effort across every
 screen**. Pick one gameplay moment and make it feel like Brawl Stars / Coin

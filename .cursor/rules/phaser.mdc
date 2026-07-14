@@ -1,10 +1,11 @@
 ---
-description: Phaser conventions for scenes, objects, systems and assets
+description: Archived Phaser experiment conventions
 globs:
-  - "client/src/game/**"
+  - "experiments/loot-drop/**"
 ---
 
-- Follow the established structure: `scenes/` (Boot -> Preload -> LootDrop,
+- This rule applies only to the archived/reference Phaser experiment. It does not make Phaser
+  the root production engine. Follow the established structure: `scenes/` (Boot -> Preload -> LootDrop,
   extending `BaseScene`), `objects/` (one class per game entity, extending
   Phaser containers/images), `systems/` (VfxSystem, CameraDirector,
   RevealDirector, AssetManager, SoundEventBus), `assets/` (generatedTextures,
