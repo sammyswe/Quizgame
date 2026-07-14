@@ -1,19 +1,10 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
     "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "useDefineForClassFields": true
   },
-  "include": ["src", "../shared/src"]
+  "include": ["src", "vite.config.ts", "e2e", "playwright.config.ts"]
 }

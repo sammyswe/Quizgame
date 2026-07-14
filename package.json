@@ -1,22 +1,35 @@
 {
   "name": "treasure-trap",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
-  "description": "Treasure Trap - multiplayer pirate casino party game. Loot Drop vertical slice.",
-  "workspaces": [
-    "client",
-    "server"
-  ],
+  "description": "Treasure Trap — a neon pirate casino party quiz for 2-8 players",
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
-    "dev:server": "npm run dev -w server",
-    "dev:client": "npm run dev -w client",
-    "build": "npm run build -w client",
-    "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
-    "start": "concurrently -n server,client -c blue,magenta \"npm run start -w server\" \"npm run preview -w client\""
+    "predev": "node scripts/kill-dev-ports.mjs",
+    "dev:stop": "node scripts/kill-dev-ports.mjs",
+    "dev": "concurrently -n server,client -c yellow,cyan \"pnpm dev:server\" \"pnpm dev:client\"",
+    "dev:client": "pnpm --filter @treasure-trap/client dev",
+    "dev:server": "pnpm --filter @treasure-trap/server dev",
+    "build": "pnpm -r build",
+    "test": "pnpm --filter @treasure-trap/shared test",
+    "test:e2e": "pnpm --filter @treasure-trap/client test:e2e",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write ."
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "playwright": "^1.61.1"
+    "@eslint/js": "^9.17.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  },
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=20"
   }
 }

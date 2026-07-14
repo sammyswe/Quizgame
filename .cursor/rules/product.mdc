@@ -1,0 +1,26 @@
+---
+description: Treasure Trap product vision and non-negotiable principles
+alwaysApply: true
+---
+
+# Product vision
+
+Treasure Trap is a neon pirate casino party quiz where friends answer trivia, split loot,
+bluff with fake maps, betray each other for treasure, open Mario Kart-style mystery chests,
+and survive a chaotic final plunder to become the richest pirate at the table.
+
+Target: Gen Z / party players, suitable for ages 9+. Tone: cheeky, fast, dramatic, funny.
+
+## Non-negotiables
+
+- Always preserve the product vision above. Never turn this into a plain quiz app.
+- Never remove multiplayer without explicit instruction. The room/join flow is the core product.
+- Knowledge should usually win: the most knowledgeable player should win ~75% of games.
+  Items and chaos are comeback tools and drama generators, not the primary win condition.
+- Discussion must matter: mechanics should give players reasons to talk, persuade, lie,
+  accuse, form pacts, and betray. Never make "ignore everyone" the always-optimal strategy.
+- Easy to learn, deep to master: the UI teaches the game (short labels, icons, animated
+  sequencing). No long rules screens.
+- Both helping AND betrayal must be viable strategies.
+- No accounts, no payments, no databases, no auth for the prototype.
+- Scores never go below zero. Attacks must never destroy an entire player's game.

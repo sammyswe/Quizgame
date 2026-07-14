@@ -1,19 +1,23 @@
 {
-  "name": "treasure-trap-server",
-  "private": true,
+  "name": "@treasure-trap/server",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
-    "socket.io": "^4.8.1"
+    "@treasure-trap/shared": "workspace:*",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "tsx": "^4.19.2"
   },
   "devDependencies": {
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3",
-    "@types/node": "^22.10.5"
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
   }
 }

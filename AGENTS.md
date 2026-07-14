@@ -1,66 +1,60 @@
 # AGENTS.md — Treasure Trap
 
-Rules for anyone (human or agent) working in this repo.
+Instructions for AI agents (and humans) working in this repository.
 
-## What this project is
+## What this is
 
-A multiplayer neon-pirate-casino party game. The current focus is a single
-excellent vertical slice: the **Loot Drop** round, built as a real 2D
-animated game scene in **Phaser 3**, with React only as the shell
-(landing/lobby/game-over/debug) and a socket.io authoritative server.
+Treasure Trap is a **neon pirate casino party quiz** for 2–8 players. Friends on separate
+laptops/phones join a room via a code, answer trivia, split loot, bluff with fake maps, betray
+each other, open Mario Kart-style mystery chests, and survive a chaotic Final Plunder. The
+richest pirate wins.
+
+Read `docs/PRD.md` and `docs/GAME_DESIGN.md` before changing game behaviour.
+
+## Repository layout
+
+- `shared/` — TypeScript types, config constants, and **pure** game logic. No IO, no React,
+  no sockets. Everything here is unit-testable. This is the source of truth for game rules.
+- `server/` — Authoritative Node + Socket.IO server. Owns rooms, phases, timers, scores,
+  items, chests, missions. Clients send **intents**; the server mutates state and broadcasts.
+- `client/` — Vite + React + Tailwind + Framer Motion. Renders server state, never computes
+  scores itself.
 
 ## Hard rules
 
-1. **The active gameplay scene must never be a static React card UI.**
-   Gameplay visuals are Phaser game objects inside `client/src/game/`.
-   React overlays are allowed only when they look like game HUD.
-2. **Every player action gets immediate visual feedback** (tween, particle,
-   sound event) — tap, drag, hover, lock, item use, everything.
-3. **Reveals are sequential, animated cinematics**, orchestrated by
-   `RevealDirector`. Never swap state instantly.
-4. **Do not break multiplayer.** Room create/join, host start, nicknames,
-   allocation sync, lock sync and reveal sync must keep working across two
-   browsers. The server (`server/src/room.ts`) stays authoritative; clients
-   render state, they don't decide outcomes.
-5. **Focus stays on Loot Drop.** Do not rebuild the other six rounds or
-   polish menus while the core scene can still improve.
-6. **Placeholder art must still look intentional.** Procedural fallbacks in
-   `generatedTextures.ts` exist for every texture; the game must boot with
-   zero binary assets. Reference textures via `spriteKeys.ts` / manifest
-   keys, never hardcoded paths.
-7. **Use Higgsfield MCP for art when available** (style guide + prompts in
-   `docs/HIGGSFIELD_PROMPTS.md`, workflow in `docs/HIGGSFIELD_ASSET_TODO.md`).
-   If it is unavailable, document exact prompts for later — never pretend it
-   was used.
-8. **Preserve type safety.** Strict TypeScript everywhere; the socket
-   contract lives in `shared/src/types.ts` and both sides must use it.
-9. Respect `animationIntensity` (`reduced | normal | chaos`) in any new
-   effect: scale particle counts/shake through `intensityScale()`.
+1. **Never remove multiplayer** or make the game local-only without explicit instruction.
+2. **Knowledge should usually win** (~75% of games). Items are comeback tools, not slot machines.
+3. **Every attack must have counterplay.** No exceptions. Document the counter in the item/action config.
+4. **Scores never go below 0.** All score changes go through `applyDelta`/`clampScore` in `shared/src/game/scoring.ts`.
+5. **No silent score changes.** Every meaningful change must produce a `RevealEvent` rendered by the reveal queue.
+6. **Secret info stays secret.** Missions, clues, and hands go only to the owning player via `player:privateState`. Never put `correctIndex` in public state during a question.
+7. **Named constants only.** Scoring, odds, timing, and rarity values live in `shared/src/config/*`. No magic numbers in game logic.
+8. **Strict TypeScript.** Do not weaken `tsconfig.base.json`.
+9. **Keep shared types centralised** in `shared/src/types/index.ts`.
+10. **Tests for scoring and item logic.** New mechanics need Vitest coverage in `shared/src/game/__tests__/`.
 
-## Where things live
+## Commands
 
-See `docs/PHASER_ARCHITECTURE.md`. Quick map: scenes in `game/scenes/`,
-game objects in `game/objects/`, cross-cutting systems (VFX, camera, reveal,
-assets, sound) in `game/systems/`, procedural art + manifest in
-`game/assets/`, socket client in `net/`, React shell in `ui/`.
+```bash
+pnpm install        # install everything
+pnpm dev            # server (3001) + client (5173) together
+pnpm dev:server     # server only
+pnpm dev:client     # client only
+pnpm typecheck      # strict TS across all packages
+pnpm lint           # eslint
+pnpm test           # vitest (shared game logic)
+pnpm build          # all packages
+```
 
-## Verification
+## Verifying changes
 
-`npm run typecheck` and `npm run build` must pass. For gameplay changes run
-the two-browser smoke tests (`node scripts/smoke-test.mjs`,
-`node scripts/smoke-test-interactions.mjs` with `npm run dev` running) and
-walk `docs/PLAYTEST_VISUAL_CHECKLIST.md`.
+Run `pnpm typecheck && pnpm lint && pnpm test && pnpm build` before finishing any task.
+For gameplay changes, start `pnpm dev`, open two browser windows, create + join a room,
+and use the 🧪 playtest panel (dev only) to add bots, skip timers, and force chests.
 
-## Agent skills (learnings from the Loot Drop rebuild)
+## Style
 
-Persistent skills in `.cursor/skills/` — read the relevant one before starting:
-
-| Skill | When to use |
-|-------|-------------|
-| `treasure-trap-loot-drop` | Any work in this repo's game scene or multiplayer |
-| `phaser-vertical-slice` | React shell + Phaser scene + bridge architecture |
-| `game-feel-and-juice` | Particles, camera, reveals, physical interactions |
-| `higgsfield-2d-game-assets` | MCP art generation + procedural fallback pipeline |
-
-These complement `.cursor/rules/*.mdc` (lint-style constraints) with
-workflows and patterns learned from the vertical slice pass.
+- Prefer readable game logic over clever abstractions. A junior dev should follow a round resolver top to bottom.
+- Copy/tone: cheeky pirate, fast, funny, ages 9+ ("You have been absolutely robbed.").
+- Animations must clarify game events, not hide them.
+- Mobile-first, portrait-friendly UI. Big buttons. Readable text.

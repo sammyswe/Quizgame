@@ -1,6 +1,13 @@
 node_modules/
 dist/
-*.log
-.DS_Store
+build/
+coverage/
 .env
 .env.local
+*.local
+.DS_Store
+*.log
+playwright-report/
+test-results/
+.vite/
+package-lock.json

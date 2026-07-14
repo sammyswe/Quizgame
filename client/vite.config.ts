@@ -5,8 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-  },
-  build: {
-    chunkSizeWarningLimit: 2000,
+    strictPort: true,
+    proxy: {
+      "/socket.io": {
+        target: "http://localhost:3001",
+        ws: true,
+      },
+    },
   },
 });

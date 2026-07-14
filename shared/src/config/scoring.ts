@@ -1,0 +1,72 @@
+/**
+ * Central scoring config. Never hardcode these numbers in game logic —
+ * import from here so balance tuning happens in one place.
+ */
+export const SCORING = {
+  BASE_CORRECT: 100,
+  ACCUSATION_CORRECT: 150,
+  ACCUSATION_WRONG_CONSOLATION: 25,
+  SECRET_MISSION_BASE: 150,
+  FOLLOW_BONUS: 50,
+  TRUST_STREAK_BONUS: 50,
+  MIN_SCORE: 0,
+
+  // Loot Drop
+  LOOT_POOL: 100,
+  CONFIDENCE_BONUS: 40,
+  CONFIDENCE_PENALTY: 30,
+  PACT_BONUS: 40,
+
+  // Obscure Island (per how many players picked the same correct option)
+  OBSCURE_SOLO: 200,
+  OBSCURE_FEW: 120, // 2-3 players
+  OBSCURE_MANY: 80, // 4+ players
+
+  // Split or Plunder pot outcomes
+  POT_BASE: 200,
+  SPLIT_SPLIT_EACH: 100,
+  PLUNDER_WINNER: 160,
+  PLUNDER_VICTIM: 20,
+  PLUNDER_PLUNDER_EACH: 40,
+  GUARD_COUNTER_BONUS: 60,
+  GUARD_VS_SPLIT_GUARD: 70,
+  GUARD_VS_SPLIT_SPLITTER: 100,
+  SOLO_CORRECT_IN_PAIR: 100,
+
+  // Captain's Chase
+  CHASE_CAPTAIN_ESCAPE: 250,
+  CHASE_CATCH_STEAL: 200,
+  CHASE_CHASER_STEP_BONUS: 50,
+  CHASE_SHORTCUT_BONUS: 100,
+
+  // Items
+  LUCKY_DOUBLOON_CONSOLATION: 30,
+  BACKSTAB_BONUS: 75,
+  SNEAKS_MAP_PER_VICTIM: 40,
+  BLACK_SPOT_BONUS: 40,
+  CROWN_HEIST_PCT: 0.15,
+  BROADSIDE_WIN: 150,
+  BROADSIDE_LOSS_HIGHER: 100,
+  BROADSIDE_LOSS_LOWER: 50,
+  CURSE_REVERSAL_BONUS: 75,
+  RUM_RUSH_MULTIPLIER: 2,
+
+  // Final Plunder
+  FINAL_CORRECT: 120,
+  LAST_CANNON_BONUS: 150,
+  ALL_IN_MULTIPLIER: 2,
+  ALL_IN_PENALTY: 100,
+  BETRAY_STEAL: 100,
+  FOLLOW_ME_BONUS: 60,
+  BLACK_FLAG_ALL_LOSE: 50,
+  BODYGUARD_BONUS: 50,
+  FALSE_TREASURE_BAIT: 80,
+
+  // Protected score by rank tier in Final Plunder
+  PROTECTED_PCT: {
+    first: 0.7,
+    second: 0.6,
+    middle: 0.5,
+    bottom: 0.4,
+  },
+} as const;
