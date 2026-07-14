@@ -37,7 +37,7 @@ See [STATUS.md](STATUS.md). In short:
 | Product or mechanic work | [VISION.md](VISION.md), [MECHANICS.md](MECHANICS.md) | `shared/src/config/*`, `shared/src/game/*` |
 | Special rounds | [SPECIAL_ROUNDS.md](SPECIAL_ROUNDS.md) | `shared/src/config/arcade.ts`, `server/src/engine.ts` |
 | Items or loot boxes | [ITEMS.md](ITEMS.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | `shared/src/config/powerups.ts` |
-| UI, animation, sound or art | [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | `client/src/` |
+| UI, animation, sound or art | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md), [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | `client/src/` |
 | Multiplayer or protocol | [ARCHITECTURE.md](ARCHITECTURE.md) | `server/src/engine.ts`, `shared/src/types/index.ts` |
 | Planning or deployment | [ROADMAP.md](ROADMAP.md) | CI and hosting configuration |
 | Brainstorming | [IDEA_BANK.md](IDEA_BANK.md) | none until promoted |
@@ -54,6 +54,7 @@ See [STATUS.md](STATUS.md). In short:
 | MECH-003 | LOCKED/IDEA | Special-round framework and Loot Drop | [SPECIAL_ROUNDS.md](SPECIAL_ROUNDS.md) |
 | VIS-001 | LOCKED | Excursion-first art direction and casino boundary | [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md) |
 | VIS-002 | LOCKED/PILOT | Animation, sound and Higgsfield production contract | [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) |
+| VIS-003 | LOCKED | Screen-by-screen UI and animation decisions | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md) |
 | ARCH-001 | LOCKED | Active runtime and authority boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | PLAN-001 | PILOT/IDEA | Playtest-to-public-web roadmap | [ROADMAP.md](ROADMAP.md) |
 | IDEA-001 | IDEA | Unconfirmed mechanics preserved without polluting scope | [IDEA_BANK.md](IDEA_BANK.md) |

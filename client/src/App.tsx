@@ -7,8 +7,7 @@ import { isMuted, setMuted } from "./lib/sfx";
 import { LandingScreen } from "./screens/LandingScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { RoundIntroScreen } from "./screens/RoundIntroScreen";
-import { QuestionScreen } from "./screens/QuestionScreen";
-import { RevealScreen } from "./screens/RevealScreen";
+import { GameplayShell } from "./screens/GameplayShell";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
 import { WinnerScreen } from "./screens/WinnerScreen";
 import { Hud } from "./components/Hud";
@@ -24,6 +23,7 @@ export default function App() {
 
   const inGame =
     game && game.phase !== "lobby" && game.phase !== "setup" && game.phase !== "winner";
+  const inPhaser = game?.phase === "question" || game?.phase === "reveal";
 
   let screen: React.ReactNode;
   let screenKey: string;
@@ -42,11 +42,11 @@ export default function App() {
         screenKey = `intro-${game.arcade?.roundNumber ?? 0}`;
         break;
       case "question":
-        screen = <QuestionScreen />;
+        screen = <GameplayShell />;
         screenKey = `q-${game.question?.id ?? game.questionNumber}`;
         break;
       case "reveal":
-        screen = <RevealScreen />;
+        screen = <GameplayShell />;
         screenKey = `reveal-${game.revealEvents[0]?.id ?? game.arcade?.roundNumber ?? 0}`;
         break;
       case "leaderboard":
@@ -68,10 +68,10 @@ export default function App() {
 
   return (
     <div className="relative min-h-full">
-      <Background />
-      {scene && <SceneBackdrop round={scene} />}
+      {!inPhaser && <Background />}
+      {!inPhaser && scene && <SceneBackdrop round={scene} />}
       <div className="relative z-10 min-h-full">
-        {inGame && <Hud />}
+        {inGame && !inPhaser && <Hud />}
         <AnimatePresence mode="wait">
           <motion.div
             key={screenKey}
@@ -85,7 +85,7 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
       </div>
-      {game && <ItemDrawer />}
+      {game && !inPhaser && <ItemDrawer />}
       <ResultOverlay />
       <ChestModal />
       <Toasts />

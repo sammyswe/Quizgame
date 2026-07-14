@@ -86,6 +86,13 @@ export function publicPlayers(room: ServerRoom): PublicPlayer[] {
     roundLoot: 0,
     chestCount: p.chests.length,
     itemCount: p.powerUps.length,
+    powerUpIds: p.powerUps.map((item) => item.powerUpId),
+    activePowerUpEffects: [
+      ...(p.rumRush ? (["rumRush"] as const) : []),
+      ...(p.cannonballed ? (["cannonball"] as const) : []),
+      ...(p.plankUntil ? (["walkThePlank"] as const) : []),
+      ...(p.parrotTargetId ? (["parrot"] as const) : []),
+    ],
     streak: p.streak,
     mutinyTokens: 0,
     hasAnswered: room.answers.has(p.id),
@@ -116,6 +123,18 @@ export function publicState(room: ServerRoom): PublicGameState {
     timerEndsAt: room.timerEndsAt,
     players: publicPlayers(room),
     revealEvents: room.phase === "reveal" ? room.revealEvents : [],
+    arcadeReveal:
+      room.phase === "reveal" && room.currentQuestion
+        ? {
+            correctIndex: room.currentQuestion.correctIndex,
+            answers: [...room.answers.values()].map((answer) => ({
+              playerId: answer.playerId,
+              choiceIndex: answer.choiceIndex,
+              lootAllocation: answer.lootAllocation,
+              lockedAt: answer.lockedAt,
+            })),
+          }
+        : undefined,
     arcade:
       room.roundNumber > 0
         ? {
@@ -153,6 +172,8 @@ export function privateState(room: ServerRoom, p: ServerPlayer): PrivatePlayerSt
     cannonballed: p.cannonballed || undefined,
     plankUntil: p.plankUntil,
     lootDropPool: room.isEventRound ? p.eventWager : undefined,
+    selectedChoiceIndex: room.answers.get(p.id)?.choiceIndex,
+    lootAllocation: room.answers.get(p.id)?.lootAllocation,
     disabledOptions: p.disabledOptions.length > 0 ? p.disabledOptions : undefined,
   };
 }
@@ -448,12 +469,8 @@ function startReveal(room: ServerRoom, events: RevealEvent[], after: () => void)
 }
 
 function afterArcadeReveal(room: ServerRoom): void {
-  // Breather every 5th round and after events; otherwise straight on.
-  if (room.roundNumber % 5 === 0 || room.isEventRound) {
-    setPhase(room, "leaderboard", TIMING.ARCADE_LEADERBOARD_MS, () => nextArcadeRound(room));
-    return;
-  }
-  nextArcadeRound(room);
+  // Every question lands on the fleet standings so rank changes are always visible.
+  setPhase(room, "leaderboard", TIMING.ARCADE_LEADERBOARD_MS, () => nextArcadeRound(room));
 }
 
 // ---------------------------------------------------------------------------
@@ -752,19 +769,19 @@ export function usePowerUp(
     }
   }
 
-  // Attacks are public spectacle; sneaky items stay quiet.
+  // Every item is visible on the shared fleet board; private information stays in private state.
+  const targetIds =
+    def.target === "allOthers"
+      ? [...room.players.keys()].filter((id) => id !== playerId)
+      : target
+        ? [target.id]
+        : [playerId];
+  emitter.toRoom(room, "powerup:fired", {
+    byId: playerId,
+    targetIds,
+    powerUpId: owned.powerUpId,
+  });
   if (def.isAttack) {
-    const targetIds =
-      def.target === "allOthers"
-        ? [...room.players.keys()].filter((id) => id !== playerId)
-        : target
-          ? [target.id]
-          : [];
-    emitter.toRoom(room, "powerup:fired", {
-      byId: playerId,
-      targetIds,
-      powerUpId: owned.powerUpId,
-    });
     ticker(room, `${def.icon} ${p.nickname} fires ${def.name}!`);
   }
   emitter.broadcast(room);

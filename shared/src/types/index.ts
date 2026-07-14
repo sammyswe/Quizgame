@@ -442,6 +442,10 @@ export type PublicPlayer = {
   roundLoot: number;
   chestCount: number;
   itemCount: number;
+  /** Publicly visible booty bag contents; item ownership is part of the fleet board. */
+  powerUpIds: PowerUpId[];
+  /** Public status effects currently visible on this player's ship. */
+  activePowerUpEffects: PowerUpId[];
   streak: number;
   mutinyTokens: number;
   hasAnswered: boolean;
@@ -471,6 +475,10 @@ export type PrivatePlayerState = {
   plankUntil?: number;
   /** Your private wager available in the active Loot Drop special. */
   lootDropPool?: number;
+  /** Reconnect-safe echo of your committed regular answer. */
+  selectedChoiceIndex?: number;
+  /** Reconnect-safe echo of your committed Loot Drop allocation. */
+  lootAllocation?: number[];
   mission?: ActiveMission & { def: MissionDef };
   /** Spyglass: option indexes greyed out for this player. */
   disabledOptions?: number[];
@@ -505,6 +513,16 @@ export type PublicGameState = {
   timerEndsAt: number;
   players: PublicPlayer[];
   revealEvents: RevealEvent[];
+  /** Structured reveal geometry. Present only after choices are no longer secret. */
+  arcadeReveal?: {
+    correctIndex: number;
+    answers: Array<{
+      playerId: string;
+      choiceIndex?: number;
+      lootAllocation?: number[];
+      lockedAt: number;
+    }>;
+  };
   auction?: AuctionState;
   falseMap?: FalseMapInfo;
   pairs?: PairState[];
