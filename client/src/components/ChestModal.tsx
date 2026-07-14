@@ -4,6 +4,8 @@ import { useGameStore } from "../store/gameStore";
 import { EmojiBurst } from "./fx";
 import { ImpactFlash } from "./gamefeel/ImpactFlash";
 import { ItemCard } from "./items/ItemCard";
+import { HfSprite } from "./higgsfield/HfSprite";
+import { chestFrame, rarityGlowFrame, type ChestStageFrame } from "../lib/higgsfield";
 import { RARITY_STYLES } from "../lib/rarityStyles";
 import { sfx } from "../lib/sfx";
 import { particleCount, useGameFeel } from "../lib/gameFeel";
@@ -60,6 +62,8 @@ export function ChestModal() {
   if (!reveal) return null;
   const style = RARITY_STYLES[reveal.rarity];
   const closed = stage === "drop" || stage === "rattle" || stage === "jackpot";
+  const chestStage: ChestStageFrame =
+    stage === "drop" ? "closed" : stage === "rattle" ? "shake" : stage === "jackpot" ? "glow" : stage === "burst" ? "burst" : "open";
 
   return (
     <AnimatePresence>
@@ -107,10 +111,23 @@ export function ChestModal() {
                       : "animate-chestShake"
                 }
               >
-                <span className="text-9xl drop-shadow-[0_0_30px_rgba(251,191,36,0.6)]" aria-hidden>
-                  🎁
-                </span>
+                <HfSprite
+                  frame={chestFrame(reveal.rarity, chestStage)}
+                  size={220}
+                  className="drop-shadow-[0_0_34px_rgba(251,191,36,0.55)]"
+                  label="Treasure chest"
+                />
               </div>
+              {stage === "jackpot" && (
+                <motion.div
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  animate={{ opacity: [0.45, 0.9, 0.45], scale: [0.9, 1.08, 0.9] }}
+                  transition={{ repeat: Infinity, duration: 1.1 }}
+                  aria-hidden
+                >
+                  <HfSprite frame={rarityGlowFrame(reveal.rarity, 1)} size={260} />
+                </motion.div>
+              )}
 
               {/* 2: light leaks out of the seams */}
               {(stage === "rattle" || stage === "jackpot") && (
@@ -156,15 +173,25 @@ export function ChestModal() {
           {/* ---- Frame 4: explodes open ---- */}
           {stage === "burst" && (
             <div className="relative flex h-64 items-center justify-center">
-              <motion.span
-                className="text-9xl"
-                initial={{ scale: 1 }}
-                animate={{ scale: [1, 1.5, 0.9], rotate: [0, -8, 5] }}
-                transition={{ duration: 0.5 }}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0.6 }}
+                animate={{ scale: [1, 1.35, 1.05], opacity: [1, 1, 0.85] }}
+                transition={{ duration: 0.55 }}
+              >
+                <HfSprite
+                  frame={chestFrame(reveal.rarity, "burst")}
+                  size={240}
+                  label="Chest burst"
+                />
+              </motion.div>
+              <motion.div
+                className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                animate={{ rotate: [0, 12, -8, 0], scale: [1, 1.15, 1] }}
+                transition={{ duration: 0.7 }}
                 aria-hidden
               >
-                🧨
-              </motion.span>
+                <HfSprite frame={rarityGlowFrame(reveal.rarity, 2)} size={280} />
+              </motion.div>
               <EmojiBurst emoji="🪙" count={particleCount(18, intensity)} distance={170} duration={1.1} />
               <EmojiBurst emoji="💎" count={particleCount(8, intensity)} distance={130} duration={1} />
               <EmojiBurst emoji={style.burst} count={particleCount(10, intensity)} distance={120} duration={1} />

@@ -1,0 +1,52 @@
+{
+  "generatedWith": "Higgsfield MCP",
+  "model": "nano_banana_pro",
+  "generatedAt": "2026-07-08",
+  "integratedIntoArcadeAt": "2026-07-14",
+  "artDirection": "Cartoon 2D mobile arcade game art, neon pirate casino theme, bold shapes, thick outlines, glossy highlights, vivid colours, readable on small screens, Brawl Stars / Coin Master inspired energy, dark ocean background, glowing gold treasure, cyan and magenta neon accents, funny chaotic pirate mood, clean sprite-friendly composition.",
+  "postProcessing": "Sheets chroma-keyed via scripts/chroma_key.py, then resized + compressed to WebP for the web client (<1MB total).",
+  "assets": [
+    {
+      "id": "A1",
+      "file": "a1-background.webp",
+      "usedInGame": true,
+      "usage": "Full-bleed Background.tsx ocean painting"
+    },
+    {
+      "id": "A2",
+      "file": "a2-islands-cut.webp",
+      "grid": "2x2 (skull, crescent, volcano, shipwreck)",
+      "usedInGame": true,
+      "usage": "Answer buttons, trapdoors, SceneBackdrop islands"
+    },
+    {
+      "id": "A3",
+      "file": "a3-ships-cut.webp",
+      "grid": "4x4 (q0 player ship, q14 raider)",
+      "usedInGame": true,
+      "usage": "SceneBackdrop pirate ships"
+    },
+    {
+      "id": "A5",
+      "file": "a5-chests-cut.webp",
+      "grid": "4x5 (cols=rarity, rows=closed/shake/glow/open/burst)",
+      "usedInGame": true,
+      "usage": "ChestModal ceremony"
+    },
+    {
+      "id": "A6",
+      "file": "a6-avatars-cut.webp",
+      "grid": "3x3 reaction portraits",
+      "usedInGame": true,
+      "usage": "PirateAvatar mood frames (ring colour keeps identity)"
+    },
+    {
+      "id": "A9",
+      "file": "a9-rarity-cut.webp",
+      "grid": "4x4 rarity glow loops",
+      "usedInGame": true,
+      "usage": "ChestModal rarity burst overlays"
+    }
+  ],
+  "rawReference": "experiments/loot-drop/assets/higgsfield/loot-drop/raw/"
+}

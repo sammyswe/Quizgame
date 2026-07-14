@@ -63,13 +63,13 @@ export default function App() {
     }
   }
 
-  // Event rounds sail to the island scene; regular rounds keep the open ocean.
-  const scene = game?.arcade?.isEventRound ? ("lootDrop" as const) : undefined;
+  // Higgsfield islands + ships on every screen — the painting is the world.
+  const scene = "lootDrop" as const;
 
   return (
     <div className="relative min-h-full">
       <Background />
-      {inGame && scene && <SceneBackdrop round={scene} />}
+      {scene && <SceneBackdrop round={scene} />}
       <div className="relative z-10 min-h-full">
         {inGame && <Hud />}
         <AnimatePresence mode="wait">

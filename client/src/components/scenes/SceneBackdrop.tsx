@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { RoundId } from "@treasure-trap/shared";
 import { ambientAllowed, useGameFeel } from "../../lib/gameFeel";
+import { islandFrame, shipFrame } from "../../lib/higgsfield";
+import { HfSprite } from "../higgsfield/HfSprite";
 
 /**
  * Per-round ambient scene layer. Renders behind the screen content (above the
@@ -27,69 +29,49 @@ export function SceneBackdrop({ round }: { round?: RoundId }) {
 
 // ---------------------------------------------------------------------------
 
-/** Cartoon pirate ship silhouette that bobs and sails. */
-export function PirateShip({ size = 64, flip = false }: { size?: number; flip?: boolean }) {
+/** Higgsfield pirate ship (A3) — player dock or raider. */
+export function PirateShip({
+  size = 64,
+  flip = false,
+  kind = "player",
+}: {
+  size?: number;
+  flip?: boolean;
+  kind?: "player" | "raider";
+}) {
   return (
-    <svg
-      width={size}
-      height={size * 0.9}
-      viewBox="0 0 100 90"
+    <HfSprite
+      frame={shipFrame(kind)}
+      size={size}
       style={{ transform: flip ? "scaleX(-1)" : undefined }}
-    >
-      {/* Hull */}
-      <path
-        d="M10 62 Q50 78 90 62 L82 78 Q50 90 18 78 Z"
-        fill="#1e1b4b"
-        stroke="#22d3ee"
-        strokeWidth="2"
-      />
-      {/* Mast */}
-      <rect x="48" y="14" width="4" height="50" fill="#312e81" stroke="#22d3ee" strokeWidth="1.5" />
-      {/* Sail */}
-      <path d="M52 18 Q78 32 52 48 Z" fill="#0f172a" stroke="#f472b6" strokeWidth="2" />
-      <path d="M48 22 Q28 34 48 44 Z" fill="#0f172a" stroke="#22d3ee" strokeWidth="1.5" />
-      {/* Flag */}
-      <path d="M48 14 L34 10 L48 6 Z" fill="#0b0b14" stroke="#fb7185" strokeWidth="1.5" />
-      {/* Skull on sail */}
-      <circle cx="60" cy="32" r="4" fill="#fbbf24" />
-      <rect x="56.5" y="37" width="7" height="1.6" rx="0.8" fill="#fbbf24" />
-    </svg>
+    />
   );
 }
 
-/** Glowing island hump silhouette. */
+/** Higgsfield treasure island (A2) bobbing at the horizon. */
 function Island({
   left,
   size = 90,
-  hue = "#22d3ee",
+  index = 0,
   delay = 0,
 }: {
   left: string;
   size?: number;
-  hue?: string;
+  index?: number;
   delay?: number;
 }) {
   return (
     <motion.div
       className="absolute bottom-0"
       style={{ left }}
-      animate={{ y: [0, -5, 0] }}
+      animate={{ y: [0, -6, 0] }}
       transition={{ repeat: Infinity, duration: 4.5, delay, ease: "easeInOut" }}
     >
-      <svg width={size} height={size * 0.55} viewBox="0 0 100 55">
-        <ellipse cx="50" cy="52" rx="48" ry="10" fill={`${hue}22`} />
-        <path
-          d="M8 52 Q30 8 50 20 Q66 4 92 52 Z"
-          fill="#0d1233"
-          stroke={hue}
-          strokeWidth="2"
-          opacity="0.85"
-        />
-        <path d="M46 22 L46 10 L58 15 L46 18 Z" fill="#fbbf24" opacity="0.9" />
-      </svg>
-      <div
-        className="absolute inset-x-0 bottom-1 mx-auto h-3 w-3/4 rounded-full blur-md"
-        style={{ backgroundColor: `${hue}55` }}
+      <HfSprite
+        frame={islandFrame(index)}
+        size={size}
+        className="drop-shadow-[0_0_18px_rgba(46,230,255,0.35)]"
+        style={{ height: size * 0.95 }}
       />
     </motion.div>
   );
@@ -98,22 +80,34 @@ function Island({
 function LootDropScene() {
   return (
     <>
-      <Island left="4%" size={110} hue="#22d3ee" />
-      <Island left="34%" size={80} hue="#fbbf24" delay={1.2} />
-      <Island left="62%" size={95} hue="#f472b6" delay={0.6} />
-      <Island left="86%" size={70} hue="#4ade80" delay={1.8} />
-      {/* Circling ship */}
+      <Island left="2%" size={118} index={0} />
+      <Island left="28%" size={92} index={1} delay={1.2} />
+      <Island left="56%" size={106} index={2} delay={0.6} />
+      <Island left="80%" size={84} index={3} delay={1.8} />
       <motion.div
-        className="absolute bottom-10"
-        initial={{ x: "-15vw" }}
-        animate={{ x: "110vw" }}
-        transition={{ repeat: Infinity, duration: 26, ease: "linear" }}
+        className="absolute bottom-12"
+        initial={{ x: "-18vw" }}
+        animate={{ x: "112vw" }}
+        transition={{ repeat: Infinity, duration: 28, ease: "linear" }}
       >
         <motion.div
           animate={{ y: [0, -6, 0], rotate: [-2, 2, -2] }}
           transition={{ repeat: Infinity, duration: 3 }}
         >
-          <PirateShip size={58} />
+          <PirateShip size={72} kind="player" />
+        </motion.div>
+      </motion.div>
+      <motion.div
+        className="absolute bottom-20"
+        initial={{ x: "110vw" }}
+        animate={{ x: "-20vw" }}
+        transition={{ repeat: Infinity, duration: 36, ease: "linear", delay: 8 }}
+      >
+        <motion.div
+          animate={{ y: [0, -5, 0], rotate: [2, -2, 2] }}
+          transition={{ repeat: Infinity, duration: 2.6 }}
+        >
+          <PirateShip size={58} kind="raider" flip />
         </motion.div>
       </motion.div>
     </>
@@ -232,7 +226,7 @@ function ObscureScene() {
         animate={{ opacity: [0.25, 0.6, 0.25], y: [6, 0, 6] }}
         transition={{ repeat: Infinity, duration: 8 }}
       >
-        <Island left="0" size={130} hue="#c084fc" />
+        <Island left="0" size={130} index={2} />
       </motion.div>
     </>
   );
