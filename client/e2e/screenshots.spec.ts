@@ -33,8 +33,8 @@ test("capture arcade screens @shots", async ({ browser }) => {
   await page.getByRole("button", { name: /keep it/i }).click({ timeout: 8_000 });
   await page.getByRole("button", { name: /^close$/i }).click({ timeout: 8_000 }); // booty bag sheet
 
-  await page.getByRole("button", { name: /⚔️ start game/i }).click();
-  await page.getByText(/round 1 of/i).waitFor({ timeout: 15_000 });
+  await page.getByRole("button", { name: /set sail/i }).click();
+  await page.getByText(/the seven seas/i).waitFor({ timeout: 15_000 });
   await page.screenshot({ path: "/tmp/artifacts/v2-intro.png" });
 
   // Phaser question scene: canvas replaces DOM answer cards.

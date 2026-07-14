@@ -191,6 +191,31 @@ describe("power-up interactions", () => {
     expect(res.scoreDelta.v ?? 0).toBe(0);
   });
 
+  it("walk the plank caps an on-time answer below the maximum pot", () => {
+    const victim = player({
+      id: "v",
+      choiceIndex: 0,
+      lockedAt: START,
+      plankUntil: START + 5_000,
+    });
+    const res = resolve([victim, player({ id: "b", choiceIndex: 1 })]);
+    expect(res.results.v?.potAtLock).toBe(ARCADE.PLANK_POT_CAP);
+  });
+
+  it("white flag forfeits the answer while preserving the streak", () => {
+    const surrendered = player({
+      id: "flag",
+      choiceIndex: 0,
+      lockedAt: START,
+      streak: 4,
+      surrendered: true,
+    });
+    const res = resolve([surrendered, player({ id: "b", choiceIndex: 1 })]);
+    expect(res.scoreDelta.flag ?? 0).toBe(0);
+    expect(res.streaks.flag).toBe(4);
+    expect(res.results.flag?.skipped).toBeUndefined();
+  });
+
   it("sword fight: the correct pirate steals from the wrong one", () => {
     const winner = player({ id: "w", choiceIndex: 0, lockedAt: START });
     const loser = player({ id: "l", choiceIndex: 1, score: 500 });
