@@ -39,7 +39,10 @@ export type LootDropOptions = {
 };
 
 /** Normalise a raw allocation: 4 slots, non-negative ints, total <= pool. */
-export function normaliseAllocation(raw: number[] | undefined, pool = SCORING.LOOT_POOL): number[] {
+export function normaliseAllocation(
+  raw: number[] | undefined,
+  pool: number = SCORING.LOOT_POOL,
+): number[] {
   const alloc = [0, 0, 0, 0];
   if (!raw) return alloc;
   let remaining = pool;
