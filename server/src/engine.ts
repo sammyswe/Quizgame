@@ -530,7 +530,7 @@ function resolveEventRound(room: ServerRoom): void {
     const kept = alloc[q.correctIndex] ?? 0;
     const delta = res.lootDelta[p.id] ?? 0;
     const r: QuestionResult = {
-      correct: kept > 0,
+      correct: kept > 0 || res.poseidonBlessed.includes(p.id),
       correctIndex: q.correctIndex,
       earned: Math.max(0, p.eventWager + delta),
       streak: p.streak,
