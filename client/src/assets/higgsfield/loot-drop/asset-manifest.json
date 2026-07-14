@@ -1,0 +1,88 @@
+{
+  "generatedWith": "Higgsfield MCP",
+  "model": "nano_banana_pro",
+  "generatedAt": "2026-07-08",
+  "artDirection": "Cartoon 2D mobile arcade game art, neon pirate casino theme, bold shapes, thick outlines, glossy highlights, vivid colours, readable on small screens, Brawl Stars / Coin Master inspired energy, dark ocean background, glowing gold treasure, cyan and magenta neon accents, funny chaotic pirate mood, clean sprite-friendly composition.",
+  "postProcessing": "Sheets were generated on solid backgrounds (models do not emit alpha). scripts/chroma_key.py flood-fills the background to transparency; processed files carry the -cut suffix. Raw generations are kept in ./raw for re-processing.",
+  "assets": [
+    {
+      "id": "A1",
+      "file": "a1-background.png",
+      "textureKey": "hf-loot-drop-bg",
+      "jobId": "afbbecc7-f795-43f3-a226-9cd7b6864dba",
+      "usedInGame": true,
+      "usage": "Full-screen ocean background of LootDropScene",
+      "size": "1376x768"
+    },
+    {
+      "id": "A2",
+      "file": "a2-islands-cut.png",
+      "rawFile": "raw/a2-islands.png",
+      "textureKey": "hf-islands",
+      "grid": "2x2 (frames q0-q3: skull island, crescent island, volcano island, shipwreck island)",
+      "jobId": "98920749-957c-4ed0-a4b2-4bab957b188d",
+      "usedInGame": true,
+      "usage": "The four answer islands",
+      "size": "1024x1024"
+    },
+    {
+      "id": "A3",
+      "file": "a3-ships-cut.png",
+      "rawFile": "raw/a3-ships.png",
+      "textureKey": "hf-ships",
+      "grid": "4x4 (q0 blue player ship, q14 dark raider used for enemy ships)",
+      "jobId": "324ce6ae-7bcf-47d9-9de6-0ec0349134ad",
+      "usedInGame": true,
+      "usage": "Player dock ship + enemy raider ships in the reveal",
+      "size": "1024x1024"
+    },
+    {
+      "id": "A4",
+      "file": "raw/a4-coins.png",
+      "jobId": "61824bae-7465-4d48-8f6d-68c453a969e2",
+      "usedInGame": false,
+      "reason": "Irregular grid layout; unreliable to slice automatically. Procedural coins/chips used instead. Kept as style reference.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "A5",
+      "file": "raw/a5-chests.png",
+      "jobId": "852b4ba4-7687-4535-b9a4-8fdf185e17b7",
+      "usedInGame": false,
+      "reason": "Chest animation states not yet needed in this slice (chest rewards are a future round feature). Kept as reference.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "A6",
+      "file": "raw/a6-avatars.png",
+      "jobId": "ee3ed45f-3c17-4eea-b808-112e4909d638",
+      "usedInGame": false,
+      "reason": "Generated portraits are all the same pirate with different expressions; gameplay needs per-player colour identity, so procedural colour-coded medallions are used. Expressions are a great future reaction-overlay set.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "A7",
+      "file": "raw/a7-vfx.png",
+      "jobId": "40c95605-8294-4364-bfbd-7d133f35580a",
+      "usedInGame": false,
+      "reason": "Particle VFX read better with the procedural additive-blend textures at runtime. Kept as reference for future baked VFX frames.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "A8",
+      "file": "raw/a8-lock-in.png",
+      "jobId": "c3e36ba1-3059-4916-b67e-dd1142dbb70c",
+      "usedInGame": false,
+      "reason": "Button was generated at an angled perspective that fights the flat HUD; procedural chunky button used. Re-generate straight-on for a drop-in swap.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "A9",
+      "file": "raw/a9-rarity.png",
+      "jobId": "d45a801a-5df7-46eb-882e-c4d47841b668",
+      "usedInGame": false,
+      "reason": "Rarity glows are for the chest/loot-box feature, not part of this slice yet.",
+      "size": "1024x1024"
+    }
+  ]
+}

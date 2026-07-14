@@ -1,0 +1,441 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ink: #1c1230;
+  --navy: #0d1b33;
+  --deep: #0a0824;
+  --cyan: #2ee6ff;
+  --magenta: #ff4fd8;
+  --gold: #ffd23e;
+  --cream: #fdf6dd;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  background: var(--deep);
+  color: var(--cream);
+  font-family: "Nunito", sans-serif;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- screens */
+
+.screen {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background:
+    radial-gradient(1200px 500px at 50% 115%, rgba(46, 230, 255, 0.14), transparent 60%),
+    radial-gradient(900px 420px at 15% -10%, rgba(255, 79, 216, 0.16), transparent 60%),
+    var(--deep);
+  overflow: hidden;
+}
+
+.landing-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(3px 3px at 12% 22%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 34% 12%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(2px 2px at 68% 18%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(3px 3px at 84% 30%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(2px 2px at 48% 26%, rgba(255, 255, 255, 0.45), transparent);
+  animation: twinkle 3.4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.game-title {
+  font-family: "Luckiest Guy", "Arial Black", sans-serif;
+  font-size: clamp(48px, 9vw, 92px);
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-shadow:
+    0 4px 0 #8a5a00,
+    0 8px 24px rgba(255, 210, 62, 0.45),
+    0 0 60px rgba(255, 79, 216, 0.35);
+  transform: rotate(-2deg);
+}
+
+.game-title span {
+  color: var(--cyan);
+  text-shadow:
+    0 4px 0 #0e5f70,
+    0 8px 24px rgba(46, 230, 255, 0.5);
+}
+
+.game-title.small {
+  font-size: clamp(36px, 6vw, 60px);
+}
+
+.tagline {
+  color: #9fdcff;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.card {
+  margin-top: 14px;
+  width: min(420px, 92vw);
+  background: rgba(13, 27, 51, 0.88);
+  border: 3px solid rgba(46, 230, 255, 0.35);
+  border-radius: 22px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #9fdcff;
+}
+
+.field {
+  background: var(--ink);
+  border: 3px solid rgba(46, 230, 255, 0.3);
+  border-radius: 14px;
+  color: var(--cream);
+  font-family: "Nunito", sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  padding: 12px 16px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.field:focus {
+  border-color: var(--cyan);
+}
+
+.field-code {
+  text-transform: uppercase;
+  letter-spacing: 8px;
+  text-align: center;
+  font-family: "Luckiest Guy", sans-serif;
+}
+
+.btn {
+  font-family: "Luckiest Guy", "Arial Black", sans-serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  border: none;
+  border-radius: 16px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition:
+    transform 0.08s ease,
+    filter 0.12s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.btn:active {
+  transform: translateY(2px) scale(0.97);
+}
+
+.btn:disabled {
+  filter: grayscale(0.7) brightness(0.7);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-gold {
+  background: linear-gradient(180deg, #ffe27a, var(--gold) 55%, #e0a916);
+  box-shadow:
+    0 6px 0 #8a5a00,
+    0 12px 26px rgba(255, 210, 62, 0.35);
+}
+
+.btn-cyan {
+  background: linear-gradient(180deg, #9ff2ff, var(--cyan) 55%, #14a7c4);
+  box-shadow:
+    0 6px 0 #0e5f70,
+    0 12px 26px rgba(46, 230, 255, 0.3);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 3px dashed rgba(46, 230, 255, 0.4);
+  color: #9fdcff;
+  font-size: 16px;
+  box-shadow: none;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6d87b0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: rgba(46, 230, 255, 0.18);
+}
+
+.join-row {
+  display: flex;
+  gap: 10px;
+}
+
+.join-row .field {
+  flex: 1;
+}
+
+.error {
+  color: #ff8296;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ lobby */
+
+.lobby-label {
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #9fdcff;
+  font-size: 14px;
+}
+
+.room-code {
+  font-family: "Luckiest Guy", sans-serif;
+  font-size: clamp(64px, 12vw, 120px);
+  color: var(--cyan);
+  letter-spacing: 16px;
+  text-shadow:
+    0 4px 0 #0e5f70,
+    0 0 60px rgba(46, 230, 255, 0.55);
+}
+
+.crew-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.crew-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(28, 18, 48, 0.7);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.crew-row.winner-row {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 22px rgba(255, 210, 62, 0.35);
+}
+
+.crew-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+
+.crew-name {
+  font-weight: 900;
+  font-size: 18px;
+  flex: 1;
+}
+
+.crew-badge {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--ink);
+  background: var(--gold);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
+.crew-rank {
+  font-family: "Luckiest Guy", sans-serif;
+  color: var(--gold);
+  width: 24px;
+}
+
+.crew-score {
+  font-family: "Luckiest Guy", sans-serif;
+  color: var(--gold);
+  font-size: 20px;
+}
+
+.waiting {
+  text-align: center;
+  color: #9fdcff;
+  font-weight: 700;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------- game shell */
+
+.game-shell {
+  position: relative;
+  height: 100%;
+  background: var(--deep);
+}
+
+.phaser-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phaser-container canvas {
+  border-radius: 6px;
+}
+
+.hud-chip {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(13, 27, 51, 0.85);
+  border: 2px solid rgba(46, 230, 255, 0.4);
+  border-radius: 12px;
+  padding: 6px 12px;
+  z-index: 10;
+}
+
+.hud-chip-code {
+  font-family: "Luckiest Guy", sans-serif;
+  letter-spacing: 3px;
+  color: var(--cyan);
+  font-size: 16px;
+}
+
+.hud-chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.hud-chip-dot.ok {
+  background: #7cff4f;
+  box-shadow: 0 0 8px #7cff4f;
+}
+
+.hud-chip-dot.bad {
+  background: #ff4f5e;
+  box-shadow: 0 0 8px #ff4f5e;
+  animation: pulse 1s infinite;
+}
+
+/* ------------------------------------------------------------------ debug */
+
+.debug-toggle {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 20;
+  background: rgba(13, 27, 51, 0.9);
+  border: 2px solid rgba(46, 230, 255, 0.4);
+  border-radius: 10px;
+  font-size: 18px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.debug-panel {
+  position: absolute;
+  bottom: 56px;
+  left: 12px;
+  z-index: 20;
+  width: 250px;
+  background: rgba(13, 27, 51, 0.96);
+  border: 2px solid rgba(46, 230, 255, 0.45);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.debug-panel h3 {
+  font-family: "Luckiest Guy", sans-serif;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  font-size: 15px;
+}
+
+.debug-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.debug-group label {
+  font-size: 12px;
+  font-weight: 900;
+  color: #9fdcff;
+}
+
+.debug-group button,
+.debug-group select {
+  background: var(--ink);
+  color: var(--cream);
+  border: 2px solid rgba(46, 230, 255, 0.3);
+  border-radius: 8px;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.debug-group button:hover {
+  border-color: var(--cyan);
+}

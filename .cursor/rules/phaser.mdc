@@ -1,0 +1,26 @@
+---
+description: Phaser conventions for scenes, objects, systems and assets
+globs:
+  - "client/src/game/**"
+---
+
+- Follow the established structure: `scenes/` (Boot -> Preload -> LootDrop,
+  extending `BaseScene`), `objects/` (one class per game entity, extending
+  Phaser containers/images), `systems/` (VfxSystem, CameraDirector,
+  RevealDirector, AssetManager, SoundEventBus), `assets/` (generatedTextures,
+  assetManifest, spriteKeys).
+- Logical resolution is 1280x720 with `Scale.FIT`; author all coordinates in
+  that space.
+- Use tweens and particle emitters, not physics, for motion. Fire-and-forget
+  effects must destroy themselves.
+- Texture keys come from `spriteKeys.ts` (PROC/HF constants) or the
+  `AssetManager` role resolvers. Never hardcode texture strings or file
+  paths in scene code.
+- Every texture must have a procedural fallback in `generatedTextures.ts`;
+  the game must boot with zero binary assets present.
+- Long-lived loops (bobs, pulses) must be removed in `destroy()`/shutdown;
+  subscribe/unsubscribe bridge and settings listeners on scene
+  create/shutdown to survive scene restarts.
+- Camera motion goes through `CameraDirector`; reveal sequencing goes through
+  `RevealDirector`; particle effects go through `VfxSystem`. Do not scatter
+  raw `cameras.main.shake()` or ad-hoc emitters around the scene.
