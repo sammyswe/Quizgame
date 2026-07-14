@@ -13,7 +13,7 @@ not permission to fill undecided balance values with guesses.
 
 ## Match structure
 
-**Decision: LOCKED · Implementation: PARTIAL**
+**Decision: LOCKED · Implementation: PLAYABLE**
 
 - Regular quiz questions are played in blocks of **10**.
 - Completing each 10-question block triggers one special round.
@@ -24,21 +24,19 @@ not permission to fill undecided balance values with guesses.
 - Long-term content target: at least 12 special-round types and at least 3 final-round types.
 - Build sequentially: fully polish one special round before starting the next.
 
-**Current mismatch:** `server/src/engine.ts` makes every 10th numbered round the special,
-so a 30-round match currently contains 27 regular questions and 3 specials. Migrate to separate
-regular-question and event counters before calling this LOCKED behaviour implemented.
+`server/src/engine.ts` tracks regular questions and completed specials separately; a 30-question
+match contains 30 regular questions and 3 specials.
 
 ## First five questions and item onboarding
 
-**Decision: LOCKED · Implementation: PARTIAL**
+**Decision: LOCKED · Implementation: PLAYABLE**
 
 - Mutiny and marooning are unavailable during questions 1–5.
 - The first item ceremony occurs immediately after question 5 to introduce items deliberately.
 - Items may have different legal timing windows; the final timing model is not decided.
 
-**Current mismatch:** the live game grants each player's first item after their first correct
-answer during questions 1–5. It also permits mutiny/marooning in that window. Preserve the
-existing flow until the coordinated server/client migration is implemented and tested.
+The live game now grants each player the onboarding item after question 5 and gates social
+mechanics until question 6.
 
 ## Regular question
 
@@ -75,7 +73,7 @@ decay legible without requiring players to parse a small number.
 
 ## Mutiny
 
-**Decision: LOCKED · Implementation: PARTIAL and currently semantically different**
+**Decision: LOCKED · Implementation: PLAYABLE**
 
 Mutiny exists to create discussion, deception and bluffing around difficult questions.
 
@@ -94,9 +92,7 @@ Resolution:
 | 2 or more, but not all eligible non-captains | Mutineers forfeit their answers; no additional mutiny payout or punishment. |
 | All eligible non-captains | Only the captain answers. Captain correct: normal captain reward, others get nothing. Captain wrong: captain pays a server-configured tax distributed to all other players. |
 
-**Current mismatch:** live code lets mutineers still submit answers and applies win/loss
-transfers whenever any mutiny exists. That is a PILOT inherited from an earlier design and
-must be replaced by the table above.
+The server rejects/removes answers from mutineers and resolves the count table above.
 
 ## Marooning
 
@@ -152,12 +148,12 @@ readable and cannot silently alter scores.
 
 ## Implementation queue
 
-- [ ] Separate regular-question count from special-round count.
-- [ ] Disable mutiny and marooning for questions 1–5.
-- [ ] Replace first-correct-in-window reward with the post-question-5 item ceremony.
-- [ ] Make mutiny declaration forfeit answering.
-- [ ] Implement the four exact mutiny outcomes above and test secrecy.
-- [ ] Ensure maroon skips the next regular question, not a special.
+- [x] Separate regular-question count from special-round count.
+- [x] Disable mutiny and marooning for questions 1–5.
+- [x] Replace first-correct-in-window reward with the post-question-5 item ceremony.
+- [x] Make mutiny declaration forfeit answering.
+- [x] Implement the four exact mutiny outcomes above and test pure resolution.
+- [x] Ensure maroon skips the next regular question, not a special.
 - [ ] Commission and integrate both distinct maroon cinematics.
 - [ ] Replace generic regular-question answer chrome with a legible moving fleet/island scene.
 - [ ] Playtest the decaying reward curve.

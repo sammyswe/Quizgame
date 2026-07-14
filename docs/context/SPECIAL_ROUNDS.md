@@ -53,9 +53,9 @@ ventures return with treasure, wrong ventures are eliminated/plundered.
 6. Exact allocations remain private until reveal unless a named mechanic says otherwise.
 7. The server resolves every allocation and clamps total scores at zero.
 
-**Current mismatch:** the live event always allocates a fixed 100-gold pool and has no separate
-block-loot ledger. The UI calls the options trapdoors rather than pirate ventures. This is a
-functional PILOT, not the final locked implementation.
+The server now tracks positive regular-question earnings per block and privately exposes each
+player's wager in 10-point steps. The UI uses venture language, but remains a functional
+allocator rather than the intended physical fleet interaction.
 
 ### Visual direction
 
@@ -65,7 +65,7 @@ reveal, but should not replace the pirate-world cause and effect.
 
 ### Wildcard 01 — Poseidon's Rescue
 
-**Decision: LOCKED · Implementation: WRONG CONTEXT/PARTIAL**
+**Decision: LOCKED · Implementation: PLAYABLE/PARTIAL**
 
 - Eligible when a struggling player backs a wrong venture.
 - Poseidon rises from the sea, rescues that player's wager, and physically moves/returns it via
@@ -74,12 +74,12 @@ reveal, but should not replace the pirate-world cause and effect.
 - Eligibility and chance are server-owned named constants.
 - It must visibly identify why that player was eligible without revealing hidden odds.
 
-The live game has a regular-question “Poseidon Rises” +50 event. It does not rescue a Loot Drop
-allocation and must not be mistaken for this mechanic.
+The pure Loot Drop resolver now moves an eligible non-leader's committed wager to the correct
+venture and records once-per-game use. Authored animation/sound remain open.
 
 ### Wildcard 02 — Shark Attack
 
-**Decision: LOCKED · Implementation: NOT_STARTED**
+**Decision: LOCKED · Implementation: PLAYABLE/PARTIAL**
 
 - Eligible when a high majority of active players choose the correct venture.
 - A shark fleet attacks and every affected player loses a small, bounded percentage.
@@ -87,6 +87,10 @@ allocation and must not be mistaken for this mechanic.
 - Threshold, percentage, tie handling and once-per-round limits live in shared config.
 - The reveal must stage the successful return first, then telegraph and resolve the attack so
   success never appears to be silently reduced.
+
+The resolver applies the bounded percentage and targets the lowest-ranked player for a reward.
+Until the unique item is designed, the server grants an underdog chest; this temporary reward
+must not be represented as the final shark item.
 
 ### Unique item — shark concept
 
@@ -99,12 +103,12 @@ raid that steals one random eligible item in total, with warning and protection 
 
 ### Loot Drop polish gate
 
-- [ ] Prior-block wager ledger and reconnect-safe state.
+- [x] Prior-block wager ledger and reconnect-safe private state.
 - [ ] Pirate venture interaction replacing form-like allocation.
 - [ ] Lock-in feedback and private allocation sync.
 - [ ] Cancellable sequential reveal.
-- [ ] Poseidon rescue logic, tests, animation and sound.
-- [ ] Shark Attack logic, tests, animation and sound.
+- [ ] Poseidon animation and sound (logic/tests complete).
+- [ ] Shark Attack animation and sound (logic/tests complete).
 - [ ] Unique shark item redesigned and playtested.
 - [ ] Two-device full-block smoke test.
 - [ ] At least three observed playtests with logged confusion/fun moments.

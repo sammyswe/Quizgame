@@ -24,12 +24,12 @@ reading historical docs.
 
 ## Phase 1 — correct 10-question vertical slice
 
-- [ ] Track 10 regular questions separately from the following special round.
-- [ ] Make 10/30/etc. lengths count regular questions, not specials.
-- [ ] Disable mutiny/marooning in questions 1–5.
-- [ ] Give the first item in a staged ceremony after question 5.
-- [ ] Implement exact secret mutiny outcomes and answer forfeiture.
-- [ ] Ensure marooning skips the next regular question.
+- [x] Track 10 regular questions separately from the following special round.
+- [x] Make 10/30/etc. lengths count regular questions, not specials.
+- [x] Disable mutiny/marooning in questions 1–5.
+- [x] Give the first item in a staged ceremony after question 5.
+- [x] Implement exact secret mutiny outcomes and answer forfeiture.
+- [x] Ensure marooning skips the next regular question.
 - [ ] Add server-level tests for phase, secrecy, reconnect and score invariants.
 
 **Exit:** two devices repeatedly complete one block plus Loot Drop with no state divergence.
@@ -48,11 +48,11 @@ generic quiz site.
 
 ## Phase 3 — Loot Drop production slice
 
-- [ ] Wager points earned in the previous 10-question block.
+- [x] Wager points earned in the previous 10-question block.
 - [ ] Turn allocation into sending pirate forces/treasure on ventures.
 - [ ] Add reconnect-safe private allocation and lock states.
-- [ ] Implement Poseidon's Rescue in Loot Drop.
-- [ ] Implement Shark Attack and redesign its unique item.
+- [x] Implement Poseidon's Rescue in Loot Drop.
+- [x] Implement Shark Attack (temporary underdog chest; unique item redesign remains).
 - [ ] Produce the cancellable reveal sequence and sound mix.
 - [ ] Complete the Loot Drop polish gate in `SPECIAL_ROUNDS.md`.
 

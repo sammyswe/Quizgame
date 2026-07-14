@@ -17,17 +17,18 @@ updated: 2026-07-14
 - Confirmed match design is 10 regular questions followed by a special round.
 - Loot Drop is the only special round to polish now.
 
-## Important implementation mismatches
+## Current implementation status
 
-1. Live total rounds include specials; confirmed totals count regular questions.
-2. Live first item is earned on first correct answer in questions 1–5; confirmed ceremony is
-   after question 5.
-3. Live mutiny is available immediately and uses earlier transfer rules; confirmed mutiny
-   starts after question 5, forfeits answering and has four count-based outcomes.
-4. Live Loot Drop uses fixed 100 gold; confirmed design wagers the previous block's earnings.
-5. Live Poseidon grants +50 on regular reveals; confirmed Poseidon rescues Loot Drop wagers.
-6. Shark Attack and Barnacle items are not implemented.
-7. Streak bonuses are playable but remain an unconfirmed pilot.
+1. Match lengths now count regular questions; each 10-question block is followed by a special.
+2. Every player receives the onboarding item ceremony after question 5.
+3. Mutiny begins after question 5, forfeits the answer and follows the confirmed count outcomes.
+4. Maroon skips defer across specials to the next regular question.
+5. Loot Drop wagers each player's positive earnings from the preceding block in 10-point steps.
+6. Poseidon rescues eligible Loot Drop wagers and never targets the leader.
+7. Shark Attack is implemented; last place currently receives an underdog chest while the
+   unique shark item remains an explicit IDEA requiring redesign.
+8. Barnacle items are not implemented.
+9. Streak bonuses remain a playable but unconfirmed pilot.
 
 ## Asset status
 
@@ -38,14 +39,11 @@ updated: 2026-07-14
 
 ## Next implementation slice
 
-Implement Phase 1 from `ROADMAP.md` as one server-authoritative migration with shared tests:
-
-1. separate regular and special counters;
-2. post-question-5 item ceremony;
-3. gate mutiny/marooning;
-4. exact mutiny resolution and answer forfeiture;
-5. next-regular-question maroon skip;
-6. two-device smoke path.
+1. Add a full automated block/special integration test (the current Playwright smoke reaches
+   round 1; `scripts/simulate-arcade.mjs` covers the headless full test game).
+2. Replace the temporary Shark Attack chest with a playtested unique item.
+3. Implement Barnacle and Barnacle Infestation with accessible answer treatment.
+4. Begin Phase 2 fleet/island visual work event-by-event through Higgsfield.
 
 ## Do not regress
 
