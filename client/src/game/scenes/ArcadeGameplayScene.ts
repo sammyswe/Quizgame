@@ -74,7 +74,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribe?.());
   }
 
-  update(): void {
+  override update(): void {
     const game = this.snapshot.game;
     if (!game || !this.timerText) return;
     const remaining = Math.max(0, game.timerEndsAt - Date.now());

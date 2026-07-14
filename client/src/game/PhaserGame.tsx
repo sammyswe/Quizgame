@@ -18,7 +18,6 @@ export function PhaserGame() {
       transparent: false,
       antialias: true,
       roundPixels: false,
-      resolution: Math.min(window.devicePixelRatio || 1, 1.5),
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
