@@ -252,7 +252,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     });
   }
 
-  private createTimer(game: PublicGameState): void {
+  private createTimer(): void {
     const timerPanel = this.add.graphics();
     timerPanel.fillStyle(0x13263d, 0.92);
     timerPanel.lineStyle(3, 0xf0d17b, 0.9);
@@ -334,7 +334,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     this.renderSeaWorld();
     this.createQuestionBanner(game);
     this.createLeaderboard(game);
-    this.createTimer(game);
+    this.createTimer();
     this.createQuestionIslands(game);
     this.createFleet(game);
     this.createPotChest(game);
@@ -505,7 +505,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     this.renderMapWorld();
     this.createQuestionBanner(game);
     this.createLeaderboard(game);
-    this.createTimer(game);
+    this.createTimer();
     this.createLootDestinations(game);
     this.createLootDock(game, priv);
   }
@@ -669,7 +669,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
         color: "#14334a",
       }).setOrigin(0.5);
     }
-    this.createTimer(game);
+    this.createTimer();
     const chest = this.snapshot.priv?.chests.find((entry) => entry.source === "marooned");
     const chestArt = this.add.image(760, 485, "hf-chests");
     this.cropGridImage(chestArt, 4, 5, 0);
