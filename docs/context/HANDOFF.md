@@ -43,11 +43,13 @@ updated: 2026-07-14
 
 ## Next implementation slice
 
-1. Wait for owner Phase-0 style locks (`STYLE_LOCK_SEA`, `STYLE_LOCK_SHIP`, `STYLE_LOCK_ISLAND`)
-   in `design/concept/approved/`, then wire them into Phaser and kill matching fallbacks.
-2. Integrate hero assets in the ROI order in POLISH_PRODUCTION_PLAN Phase 1.
-3. Juice + SFX pass only after hero silhouettes exist.
-4. Complete full canvas interaction e2e; review with `UI_REVIEW_QUESTIONS.md`.
+1. **Sprite sheets first:** checklist + prompts live in `design/SPRITE_SHEET_CHECKLIST.md`
+   and `design/concept/SPRITE_SHEET_PROMPTS.md`. Owner wants all six sheets reviewed before
+   Phaser integration. Higgsfield `generate_image` currently fails with expired token —
+   re-auth MCP, then regenerate candidates.
+2. Owner approves/redoes each sheet until all six are APPROVED.
+3. Cutout, register, wire into Phaser; kill matching fallbacks.
+4. Then backgrounds / event keys / juice + SFX.
 5. Do **not** migrate off Phaser unless 3D/native becomes a product requirement.
 
 ## Do not regress
