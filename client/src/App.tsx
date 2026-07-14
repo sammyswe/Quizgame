@@ -1,12 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useGameStore } from "./store/gameStore";
 import { Background } from "./components/Background";
 import { isMuted, setMuted } from "./lib/sfx";
 import { LandingScreen } from "./screens/LandingScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { RoundIntroScreen } from "./screens/RoundIntroScreen";
-import { GameplayShell } from "./screens/GameplayShell";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
 import { WinnerScreen } from "./screens/WinnerScreen";
 import { Hud } from "./components/Hud";
@@ -14,6 +13,10 @@ import { ItemDrawer } from "./components/ItemDrawer";
 import { ChestModal } from "./components/ChestModal";
 import { Toasts } from "./components/Toasts";
 import { DebugPanel } from "./components/DebugPanel";
+
+const GameplayShell = lazy(() =>
+  import("./screens/GameplayShell").then((module) => ({ default: module.GameplayShell })),
+);
 
 export default function App() {
   const game = useGameStore((s) => s.game);
@@ -40,11 +43,19 @@ export default function App() {
         screenKey = `intro-${game.arcade?.roundNumber ?? 0}`;
         break;
       case "question":
-        screen = <GameplayShell />;
+        screen = (
+          <Suspense fallback={<div className="fixed inset-0 bg-[#153b5b]" />}>
+            <GameplayShell />
+          </Suspense>
+        );
         screenKey = `q-${game.question?.id ?? game.questionNumber}`;
         break;
       case "reveal":
-        screen = <GameplayShell />;
+        screen = (
+          <Suspense fallback={<div className="fixed inset-0 bg-[#153b5b]" />}>
+            <GameplayShell />
+          </Suspense>
+        );
         screenKey = `reveal-${game.revealEvents[0]?.id ?? game.arcade?.roundNumber ?? 0}`;
         break;
       case "leaderboard":

@@ -868,6 +868,10 @@ export function forceChest(room: ServerRoom, playerId: string, _rarity?: Rarity)
 // ---------------------------------------------------------------------------
 
 export function hostAdvance(room: ServerRoom, playerId: string): void {
+  if (room.phase === "round_intro" && room.players.has(playerId)) {
+    skipTimer(room);
+    return;
+  }
   if (playerId !== room.hostId) return;
   if (room.phase === "winner") {
     resetToLobby(room);

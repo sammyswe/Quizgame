@@ -771,7 +771,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
         this.time.delayedCall(delay, () => this.playSharks());
         delay += 2500;
       } else if (event.animation === "mutiny") {
-        this.time.delayedCall(delay, () => this.playMutiny(event.playerIds ?? []));
+        this.time.delayedCall(delay, () => this.playMutiny(event.title, event.playerIds ?? []));
         delay += 2300;
       } else if (event.title.includes("MAROONED")) {
         this.time.delayedCall(delay, () => this.playMaroon(event.playerIds?.[0]));
@@ -799,11 +799,19 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     });
   }
 
-  private playMutiny(playerIds: string[]): void {
+  private playMutiny(title: string, playerIds: string[]): void {
     this.showEventCard("MUTINY", "Cannons speak. The fleet discovers who stood together.");
     const captainId = this.snapshot.game?.arcade?.leaderId;
     const captain = captainId ? this.ships.get(captainId) : undefined;
     if (!captain) return;
+    if (title.toLowerCase().includes("divided")) {
+      playerIds.forEach((id, index) => {
+        const mutineer = this.ships.get(id);
+        if (!mutineer) return;
+        this.time.delayedCall(index * 160, () => this.fireCannon(captain.x, captain.y, mutineer.x, mutineer.y));
+      });
+      return;
+    }
     playerIds.filter((id) => id !== captainId).forEach((id, index) => {
       const source = this.ships.get(id);
       if (!source) return;
@@ -826,7 +834,30 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     god.add([body, head, trident]);
     this.tweens.add({ targets: god, y: 375, duration: 650, ease: "Back.easeOut", yoyo: true, hold: 900, onComplete: () => god.destroy() });
     const rescued = playerId ? this.ships.get(playerId) : undefined;
-    if (rescued) this.tweens.add({ targets: rescued, y: "-=80", duration: 600, yoyo: true, repeat: 1 });
+    if (rescued) {
+      const correctIndex = this.snapshot.game?.arcadeReveal?.correctIndex ?? 0;
+      const [targetX, targetY] = ISLAND_POSITIONS[correctIndex] ?? ISLAND_POSITIONS[0]!;
+      for (let i = 0; i < 8; i += 1) {
+        const fish = this.add.triangle(rescued.x - 70 - i * 18, rescued.y + (i % 3) * 12, 0, 8, 18, 0, 18, 16, 0x6be5dd, 1);
+        fish.setStrokeStyle(2, 0x173a5c);
+        this.tweens.add({
+          targets: fish,
+          x: targetX - 60 + i * 12,
+          y: targetY + 72 + (i % 3) * 8,
+          duration: 1250,
+          delay: 700 + i * 45,
+          onComplete: () => fish.destroy(),
+        });
+      }
+      this.tweens.add({
+        targets: rescued,
+        x: targetX,
+        y: targetY + 96,
+        duration: 1400,
+        delay: 760,
+        ease: "Sine.easeInOut",
+      });
+    }
   }
 
   private playSharks(): void {

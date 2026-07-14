@@ -4,6 +4,7 @@ import { ARCADE, SPECIAL_EVENTS } from "@treasure-trap/shared";
 import { useGameStore } from "../store/gameStore";
 import { Screen, TimerBar } from "../components/ui";
 import { sfx } from "../lib/sfx";
+import { socket } from "../net/socket";
 
 /**
  * Intro splash: shown once at the voyage start and before every special event.
@@ -89,6 +90,9 @@ export function RoundIntroScreen() {
       <div className="w-full max-w-xs">
         <TimerBar endsAt={game.timerEndsAt} />
       </div>
+      <button className="btn-gold min-w-64" onClick={() => socket.emit("phase:advance")}>
+        ENTER THE VOYAGE
+      </button>
     </Screen>
   );
 }
