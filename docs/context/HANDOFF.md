@@ -10,8 +10,8 @@ updated: 2026-07-14
 
 ## Current truth
 
-- Root `pnpm dev` runs the React + Socket.IO arcade game.
-- `experiments/loot-drop/` is archived Phaser reference code.
+- Root `pnpm dev` runs a React shell + active Phaser in-round client + Socket.IO server.
+- Active gameplay: `client/src/game/`; `experiments/loot-drop/` remains archived reference.
 - Product direction is cartoon pirate excursion first; casino spectacle is concentrated in
   loot-box/jackpot rewards and selected high-stakes peaks.
 - Confirmed match design is 10 regular questions followed by a special round.
@@ -33,17 +33,18 @@ updated: 2026-07-14
 ## Asset status
 
 - Higgsfield is the required preferred pipeline.
-- On 2026-07-14 the MCP server was discoverable, but two balance calls failed.
-- No new assets were generated in this documentation pass; do not claim otherwise.
-- Generate event-by-event using `ANIMATION_AND_ASSETS.md` and record real provenance.
+- On 2026-07-14 the MCP server was reactivated by the owner but this cloud run still returned
+  `Invalid or expired token` on a fresh `nano_banana_2` generation request.
+- `design/assets.csv` contains the complete locked generation manifest and STYLE-001.
+- Existing Higgsfield binaries and Phaser-drawn art are explicit fallbacks, not approved final art.
+- Retry generation event-by-event after token propagation and record real provenance.
 
 ## Next implementation slice
 
-1. Add a full automated block/special integration test (the current Playwright smoke reaches
-   round 1; `scripts/simulate-arcade.mjs` covers the headless full test game).
-2. Replace the temporary Shark Attack chest with a playtested unique item.
-3. Implement Barnacle and Barnacle Infestation with accessible answer treatment.
-4. Begin Phase 2 fleet/island visual work event-by-event through Higgsfield.
+1. Generate and integrate every row in `design/assets.csv` after Higgsfield authentication works.
+2. Replace interim fallback art in `ArcadeGameplayScene`.
+3. Complete a full automated block/special canvas interaction test.
+4. Review every UI area using the questions supplied at handoff.
 
 ## Do not regress
 

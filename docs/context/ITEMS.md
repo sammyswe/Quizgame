@@ -71,16 +71,16 @@ pretend the finer timing classes are decided.
 | --- | --- | --- | --- |
 | **Eyepatch** | 50/50: leave two options, one correct | LOCKED | PLAYABLE; timing TBD |
 | **Parrot** | Blindly repeat a chosen player's selection | LOCKED | PLAYABLE |
-| **Telescope** | See what others selected, then choose whether to copy | LOCKED | PARTIAL; live effect differs |
+| **Telescope** | See what another player committed | LOCKED | PLAYABLE |
 | **Hook** | Steal another player's item | LOCKED | PLAYABLE |
-| **White Flag** | Surrender/cash out a streak | LOCKED effect, streak dependency IDEA | PLAYABLE |
+| **White Flag** | Sit out one question while preserving the streak | LOCKED effect, streak dependency IDEA | PLAYABLE |
 | **Secret X** | Privately reveal the correct answer | LOCKED | PLAYABLE; rarity/scarcity critical |
 | **Rum Rush** | 2× the next correct answer | LOCKED | PLAYABLE |
 | **Walk the Plank** | Force a target to answer quickly | LOCKED | PLAYABLE |
 | **Cannonball** | Blast holes through answer words for one target | LOCKED | PLAYABLE |
 | **Cannonball Barrage** | Blast answer words for all other players | LOCKED | PLAYABLE |
-| **Barnacle** | Cover one of four options for one target | LOCKED | NOT_STARTED |
-| **Barnacle Infestation** | Barnacle everyone | LOCKED | NOT_STARTED |
+| **Barnacle** | Cover one of four options for one target | LOCKED | PLAYABLE; timing polish open |
+| **Barnacle Infestation** | Barnacle everyone | LOCKED | PLAYABLE; timing polish open |
 | **Sword Fight** | Challenge a player; others may back a winner | IDEA | A simpler live duel PILOT exists |
 
 “Hole in words” and “cover an option” must preserve accessibility. Never make text literally
@@ -124,8 +124,8 @@ Do not call an item polished when only an icon and toast exist.
 ## Item TODO
 
 - [ ] Decide timing windows through playtest.
-- [ ] Implement Barnacle and Barnacle Infestation server-authoritatively.
-- [ ] Align Telescope with “see selections then optionally copy.”
+- [x] Implement Barnacle and Barnacle Infestation server-authoritatively.
+- [x] Align Telescope with seeing another player's committed answer.
 - [ ] Decide whether Sword Fight enters the confirmed catalogue.
 - [ ] Design score-gap-aware rarity tables with duplicate/hoarding protection.
 - [ ] Add explicit `counterplay`/limit metadata to the live power-up config.

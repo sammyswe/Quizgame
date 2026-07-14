@@ -158,8 +158,8 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
 
   private renderSeaWorld(): void {
-    const bg = this.add.image(WORLD_W / 2, H / 2, "hf-sea").setDisplaySize(WORLD_W, H).setTint(0xffe4bd);
-    bg.setAlpha(0.62);
+    const bg = this.add.image(WORLD_W / 2, H / 2, "hf-sea").setDisplaySize(WORLD_W, H).setTint(0xffd7a8);
+    bg.setAlpha(0.14).setDepth(-3);
 
     const sky = this.add.graphics();
     sky.fillGradientStyle(0x74cbea, 0x74cbea, 0xf6c978, 0xf6c978, 0.72);

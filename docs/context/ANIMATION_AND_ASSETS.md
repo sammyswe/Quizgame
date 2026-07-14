@@ -152,9 +152,10 @@ For every generated asset record:
 - fallback path;
 - licence/provenance notes if any external input was used.
 
-Current MCP note (2026-07-14): the server was discoverable, but two balance requests failed.
-No new generation from this documentation pass may be claimed as completed. Retry generation
-per event and record real job IDs; never fabricate provenance.
+Current MCP note (2026-07-14): after the owner reactivated Higgsfield, this cloud run still
+received `Invalid or expired token` from a fresh `nano_banana_2` request. No new generation may
+be claimed as completed. The exact manifest is `design/assets.csv`; retry after authentication
+propagates and record real job IDs.
 
 ## Definition of polished
 

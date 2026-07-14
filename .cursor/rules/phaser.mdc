@@ -1,27 +1,20 @@
 ---
-description: Archived Phaser experiment conventions
+description: Active Phaser gameplay conventions
 globs:
-  - "experiments/loot-drop/**"
+  - "client/src/game/**"
 ---
 
-- This rule applies only to the archived/reference Phaser experiment. It does not make Phaser
-  the root production engine. Follow the established structure: `scenes/` (Boot -> Preload -> LootDrop,
-  extending `BaseScene`), `objects/` (one class per game entity, extending
-  Phaser containers/images), `systems/` (VfxSystem, CameraDirector,
-  RevealDirector, AssetManager, SoundEventBus), `assets/` (generatedTextures,
-  assetManifest, spriteKeys).
+- Active gameplay uses `PhaserGame.tsx` -> `ArcadeGameplayScene`, with all network/state access
+  passing through `GameEventBridge.ts`.
 - Logical resolution is 1280x720 with `Scale.FIT`; author all coordinates in
   that space.
 - Use tweens and particle emitters, not physics, for motion. Fire-and-forget
   effects must destroy themselves.
-- Texture keys come from `spriteKeys.ts` (PROC/HF constants) or the
-  `AssetManager` role resolvers. Never hardcode texture strings or file
-  paths in scene code.
+- Texture keys and imported asset URLs stay centralised as the asset system grows. Never import
+  socket/Zustand modules into scenes.
 - Every texture must have a procedural fallback in `generatedTextures.ts`;
   the game must boot with zero binary assets present.
 - Long-lived loops (bobs, pulses) must be removed in `destroy()`/shutdown;
   subscribe/unsubscribe bridge and settings listeners on scene
   create/shutdown to survive scene restarts.
-- Camera motion goes through `CameraDirector`; reveal sequencing goes through
-  `RevealDirector`; particle effects go through `VfxSystem`. Do not scatter
-  raw `cameras.main.shake()` or ad-hoc emitters around the scene.
+- Keep reveal/item timelines cancellable and driven by structured authoritative events.

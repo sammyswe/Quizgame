@@ -12,7 +12,11 @@ earned accent during lock/reveal; the base fantasy is sending pirate forces on v
 ## Mental model
 
 ```
-React + Framer Motion client
+React shell
+    ↕ Zustand snapshots
+GameEventBridge
+    ↕
+Phaser gameplay scene
     ↕ typed Socket.IO intents/state
 Authoritative server (`server/src/engine.ts`)
     ↕
@@ -23,7 +27,7 @@ Pure shared rules/config
   `VISUAL_DIRECTION.md` and `ANIMATION_AND_ASSETS.md`.
 - Server decides allocation validity, lock, wildcards, payout and reveal.
 - Do not build the next special before Loot Drop passes its polish gate.
-- `experiments/loot-drop/` is archived Phaser reference, not the active root runtime.
+- `client/src/game/` is active Phaser gameplay. `experiments/loot-drop/` is archived reference.
 
 ## Run & verify
 
@@ -43,7 +47,8 @@ cover the changed behaviour.
 
 | Area | Path |
 |------|------|
-| Active client | `client/src/screens/QuestionScreen.tsx`, `client/src/components/` |
+| Active scene | `client/src/game/scenes/ArcadeGameplayScene.ts` |
+| Bridge | `client/src/game/GameEventBridge.ts` |
 | Socket contract | `shared/src/types/index.ts` |
 | Server orchestration | `server/src/engine.ts` |
 | Pure allocation rules | `shared/src/game/lootDrop.ts` |
@@ -53,7 +58,7 @@ cover the changed behaviour.
 
 ## Loot Drop gameplay loop
 
-1. Pool = points earned in the preceding 10 regular questions (fixed 100 is a current PILOT).
+1. Pool = points earned in the preceding 10 regular questions.
 2. Allocate through pirate ventures, not a numeric form.
 3. Lock commits server-side; exact allocation remains private until reveal.
 4. Resolve correct return and wrong losses sequentially.

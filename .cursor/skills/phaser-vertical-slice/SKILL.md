@@ -1,13 +1,12 @@
 ---
 name: phaser-vertical-slice
-description: Reference the archived Phaser vertical-slice pattern only when explicitly prototyping or evaluating a renderer migration.
+description: Build and refine Treasure Trap's active Phaser gameplay while preserving the React shell and authoritative multiplayer bridge.
 ---
 
 # Phaser vertical slice pattern
 
-> Scope warning: Treasure Trap's active root client is React + Framer Motion. The Phaser slice
-> lives in `experiments/loot-drop/`. Do not apply this skill to ordinary production work or
-> create `client/src/game/` without an explicit architecture-migration decision.
+> Treasure Trap now uses Phaser for active in-round gameplay under `client/src/game/`. The
+> older `experiments/loot-drop/` slice is reference-only and has a stale network contract.
 
 Learned from Treasure Trap Loot Drop: **do not spread effort across every
 screen**. Pick one gameplay moment and make it feel like Brawl Stars / Coin

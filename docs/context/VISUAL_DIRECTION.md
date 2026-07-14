@@ -81,7 +81,8 @@ State changes are staged, never swapped silently.
 - Audio cues always have visual equivalents; visual cues have text/state equivalents.
 - Avoid rapid flashes and excessive camera shake.
 - Distortion attacks preserve an accessible path to understand and answer.
-- Mobile portrait is the primary constraint; landscape and desktop remain supported.
+- Laptop landscape (16:9) is the primary play surface. Responsive fallback remains usable, but
+  gameplay composition is authored for the shared landscape fleet board.
 
 ## Visual review questions
 

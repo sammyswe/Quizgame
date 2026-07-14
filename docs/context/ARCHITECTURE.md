@@ -13,16 +13,20 @@ updated: 2026-07-14
 The application launched by root `pnpm dev` is:
 
 ```text
-React + Framer Motion client
+React shell (landing/lobby/intros/leaderboard/winner/modals)
+        ↕ Zustand snapshots
+GameEventBridge
+        ↕ state in / intents out
+Phaser 3 in-round gameplay and world reveals
         ↕ typed Socket.IO intents/state
 Node authoritative server (`server/src/engine.ts`)
         ↕ pure inputs/results
 Shared TypeScript types, config and game logic
 ```
 
-The Phaser implementation in `experiments/loot-drop/` is archived reference material. Do not
-import its paths into the active app or describe `client/src/game/` as existing. A future engine
-migration requires a new explicit architecture decision and an end-to-end multiplayer plan.
+The previous Phaser implementation in `experiments/loot-drop/` remains archived reference
+material with a stale protocol. Active Phaser code is under `client/src/game/`; do not import
+the experiment's network/server modules.
 
 ## Ownership
 
@@ -31,7 +35,8 @@ migration requires a new explicit architecture decision and an end-to-end multip
 - `shared/src/game/*`: deterministic, IO-free resolvers with Vitest coverage.
 - `server/src/engine.ts`: phases, timers, legal actions, secrets, random rolls, scores and emits.
 - `server/src/rooms.ts`: room lifecycle, reconnect and host migration.
-- `client/src/`: renders state, gathers intents, stages audiovisual feedback.
+- `client/src/game/`: renders in-round state in Phaser and emits intents through the bridge.
+- `client/src/`: React shell, store/socket adapter and modal overlays.
 
 ## Invariants
 

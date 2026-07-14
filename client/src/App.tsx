@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useGameStore } from "./store/gameStore";
 import { Background } from "./components/Background";
-import { SceneBackdrop } from "./components/scenes/SceneBackdrop";
 import { isMuted, setMuted } from "./lib/sfx";
 import { LandingScreen } from "./screens/LandingScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
@@ -62,13 +61,9 @@ export default function App() {
     }
   }
 
-  // Higgsfield islands + ships on every screen — the painting is the world.
-  const scene = "lootDrop" as const;
-
   return (
     <div className="relative min-h-full">
       {!inPhaser && <Background />}
-      {!inPhaser && scene && <SceneBackdrop round={scene} />}
       <div className="relative z-10 min-h-full">
         {inGame && !inPhaser && <Hud />}
         <AnimatePresence mode="wait">

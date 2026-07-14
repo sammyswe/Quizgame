@@ -55,6 +55,7 @@ See [STATUS.md](STATUS.md). In short:
 | VIS-001 | LOCKED | Excursion-first art direction and casino boundary | [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md) |
 | VIS-002 | LOCKED/PILOT | Animation, sound and Higgsfield production contract | [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) |
 | VIS-003 | LOCKED | Screen-by-screen UI and animation decisions | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md) |
+| VIS-004 | PILOT | Owner questions for the next visual iteration | [UI_REVIEW_QUESTIONS.md](UI_REVIEW_QUESTIONS.md) |
 | ARCH-001 | LOCKED | Active runtime and authority boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | PLAN-001 | PILOT/IDEA | Playtest-to-public-web roadmap | [ROADMAP.md](ROADMAP.md) |
 | IDEA-001 | IDEA | Unconfirmed mechanics preserved without polluting scope | [IDEA_BANK.md](IDEA_BANK.md) |
