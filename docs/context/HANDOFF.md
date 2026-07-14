@@ -32,19 +32,23 @@ updated: 2026-07-14
 
 ## Asset status
 
-- Higgsfield is the required preferred pipeline.
-- On 2026-07-14 the MCP server was reactivated by the owner but this cloud run still returned
-  `Invalid or expired token` on a fresh `nano_banana_2` generation request.
-- `design/assets.csv` contains the complete locked generation manifest and STYLE-001.
-- Existing Higgsfield binaries and Phaser-drawn art are explicit fallbacks, not approved final art.
-- Retry generation event-by-event after token propagation and record real provenance.
+- **Visual quality gate is open.** Current Phaser scenes use procedural/fallback art; this is
+  why the game feels unfinished. Stack is not the root cause — see
+  [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md).
+- Higgsfield is the preferred art pipeline. Cloud-agent `balance`/generate may still fail;
+  owner Apps UI / handed concept art is the reliable path.
+- `design/assets.csv` is the locked generation queue (STYLE-001).
+- Drop owner-approved Phase-0 locks into `design/concept/approved/` before bulk regen.
+- Existing Higgsfield binaries and Phaser-drawn art are explicit fallbacks, not final art.
 
 ## Next implementation slice
 
-1. Generate and integrate every row in `design/assets.csv` after Higgsfield authentication works.
-2. Replace interim fallback art in `ArcadeGameplayScene`.
-3. Complete a full automated block/special canvas interaction test.
-4. Review every UI area using the questions supplied at handoff.
+1. Wait for owner Phase-0 style locks (`STYLE_LOCK_SEA`, `STYLE_LOCK_SHIP`, `STYLE_LOCK_ISLAND`)
+   in `design/concept/approved/`, then wire them into Phaser and kill matching fallbacks.
+2. Integrate hero assets in the ROI order in POLISH_PRODUCTION_PLAN Phase 1.
+3. Juice + SFX pass only after hero silhouettes exist.
+4. Complete full canvas interaction e2e; review with `UI_REVIEW_QUESTIONS.md`.
+5. Do **not** migrate off Phaser unless 3D/native becomes a product requirement.
 
 ## Do not regress
 

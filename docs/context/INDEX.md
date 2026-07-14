@@ -37,7 +37,8 @@ See [STATUS.md](STATUS.md). In short:
 | Product or mechanic work | [VISION.md](VISION.md), [MECHANICS.md](MECHANICS.md) | `shared/src/config/*`, `shared/src/game/*` |
 | Special rounds | [SPECIAL_ROUNDS.md](SPECIAL_ROUNDS.md) | `shared/src/config/arcade.ts`, `server/src/engine.ts` |
 | Items or loot boxes | [ITEMS.md](ITEMS.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | `shared/src/config/powerups.ts` |
-| UI, animation, sound or art | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md), [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | `client/src/` |
+| UI, animation, sound or art | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md), [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md), [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | `client/src/` |
+| Visual quality / stack / Higgsfield handoff | [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | `design/assets.csv`, `design/concept/` |
 | Multiplayer or protocol | [ARCHITECTURE.md](ARCHITECTURE.md) | `server/src/engine.ts`, `shared/src/types/index.ts` |
 | Planning or deployment | [ROADMAP.md](ROADMAP.md) | CI and hosting configuration |
 | Brainstorming | [IDEA_BANK.md](IDEA_BANK.md) | none until promoted |
@@ -56,6 +57,7 @@ See [STATUS.md](STATUS.md). In short:
 | VIS-002 | LOCKED/PILOT | Animation, sound and Higgsfield production contract | [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) |
 | VIS-003 | LOCKED | Screen-by-screen UI and animation decisions | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md) |
 | VIS-004 | PILOT | Owner questions for the next visual iteration | [UI_REVIEW_QUESTIONS.md](UI_REVIEW_QUESTIONS.md) |
+| VIS-005 | PILOT | Pro polish diagnosis, stack verdict, concept-art pipeline | [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) |
 | ARCH-001 | LOCKED | Active runtime and authority boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | PLAN-001 | PILOT/IDEA | Playtest-to-public-web roadmap | [ROADMAP.md](ROADMAP.md) |
 | IDEA-001 | IDEA | Unconfirmed mechanics preserved without polluting scope | [IDEA_BANK.md](IDEA_BANK.md) |
@@ -65,7 +67,8 @@ See [STATUS.md](STATUS.md). In short:
 
 - `experiments/loot-drop/` is an archived Phaser vertical slice. It is reference material,
   not the app launched by root `pnpm dev`.
-- The root app currently uses React + Framer Motion for gameplay and Socket.IO for networking.
+- The root app uses React for lobby/shell HUD and Phaser 3 for in-round gameplay, with
+  Socket.IO networking. Framer Motion may appear in shell transitions only.
 - Older `docs/PRD.md`, `docs/GAME_DESIGN.md`, `docs/ARCHITECTURE.md` and related reviews contain
   useful history but may describe the superseded seven-round prototype. The context files
   above take precedence.

@@ -152,10 +152,11 @@ For every generated asset record:
 - fallback path;
 - licence/provenance notes if any external input was used.
 
-Current MCP note (2026-07-14): after the owner reactivated Higgsfield, this cloud run still
-received `Invalid or expired token` from a fresh `nano_banana_2` request. No new generation may
-be claimed as completed. The exact manifest is `design/assets.csv`; retry after authentication
-propagates and record real job IDs.
+Current MCP note (2026-07-14): Higgsfield tools are listed ready, but cloud-agent `balance` /
+generate can still fail auth. Do not claim new generations as completed without a real job ID.
+Owner Apps UI and files dropped in `design/concept/approved/` are valid production inputs.
+See [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) for stack verdict and concept-art
+queue. Manifest remains `design/assets.csv`.
 
 ## Definition of polished
 
