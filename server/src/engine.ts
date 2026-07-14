@@ -305,7 +305,7 @@ function nextArcadeRound(room: ServerRoom): void {
   room.isEventRound = false;
   room.eventId = undefined;
   if (room.roundNumber === 1) {
-    ticker(room, `⚓ The voyage begins — ${room.totalRounds} questions and ${eventRounds(room.totalRounds).length} specials!`);
+    ticker(room, `The voyage begins — ${room.totalRounds} questions across the Seven Seas.`);
     setPhase(room, "round_intro", TIMING.ARCADE_INTRO_MS, () => beginArcadeQuestion(room));
     return;
   }
@@ -558,6 +558,10 @@ export function submitAnswer(
   if (room.phase !== "question") return;
   const p = room.players.get(playerId);
   if (!p || p.marooned || p.mutinied || p.whiteFlagged) return;
+  if (room.answers.has(playerId)) {
+    emitter.toPlayer(room, playerId, "error", "Your course is already confirmed.");
+    return;
+  }
   const allocationPool = room.isEventRound ? p.eventWager : ARCADE.MPD_POOL;
   room.answers.set(playerId, {
     playerId,

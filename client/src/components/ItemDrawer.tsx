@@ -7,6 +7,8 @@ import { ItemCard } from "./items/ItemCard";
 import { ItemUseOverlay } from "./items/ItemUseOverlay";
 import { playSound } from "../lib/soundEvents";
 import { sfx } from "../lib/sfx";
+import { HfSprite } from "./higgsfield/HfSprite";
+import { chestFrame } from "../lib/higgsfield";
 
 /**
  * The booty bag: mystery chests to crack open and power-ups to fire.
@@ -32,7 +34,7 @@ export function ItemDrawer() {
       setTargeting({ uid: owned.uid, powerUpId: owned.powerUpId });
       setOpen(false);
       sfx.select();
-      pushToast({ icon: "🎯", text: `${def.name} armed — tap a pirate to fire!` });
+      pushToast({ text: `${def.name} armed — choose a pirate ship.` });
       return;
     }
     // Self / all-others fire instantly with a flourish.
@@ -50,10 +52,10 @@ export function ItemDrawer() {
         whileTap={{ scale: 0.9 }}
         animate={count > 0 ? { y: [0, -4, 0] } : {}}
         transition={{ repeat: Infinity, duration: 2 }}
-        className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-neon-gold/50 bg-deeper text-2xl shadow-neon-gold"
+        className="fixed bottom-4 right-4 z-40 flex min-h-14 min-w-24 items-center justify-center rounded-2xl border-2 border-[#d1a34f] bg-[#132f43] px-3 font-display text-sm text-[#ffe18a] shadow-xl"
         aria-label={`Open booty bag, ${count} treasures`}
       >
-        🎒
+        BOOTY
         {count > 0 && (
           <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-neon-pink font-display text-sm text-pink-950">
             {count}
@@ -79,7 +81,7 @@ export function ItemDrawer() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-display text-2xl text-neon-gold text-outline">Booty Bag 🎒</h2>
+                <h2 className="font-display text-2xl text-neon-gold text-outline">Booty Bag</h2>
                 <button
                   className="btn-ghost !min-h-0 !px-3 !py-1.5 !text-sm"
                   onClick={() => setOpen(false)}
@@ -103,9 +105,7 @@ export function ItemDrawer() {
                             onClick={() => socket.emit("chest:open", chest.uid)}
                             className="neon-card flex flex-col items-center gap-1 border-neon-gold/30 p-3 transition hover:shadow-neon-gold"
                           >
-                            <span className="text-3xl animate-floaty" aria-hidden>
-                              🎁
-                            </span>
+                            <HfSprite frame={chestFrame("common", "closed")} size={54} label="Chest" />
                             <span className="font-display text-sm text-neon-gold">{src.name}</span>
                             <span className="text-[11px] text-slate-400">{src.blurb}</span>
                             <span className="mt-1 rounded-full bg-neon-gold/20 px-2 py-0.5 text-[11px] font-bold text-neon-gold">
@@ -144,10 +144,10 @@ export function ItemDrawer() {
 
                 {count === 0 && (
                   <p className="py-8 text-center text-slate-400">
-                    No treasure yet 🥲
+                    No treasure yet
                     <br />
                     <span className="text-xs">
-                      Answer right in the first 5 rounds, hit streaks, get marooned...
+                      First item after question 5; more arrive from streaks and marooning.
                     </span>
                   </p>
                 )}

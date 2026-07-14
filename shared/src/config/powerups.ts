@@ -8,7 +8,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   eyepatch: {
     id: "eyepatch",
     name: "Eyepatch",
-    icon: "🏴‍☠️",
+    icon: "EP",
     rarity: "common",
     description: "50/50 — removes half the wrong answers.",
     target: "self",
@@ -18,7 +18,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   parrot: {
     id: "parrot",
     name: "Parrot",
-    icon: "🦜",
+    icon: "PA",
     rarity: "common",
     description: "Copy another pirate's answer.",
     target: "otherPlayer",
@@ -28,7 +28,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   whiteFlag: {
     id: "whiteFlag",
     name: "White Flag",
-    icon: "🏳️",
+    icon: "WF",
     rarity: "common",
     description: "Sit out this question and preserve your streak.",
     target: "self",
@@ -38,7 +38,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   telescope: {
     id: "telescope",
     name: "Telescope",
-    icon: "🔭",
+    icon: "TE",
     rarity: "rare",
     description: "Privately see another pirate's committed answer.",
     target: "otherPlayer",
@@ -48,7 +48,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   rumRush: {
     id: "rumRush",
     name: "Rum Rush",
-    icon: "🍾",
+    icon: "RR",
     rarity: "rare",
     description: "Double your next correct reward.",
     target: "self",
@@ -58,7 +58,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   cannonball: {
     id: "cannonball",
     name: "Cannonball",
-    icon: "💣",
+    icon: "CB",
     rarity: "rare",
     description: "Blast holes in the middle of a pirate's answers.",
     target: "otherPlayer",
@@ -68,7 +68,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   walkThePlank: {
     id: "walkThePlank",
     name: "Walk the Plank",
-    icon: "🪵",
+    icon: "WP",
     rarity: "rare",
     description: "Force a pirate to answer in 5 seconds — or score nothing.",
     target: "otherPlayer",
@@ -78,7 +78,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   hook: {
     id: "hook",
     name: "Hook",
-    icon: "🪝",
+    icon: "HK",
     rarity: "epic",
     description: "Steal a random power-up from a pirate.",
     target: "otherPlayer",
@@ -88,7 +88,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   swordFight: {
     id: "swordFight",
     name: "Sword Fight",
-    icon: "⚔️",
+    icon: "SF",
     rarity: "epic",
     description: "Duel a pirate on this question. Winner steals gold.",
     target: "otherPlayer",
@@ -98,7 +98,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   secretX: {
     id: "secretX",
     name: "Secret X",
-    icon: "❌",
+    icon: "SX",
     rarity: "legendary",
     description: "X marks the spot — reveals the correct answer.",
     target: "self",
@@ -108,7 +108,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   cannonballBarrage: {
     id: "cannonballBarrage",
     name: "Cannonball Barrage",
-    icon: "🧨",
+    icon: "BR",
     rarity: "legendary",
     description: "Blast holes in EVERYONE else's answers.",
     target: "allOthers",

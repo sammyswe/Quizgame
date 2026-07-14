@@ -39,20 +39,20 @@ export function LobbyScreen() {
   };
 
   return (
-    <Screen className="gap-5">
+    <Screen className="gap-2 overflow-y-auto">
       <div className="text-center">
         <p className="text-sm text-slate-400">Room code</p>
         <motion.button
           onClick={copyLink}
           whileTap={{ scale: 0.96 }}
-          className="mx-auto mt-1 block rounded-2xl border-4 border-[#75451f] bg-[#f0d99e] px-8 py-3 font-display text-5xl tracking-[0.3em] text-[#3b2618] shadow-xl"
+          className="mx-auto block rounded-2xl border-4 border-[#75451f] bg-[#f0d99e] px-8 py-1.5 font-display text-4xl tracking-[0.3em] text-[#3b2618] shadow-xl"
           aria-label={`Room code ${game.roomCode}, tap to copy invite link`}
         >
           {game.roomCode}
         </motion.button>
         <button
           onClick={copyLink}
-          className="mt-2 text-xs font-bold text-[#bfefff] underline underline-offset-2"
+          className="mt-1 text-xs font-bold text-[#bfefff] underline underline-offset-2"
         >
           {copied ? "Copied!" : "Copy invite link"}
         </button>
@@ -60,14 +60,14 @@ export function LobbyScreen() {
 
       <div>
         <SectionTitle>Crew ({game.players.length}/8)</SectionTitle>
-        <div className="mt-2 grid max-w-sm grid-cols-1 gap-3">
+        <div className="mt-1 grid grid-cols-4 gap-2">
           {game.players.map((p, i) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, scale: 0.5, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 18 }}
-              className={`pirate-panel flex items-center gap-2 p-3 ${p.id === playerId ? "ring-2 ring-[#f2c85b]" : ""}`}
+              className={`pirate-panel flex items-center gap-2 p-2 ${p.id === playerId ? "ring-2 ring-[#f2c85b]" : ""}`}
             >
               <PirateAvatar playerId={p.id} emoji={p.avatar} size={40} bobDelay={i * 0.3} />
               <div className="min-w-0">
@@ -88,9 +88,9 @@ export function LobbyScreen() {
         </div>
       </div>
 
-      <div className="pirate-panel p-4">
+      <div className="pirate-panel p-2.5">
         <SectionTitle>Choose your pirate</SectionTitle>
-        <div className="mt-3 flex flex-wrap justify-center gap-3">
+        <div className="mt-1 flex flex-wrap justify-center gap-2">
           {Array.from({ length: 8 }, (_, index) => (
             <button
               key={index}
@@ -101,7 +101,7 @@ export function LobbyScreen() {
                 avatarIndex === index ? "bg-[#f2c85b] ring-4 ring-[#fff0b2]" : "bg-[#14354b]/70"
               }`}
             >
-              <PirateAvatar playerId={`choice-${index}`} emoji={`pirate-${index}`} size={58} />
+              <PirateAvatar playerId={`choice-${index}`} emoji={`pirate-${index}`} size={48} />
             </button>
           ))}
         </div>
@@ -109,7 +109,7 @@ export function LobbyScreen() {
 
       <div>
         <SectionTitle>Game length</SectionTitle>
-        <div className="mt-2 grid grid-cols-4 gap-3">
+        <div className="mt-1 grid max-w-sm grid-cols-1 gap-2">
           {LENGTH_ORDER.map((l) => (
             <button
               key={l}
