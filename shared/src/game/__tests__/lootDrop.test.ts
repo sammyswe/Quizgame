@@ -65,4 +65,54 @@ describe("resolveLootDrop", () => {
     expect(res.lootDelta.b).toBe(60 + SCORING.PACT_BONUS);
     expect(res.chests.some((c) => c.source === "honour")).toBe(true);
   });
+
+  it("risks a player's dynamic block pool in wager mode", () => {
+    const res = resolveLootDrop(
+      [{ id: "a", nickname: "A", pool: 240, allocation: [90, 150, 0, 0] }],
+      0,
+      [],
+      { wagered: true },
+    );
+    expect(res.lootDelta.a).toBe(-150);
+    expect(res.lost.a).toBe(150);
+  });
+
+  it("lets Poseidon rescue a trailing player's doomed wager, never the leader", () => {
+    const res = resolveLootDrop(
+      [
+        {
+          id: "lead",
+          nickname: "Lead",
+          pool: 100,
+          allocation: [100, 0, 0, 0],
+          rank: 1,
+          isLeader: true,
+        },
+        { id: "poor", nickname: "Poor", pool: 100, allocation: [0, 100, 0, 0], rank: 2 },
+      ],
+      0,
+      [],
+      { wagered: true, enableWildcards: true, rng: () => 0 },
+    );
+    expect(res.poseidonBlessed).toEqual(["poor"]);
+    expect(res.lootDelta.poor).toBe(0);
+    expect(res.events.some((e) => e.title.includes("POSEIDON"))).toBe(true);
+  });
+
+  it("triggers sharks after a strong majority succeeds and rewards last place", () => {
+    const res = resolveLootDrop(
+      [
+        { id: "a", nickname: "A", pool: 100, allocation: [100, 0, 0, 0], rank: 1 },
+        { id: "b", nickname: "B", pool: 100, allocation: [100, 0, 0, 0], rank: 2 },
+        { id: "c", nickname: "C", pool: 100, allocation: [100, 0, 0, 0], rank: 3 },
+        { id: "d", nickname: "D", pool: 100, allocation: [100, 0, 0, 0], rank: 4 },
+      ],
+      0,
+      [],
+      { wagered: true, enableWildcards: true, rng: () => 0.99 },
+    );
+    expect(res.events.some((e) => e.title.includes("SHARK"))).toBe(true);
+    expect(res.lootDelta.a).toBe(-5);
+    expect(res.sharkRewardPlayerId).toBe("d");
+  });
 });

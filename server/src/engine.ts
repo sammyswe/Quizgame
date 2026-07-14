@@ -152,6 +152,7 @@ export function privateState(room: ServerRoom, p: ServerPlayer): PrivatePlayerSt
     horizon: p.horizon,
     cannonballed: p.cannonballed || undefined,
     plankUntil: p.plankUntil,
+    lootDropPool: room.isEventRound ? p.eventWager : undefined,
     disabledOptions: p.disabledOptions.length > 0 ? p.disabledOptions : undefined,
   };
 }
@@ -205,6 +206,8 @@ function resetPlayerForGame(p: ServerPlayer): void {
   p.powerUps = [];
   p.chests = [];
   p.jackpotEarned = false;
+  p.blockLoot = 0;
+  p.eventWager = 0;
   p.poseidonUsed = false;
   p.marooned = false;
   p.maroonPending = false;
@@ -223,6 +226,7 @@ function resetQuestionState(p: ServerPlayer): void {
 export function startGame(room: ServerRoom): void {
   room.totalRounds = ARCADE_LENGTHS[room.config.length].rounds;
   room.roundNumber = 0;
+  room.specialsPlayed = 0;
   room.usedQuestionIds = new Set();
   room.winnerId = undefined;
   for (const p of room.players.values()) resetPlayerForGame(p);
@@ -233,6 +237,7 @@ export function resetToLobby(room: ServerRoom): void {
   if (room.timer) clearTimeout(room.timer);
   room.timer = undefined;
   room.roundNumber = 0;
+  room.specialsPlayed = 0;
   room.currentQuestion = undefined;
   room.usedQuestionIds = new Set();
   room.answers = new Map();
@@ -245,22 +250,28 @@ export function resetToLobby(room: ServerRoom): void {
 }
 
 function nextArcadeRound(room: ServerRoom): void {
-  room.roundNumber += 1;
-  if (room.roundNumber > room.totalRounds) {
-    declareWinner(room);
-    return;
-  }
-  room.isEventRound = room.roundNumber % ARCADE.EVENT_EVERY === 0;
-  room.eventId = room.isEventRound ? eventForRound(room.roundNumber) : undefined;
-
-  if (room.isEventRound) {
+  const completedBlocks = Math.floor(room.roundNumber / ARCADE.EVENT_EVERY);
+  if (completedBlocks > room.specialsPlayed) {
+    room.specialsPlayed += 1;
+    room.isEventRound = true;
+    room.eventId = eventForRound(room.roundNumber);
+    for (const p of room.players.values()) {
+      p.eventWager = Math.floor(Math.min(p.score, p.blockLoot) / 10) * 10;
+    }
     const meta = SPECIAL_EVENTS[room.eventId ?? "millionPoundDrop"];
     ticker(room, `${meta.icon} SPECIAL EVENT: ${meta.name}!`);
     setPhase(room, "round_intro", TIMING.ROUND_INTRO_MS, () => beginArcadeQuestion(room));
     return;
   }
+  if (room.roundNumber >= room.totalRounds) {
+    declareWinner(room);
+    return;
+  }
+  room.roundNumber += 1;
+  room.isEventRound = false;
+  room.eventId = undefined;
   if (room.roundNumber === 1) {
-    ticker(room, `⚓ The voyage begins — ${room.totalRounds} rounds!`);
+    ticker(room, `⚓ The voyage begins — ${room.totalRounds} questions and ${eventRounds(room.totalRounds).length} specials!`);
     setPhase(room, "round_intro", TIMING.ARCADE_INTRO_MS, () => beginArcadeQuestion(room));
     return;
   }
@@ -288,10 +299,14 @@ function drawQuestion(room: ServerRoom): Question {
 }
 
 function beginArcadeQuestion(room: ServerRoom): void {
-  // Apply pending maroons; free last question's castaways.
+  // Special rounds never consume a maroon skip; defer it to the next regular question.
   for (const p of room.players.values()) {
-    p.marooned = p.maroonPending;
-    p.maroonPending = false;
+    if (room.isEventRound) {
+      p.marooned = false;
+    } else {
+      p.marooned = p.maroonPending;
+      p.maroonPending = false;
+    }
     resetQuestionState(p);
   }
   room.answers = new Map();
@@ -315,6 +330,7 @@ export function maybeEndEarly(room: ServerRoom): void {
   if (room.phase !== "question") return;
   const everyoneIn = [...room.players.values()]
     .filter((p) => p.connected && !p.marooned)
+    .filter((p) => !p.mutinied)
     .every((p) => room.answers.has(p.id));
   if (!everyoneIn) return;
   if (room.timer) clearTimeout(room.timer);
@@ -370,6 +386,7 @@ function endArcadeQuestion(room: ServerRoom): void {
     poseidonUsed: new Set(
       [...room.players.values()].filter((p) => p.poseidonUsed).map((p) => p.id),
     ),
+    socialMechanicsEnabled: room.roundNumber > ARCADE.FIRST_ITEM_WINDOW,
   });
 
   applyScoreDelta(room, res.scoreDelta);
@@ -379,14 +396,15 @@ function endArcadeQuestion(room: ServerRoom): void {
     if (res.rumRushConsumed.includes(p.id)) p.rumRush = false;
     if (res.poseidonBlessed.includes(p.id)) p.poseidonUsed = true;
     if (res.newlyMarooned.includes(p.id)) p.maroonPending = true;
+    p.blockLoot += Math.max(0, res.results[p.id]?.earned ?? 0);
   }
 
-  // First-5 jackpot: your first correct answer in rounds 1..5 = an item reward.
+  // Item onboarding: everyone receives their first item after regular question 5.
   const jackpotWinners: ServerPlayer[] = [];
-  if (room.roundNumber <= ARCADE.FIRST_ITEM_WINDOW) {
+  if (room.roundNumber === ARCADE.FIRST_ITEM_WINDOW) {
     for (const p of room.players.values()) {
       const r = res.results[p.id];
-      if (r?.correct && !p.jackpotEarned) {
+      if (r && !p.jackpotEarned) {
         p.jackpotEarned = true;
         r.jackpot = true;
         jackpotWinners.push(p);
@@ -430,11 +448,6 @@ function startReveal(room: ServerRoom, events: RevealEvent[], after: () => void)
 }
 
 function afterArcadeReveal(room: ServerRoom): void {
-  const isLast = room.roundNumber >= room.totalRounds;
-  if (isLast) {
-    declareWinner(room);
-    return;
-  }
   // Breather every 5th round and after events; otherwise straight on.
   if (room.roundNumber % 5 === 0 || room.isEventRound) {
     setPhase(room, "leaderboard", TIMING.ARCADE_LEADERBOARD_MS, () => nextArcadeRound(room));
@@ -450,31 +463,52 @@ function afterArcadeReveal(room: ServerRoom): void {
 function resolveEventRound(room: ServerRoom): void {
   const q = room.currentQuestion;
   if (!q) return;
+  const ranks = ranksNow(room);
+  const leaderId = leaderIdNow(room);
   const inputs = [...room.players.values()]
-    .filter((p) => !p.marooned)
     .map((p) => ({
       id: p.id,
       nickname: p.nickname,
       allocation: room.answers.get(p.id)?.lootAllocation,
+      pool: p.eventWager,
+      rank: ranks[p.id] ?? 1,
+      isLeader: p.id === leaderId,
+      poseidonUsed: p.poseidonUsed,
     }));
-  const res = resolveLootDrop(inputs, q.correctIndex);
-  // resolveLootDrop returns deltas of surviving loot (gain only).
+  const res = resolveLootDrop(inputs, q.correctIndex, [], {
+    enableWildcards: true,
+    wagered: true,
+  });
   applyScoreDelta(room, res.lootDelta);
   for (const award of res.chests) grantChest(room, award);
+  if (res.sharkRewardPlayerId) {
+    grantChest(room, { playerId: res.sharkRewardPlayerId, source: "underdog" });
+    res.events.push(
+      ev(
+        "chestEarned",
+        "Shark trophy! 🦈",
+        "The lowest-ranked pirate survives the attack and earns a special catch-up chest.",
+        { icon: "🦈", playerIds: [res.sharkRewardPlayerId], animation: "chest" },
+      ),
+    );
+  }
 
   for (const p of room.players.values()) {
-    const alloc = normaliseAllocation(room.answers.get(p.id)?.lootAllocation);
+    const alloc = normaliseAllocation(room.answers.get(p.id)?.lootAllocation, p.eventWager);
     const kept = alloc[q.correctIndex] ?? 0;
+    const delta = res.lootDelta[p.id] ?? 0;
     const r: QuestionResult = {
       correct: kept > 0,
       correctIndex: q.correctIndex,
-      earned: kept,
+      earned: delta,
       streak: p.streak,
       streakBonus: 0,
-      potAtLock: kept,
-      skipped: p.marooned || undefined,
+      potAtLock: Math.max(0, p.eventWager + delta),
     };
     emitter.toPlayer(room, p.id, "question:result", r);
+    if (res.poseidonBlessed.includes(p.id)) p.poseidonUsed = true;
+    p.blockLoot = 0;
+    p.eventWager = 0;
   }
 
   startReveal(room, res.events, () => afterArcadeReveal(room));
@@ -491,12 +525,13 @@ export function submitAnswer(
 ): void {
   if (room.phase !== "question") return;
   const p = room.players.get(playerId);
-  if (!p || p.marooned) return;
+  if (!p || p.marooned || p.mutinied) return;
+  const allocationPool = room.isEventRound ? p.eventWager : ARCADE.MPD_POOL;
   room.answers.set(playerId, {
     playerId,
     choiceIndex: payload.choiceIndex,
     lootAllocation: payload.lootAllocation
-      ? normaliseAllocation(payload.lootAllocation, ARCADE.MPD_POOL)
+      ? normaliseAllocation(payload.lootAllocation, allocationPool)
       : undefined,
     lockedAt: Date.now(),
   });
@@ -506,6 +541,10 @@ export function submitAnswer(
 
 export function declareMutiny(room: ServerRoom, playerId: string): void {
   if (room.phase !== "question" || room.isEventRound) return;
+  if (room.roundNumber <= ARCADE.FIRST_ITEM_WINDOW) {
+    emitter.toPlayer(room, playerId, "error", "Mutiny unlocks after question 5.");
+    return;
+  }
   const p = room.players.get(playerId);
   if (!p || p.marooned || p.mutinied) return;
   if (leaderIdNow(room) === playerId) {
@@ -513,12 +552,14 @@ export function declareMutiny(room: ServerRoom, playerId: string): void {
     return;
   }
   p.mutinied = true;
+  room.answers.delete(playerId);
   // Secret: only the mutineer knows. No broadcast, just their private echo.
   emitter.toPlayer(room, playerId, "player:privateState", privateState(room, p));
   emitter.toPlayer(room, playerId, "toast", {
     icon: "🏴",
-    text: "Mutiny declared. If the captain fails, you profit...",
+    text: "Mutiny declared. Your answer is forfeited — nobody else knows.",
   });
+  maybeEndEarly(room);
 }
 
 // ---------------------------------------------------------------------------

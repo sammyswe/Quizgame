@@ -78,7 +78,7 @@ export type ArcadeState = {
   questionDurationMs: number;
   potMax: number;
   potMin: number;
-  /** First-5 jackpot: who has already earned their item. */
+  /** Post-question-5 onboarding reward: who has received their first item. */
   firstFiveEarned: string[];
   maroonedIds: string[];
   leaderId?: string;
@@ -469,6 +469,8 @@ export type PrivatePlayerState = {
   cannonballed?: boolean;
   /** Walk the Plank: answer before this epoch ms or score nothing. */
   plankUntil?: number;
+  /** Your private wager available in the active Loot Drop special. */
+  lootDropPool?: number;
   mission?: ActiveMission & { def: MissionDef };
   /** Spyglass: option indexes greyed out for this player. */
   disabledOptions?: number[];

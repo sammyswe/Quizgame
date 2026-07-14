@@ -31,6 +31,10 @@ export type ServerPlayer = {
   maroonPending: boolean;
   /** Earned the first-5 jackpot item already. */
   jackpotEarned: boolean;
+  /** Positive trivia earnings accumulated in the current 10-question block. */
+  blockLoot: number;
+  /** Score committed to the active Loot Drop special. */
+  eventWager: number;
   /** Rum Rush pending on next correct answer. */
   rumRush: boolean;
   /** Eyepatch / Secret X: wrong options hidden for this player. */
@@ -58,6 +62,8 @@ export type ServerRoom = {
   /** 1-based current round number; 0 before the game starts. */
   roundNumber: number;
   totalRounds: number;
+  /** Number of post-block special rounds already started. */
+  specialsPlayed: number;
   isEventRound: boolean;
   eventId?: SpecialEventId;
   currentQuestion?: Question;
@@ -104,6 +110,8 @@ export function createPlayer(
     marooned: false,
     maroonPending: false,
     jackpotEarned: false,
+    blockLoot: 0,
+    eventWager: 0,
     rumRush: false,
     disabledOptions: [],
     cannonballed: false,
@@ -121,6 +129,7 @@ export function createRoom(code: string, host: ServerPlayer): ServerRoom {
     config: { length: "test", rounds: [] },
     roundNumber: 0,
     totalRounds: 10,
+    specialsPlayed: 0,
     isEventRound: false,
     questionStartedAt: 0,
     questionDurationMs: 0,

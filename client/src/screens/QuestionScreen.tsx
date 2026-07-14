@@ -80,9 +80,9 @@ function RoundHeader() {
           className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${
             iEarned ? "border-neon-green/50 text-neon-green" : "border-neon-gold/40 text-neon-gold"
           }`}
-          title="Get 1 correct answer in the first 5 rounds to win an item"
+          title="Everyone receives their first item after question 5"
         >
-          {iEarned ? "🎁 item won!" : "1 right = 🎁"}
+          {iEarned ? "🎁 item aboard!" : "🎁 after Q5"}
           <span className="flex gap-0.5" aria-hidden>
             {Array.from({ length: ARCADE.FIRST_ITEM_WINDOW }, (_, i) => (
               <span
@@ -190,12 +190,14 @@ function ChoiceGrid() {
   const disabled = new Set(priv?.disabledOptions ?? []);
   const revealed = priv?.revealedAnswerIndex;
   const holed = Boolean(priv?.cannonballed);
+  const mutinied = Boolean(priv?.hasMutinied);
   const parroting = priv?.parrotTargetId
     ? game.players.find((p) => p.id === priv.parrotTargetId)
     : undefined;
   const twoCol = game.question.options.length > 4;
 
   const submit = (i: number) => {
+    if (mutinied) return;
     const changing = choice !== undefined;
     setChoice(i);
     setBurstAt(i);
@@ -234,13 +236,13 @@ function ChoiceGrid() {
             transition={{ type: "spring", stiffness: 260, damping: 20, delay: i * 0.08 }}
             whileHover={{ scale: isMine ? 1.03 : 1.02 }}
             whileTap={{ scale: 0.94, rotate: 0 }}
-            disabled={isDisabled}
+            disabled={isDisabled || mutinied}
             onClick={() => submit(i)}
             className={`neon-card relative flex min-h-[72px] items-center gap-3 overflow-visible border-2 px-3 py-3 text-left transition-colors ${style.border} ${
               isMine
                 ? `bg-black/45 ${style.glow} animate-ring-pulse`
                 : `bg-black/35 hover:bg-black/45 ${dimmed ? "" : style.glow.replace("shadow", "hover:shadow")}`
-            } ${isDisabled ? "opacity-20" : ""} ${
+            } ${isDisabled || mutinied ? "opacity-20" : ""} ${
               isRevealed ? "!border-neon-gold ring-2 ring-neon-gold shadow-neon-gold" : ""
             }`}
             aria-pressed={isMine}
@@ -288,6 +290,11 @@ function ChoiceGrid() {
           </motion.button>
         );
       })}
+      {mutinied && (
+        <p className="col-span-full text-center text-sm font-black text-neon-red">
+          🏴 MUTINY DECLARED — your answer is forfeited.
+        </p>
+      )}
       {choice !== undefined && (
         <motion.p
           initial={{ opacity: 0, y: 6 }}
@@ -307,6 +314,7 @@ function ChoiceGrid() {
 
 function TrapdoorAllocator() {
   const game = useGameStore((s) => s.game);
+  const priv = useGameStore((s) => s.priv);
   const [alloc, setAlloc] = useState<number[]>([0, 0, 0, 0]);
   const [sent, setSent] = useState(false);
   const [burst, setBurst] = useState(false);
@@ -318,7 +326,8 @@ function TrapdoorAllocator() {
   }, [game?.question?.id]);
 
   const total = alloc.reduce((a, b) => a + b, 0);
-  const remaining = ARCADE.MPD_POOL - total;
+  const pool = priv?.lootDropPool ?? ARCADE.MPD_POOL;
+  const remaining = pool - total;
   if (!game?.question) return null;
 
   const bump = (i: number, delta: number) => {
@@ -350,7 +359,7 @@ function TrapdoorAllocator() {
   return (
     <div className="relative flex flex-col gap-2.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-bold text-slate-300">💷 Stack gold on the trapdoors</span>
+        <span className="font-bold text-slate-300">⚓ Send your block treasure on ventures</span>
         <motion.span
           key={remaining}
           initial={{ scale: 1.4 }}
@@ -386,7 +395,7 @@ function TrapdoorAllocator() {
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                   <motion.div
                     className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 shadow-neon-gold"
-                    animate={{ width: `${amount}%` }}
+                    animate={{ width: `${pool > 0 ? (amount / pool) * 100 : 0}%` }}
                     transition={{ type: "spring", stiffness: 180, damping: 20 }}
                   />
                 </div>
@@ -428,15 +437,15 @@ function TrapdoorAllocator() {
         <motion.button
           whileTap={{ scale: 0.95 }}
           className="btn-gold w-full text-xl"
-          disabled={total === 0 || sent}
+          disabled={total !== pool || sent || pool === 0}
           onClick={lockIn}
         >
-          {sent ? "🚪 Gold placed!" : `💷 Drop it! (${total} placed)`}
+          {sent ? "⚓ Crews dispatched!" : `SET SAIL (${total}/${pool})`}
         </motion.button>
         {burst && <EmojiBurst emoji="🪙" count={14} distance={110} />}
       </div>
       <p className="text-center text-[11px] text-slate-500">
-        Wrong trapdoors open. That gold is gone forever.
+        Allocate every coin. Wrong ventures lose their treasure.
       </p>
     </div>
   );
@@ -588,7 +597,7 @@ function MutinyPanel() {
 
   useEffect(() => setConfirming(false), [game?.question?.id]);
 
-  if (!game?.arcade) return null;
+  if (!game?.arcade || game.arcade.roundNumber <= ARCADE.FIRST_ITEM_WINDOW) return null;
   const leader = game.players.find((p) => p.id === game.arcade?.leaderId);
   const iAmLeader = leader?.id === playerId;
   const declared = Boolean(priv?.hasMutinied);
@@ -616,8 +625,7 @@ function MutinyPanel() {
         🏴 Mutiny declared against {leader.nickname} — nobody knows but you.
         <br />
         <span className="text-[10px] font-normal text-rose-200/70">
-          Captain wrong: +{ARCADE.MUTINY_REWARD}. Captain right: −{ARCADE.MUTINY_FAIL_PENALTY}.
-          Mutiny ALONE and you're marooned!
+          You cannot answer. Alone = marooned. Only a unanimous crew can tax a wrong captain.
         </span>
       </motion.div>
     );
@@ -642,10 +650,10 @@ function MutinyPanel() {
           className="neon-card border-neon-red/50 p-3 text-center"
         >
           <p className="text-xs font-bold">
-            If the captain answers wrong: <span className="text-neon-green">+{ARCADE.MUTINY_REWARD}</span>.
-            Right: <span className="text-neon-red">−{ARCADE.MUTINY_FAIL_PENALTY}</span>.
+            Mutiny forfeits your answer. If the whole crew joins and the captain is wrong,
+            the captain pays everyone.
             <br />
-            <span className="text-neon-gold">Sole mutineer gets MAROONED 🏝️</span>
+            <span className="text-neon-gold">Mutiny alone and you are MAROONED 🏝️</span>
           </p>
           <div className="mt-2 flex gap-2">
             <button

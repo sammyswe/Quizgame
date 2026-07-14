@@ -81,24 +81,42 @@ describe("streaks", () => {
 });
 
 describe("mutiny", () => {
-  it("mutineers profit when the leader answers wrong", () => {
+  it("taxes a wrong captain only when every eligible crew member mutinies", () => {
     const leader = player({ id: "lead", choiceIndex: 1 });
     const m1 = player({ id: "m1", choiceIndex: 0, lockedAt: START, mutinied: true });
     const m2 = player({ id: "m2", choiceIndex: 1, mutinied: true });
     const res = resolve([leader, m1, m2], { leaderId: "lead" });
     expect(res.results.m1?.mutiny).toBe("won");
-    expect(res.scoreDelta.lead).toBe(-ARCADE.MUTINY_LEADER_PENALTY);
-    // m2 wrong answer earns 0 pot but +MUTINY_REWARD
-    expect(res.scoreDelta.m2).toBe(ARCADE.MUTINY_REWARD);
+    expect(res.scoreDelta.lead).toBe(-ARCADE.MUTINY_CAPTAIN_TAX_TOTAL);
+    expect(res.scoreDelta.m1).toBe(ARCADE.MUTINY_CAPTAIN_TAX_TOTAL / 2);
+    expect(res.scoreDelta.m2).toBe(ARCADE.MUTINY_CAPTAIN_TAX_TOTAL / 2);
   });
 
-  it("mutineers pay when the leader answers right", () => {
+  it("gives unanimous mutineers nothing when the captain answers right", () => {
     const leader = player({ id: "lead", choiceIndex: 0, lockedAt: START });
     const m1 = player({ id: "m1", choiceIndex: 1, mutinied: true });
     const m2 = player({ id: "m2", choiceIndex: 1, mutinied: true });
     const res = resolve([leader, m1, m2], { leaderId: "lead" });
     expect(res.results.m1?.mutiny).toBe("lost");
-    expect(res.scoreDelta.m1).toBe(-ARCADE.MUTINY_FAIL_PENALTY);
+    expect(res.scoreDelta.m1 ?? 0).toBe(0);
+    expect(res.scoreDelta.m2 ?? 0).toBe(0);
+    expect(res.scoreDelta.lead).toBeGreaterThan(0);
+  });
+
+  it("only forfeits answers for a divided mutiny", () => {
+    const res = resolve(
+      [
+        player({ id: "lead", choiceIndex: 1 }),
+        player({ id: "m1", choiceIndex: 0, mutinied: true }),
+        player({ id: "m2", choiceIndex: 0, mutinied: true }),
+        player({ id: "crew", choiceIndex: 0, lockedAt: START }),
+      ],
+      { leaderId: "lead" },
+    );
+    expect(res.scoreDelta.m1 ?? 0).toBe(0);
+    expect(res.scoreDelta.m2 ?? 0).toBe(0);
+    expect(res.scoreDelta.lead ?? 0).toBe(0);
+    expect(res.scoreDelta.crew).toBe(ARCADE.POT_MAX);
   });
 
   it("a lone mutineer is marooned, win or lose", () => {
@@ -108,6 +126,19 @@ describe("mutiny", () => {
     const res = resolve([leader, lone, other], { leaderId: "lead" });
     expect(res.newlyMarooned).toContain("lone");
     expect(res.chests.some((c) => c.playerId === "lone" && c.source === "marooned")).toBe(true);
+  });
+
+  it("disables mutiny and marooning during onboarding", () => {
+    const res = resolve(
+      [
+        player({ id: "lead", choiceIndex: 0, lockedAt: START }),
+        player({ id: "m", choiceIndex: 1, mutinied: true }),
+        player({ id: "crew", choiceIndex: 0, lockedAt: START }),
+      ],
+      { leaderId: "lead", socialMechanicsEnabled: false },
+    );
+    expect(res.newlyMarooned).toEqual([]);
+    expect(res.events.some((e) => e.title.includes("MUTINY"))).toBe(false);
   });
 });
 
@@ -194,20 +225,15 @@ describe("random sea events", () => {
     expect(res.scoreDelta.lead).toBeLessThan(0);
   });
 
-  it("poseidon blesses a struggling pirate at most once", () => {
+  it("does not fire Poseidon during regular questions", () => {
     const leader = player({ id: "lead", choiceIndex: 0, lockedAt: START, score: 1000 });
     const poor = player({ id: "poor", choiceIndex: 1, score: 50 });
-    const withBlessing = resolve([leader, poor, player({ id: "c", choiceIndex: 1, score: 500 })], {
+    const res = resolve([leader, poor, player({ id: "c", choiceIndex: 1, score: 500 })], {
       leaderId: "lead",
       rng: () => 0.3,
     });
-    expect(withBlessing.poseidonBlessed).toContain("poor");
-    const alreadyUsed = resolve([leader, poor, player({ id: "c", choiceIndex: 1, score: 500 })], {
-      leaderId: "lead",
-      rng: () => 0.3,
-      poseidonUsed: new Set(["poor"]),
-    });
-    expect(alreadyUsed.poseidonBlessed).toHaveLength(0);
+    expect(res.poseidonBlessed).toHaveLength(0);
+    expect(res.events.some((e) => e.title.includes("POSEIDON"))).toBe(false);
   });
 });
 
