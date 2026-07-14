@@ -90,11 +90,12 @@ URL — room codes do the rest (invite links use `?room=CODE`).
 ## Repo map
 
 ```
-shared/   types · config (scoring/odds/items/missions) · pure game logic · 75 unit tests
-server/   Socket.IO authoritative engine · rooms · bots · debug handlers
-client/   React screens · Zustand store · neon pirate UI · Playwright smoke test
-docs/     PRD · GAME_DESIGN · ARCHITECTURE · ROADMAP · IMPLEMENTATION_PLAN · SELF_REVIEW · PLAYTEST_NOTES
-.cursor/  persistent rules for future Cursor work
+shared/              types · config · pure game logic · Vitest tests
+server/              Socket.IO authoritative engine · rooms · bots · debug handlers
+client/              React screens · Zustand store · neon pirate UI · Playwright smoke
+experiments/loot-drop/  archived Phaser 3 Loot Drop vertical slice (assets + systems)
+docs/                PRD · GAME_DESIGN · ARCHITECTURE · Phaser / Higgsfield notes
+.cursor/             rules + skills for future Cursor work
 ```
 
 ## Docs

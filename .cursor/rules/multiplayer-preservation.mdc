@@ -1,0 +1,22 @@
+---
+description: Multiplayer must keep working; server stays authoritative
+alwaysApply: true
+---
+
+- Never break: room creation, room joining by code, host start, player
+  nicknames, allocation sync, lock-in sync, reveal sync, disconnect handling.
+  Two browsers/laptops must be able to complete a full game.
+- The server (`server/src/room.ts`) is the single source of truth: it owns
+  phases, timers, allocations, scores and the correct answer. Clients render
+  state and send intents; they never compute outcomes locally.
+- The socket contract lives in `shared/src/types.ts`
+  (`ClientToServerEvents` / `ServerToClientEvents`). Any protocol change
+  updates that file first and both sides together.
+- Validate all client input server-side (`allocationsValid`, phase checks,
+  lock checks). Exact loot splits stay private until reveal; only totals,
+  lock status and confidence flags are public.
+- Client effects must tolerate out-of-order/late state: cancel running
+  timelines when a new question arrives, re-hydrate from
+  `GameEventBridge.lastRoomState` on scene (re)start.
+- After protocol or flow changes, run `node scripts/smoke-test.mjs` with the
+  dev servers up to prove the two-player loop end to end.

@@ -1,0 +1,20 @@
+---
+description: Visual quality bar — it must feel like a 2D mobile game, not a website
+alwaysApply: true
+---
+
+- Banned in gameplay: static answer cards, plain buttons, numeric input
+  boxes, emoji-as-art, motionless panels, instant state swaps.
+- Required: full-screen animated scene with constant ambient motion (waves,
+  fog, bobbing, sparkles), chunky outlined shapes, neon pirate casino palette
+  (deep navy `#0d1b33`, ink `#1c1230`, cyan `#2ee6ff`, magenta `#ff4fd8`,
+  gold `#ffd23e`, cream `#fdf6dd`).
+- Text uses the game fonts: Luckiest Guy for numbers/headlines with thick
+  dark strokes, Nunito 700/900 for readable body/answers.
+- Placeholder art must look intentional: thick outlines, gloss highlights,
+  consistent palette — never developer-grey boxes.
+- Answer text must stay readable at a glance on every island; if art fights
+  readability, readability wins (scrims, plaques, strokes).
+- Any React overlay that appears during gameplay must be styled like game HUD
+  (chunky, glowing, on-palette), not like a settings form. The debug panel is
+  the only exception.

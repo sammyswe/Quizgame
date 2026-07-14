@@ -1,0 +1,16 @@
+---
+description: Every interaction must be physical and give immediate feedback
+alwaysApply: true
+---
+
+- No numeric input boxes, dropdowns or checkbox forms for gameplay actions.
+  Allocating loot = dragging/tapping coins that visibly fly. Using an item =
+  dragging an attack onto a target that glows. Locking in = slamming a big
+  button.
+- Every pointer interaction needs feedback within one frame: hover glow,
+  press squash, release action + particle/sound. Invalid actions also give
+  feedback (shake, "NO LOOT LEFT!" pop) — never silently ignore input.
+- Buttons are chunky, animated (pulse when actionable, squash on press) and
+  state-changing (LOCK IN -> LOCKED!).
+- If a UI element could appear unchanged in a generic quiz website, it does
+  not belong in the gameplay scene.
