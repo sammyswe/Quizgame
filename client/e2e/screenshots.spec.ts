@@ -37,8 +37,8 @@ test("capture arcade screens @shots", async ({ browser }) => {
   await page.getByText(/round 1 of/i).waitFor({ timeout: 15_000 });
   await page.screenshot({ path: "/tmp/artifacts/v2-intro.png" });
 
-  // question screen with decaying pot + mutiny + avatars
-  await page.getByText(/draining|locked/i).waitFor({ timeout: 15_000 });
+  // Phaser question scene: canvas replaces DOM answer cards.
+  await page.locator("canvas").waitFor({ state: "visible", timeout: 15_000 });
   await page.waitForTimeout(1200);
   await page.screenshot({ path: "/tmp/artifacts/v2-question.png" });
 

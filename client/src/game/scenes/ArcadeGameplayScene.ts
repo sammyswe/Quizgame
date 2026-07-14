@@ -921,6 +921,9 @@ export class ArcadeGameplayScene extends Phaser.Scene {
         } else if (fired.powerUpId === "parrot") {
           const parrot = this.add.circle(source.x, source.y - 45, 14, 0x40c75a, 1).setStrokeStyle(4, INK);
           this.tweens.add({ targets: parrot, x: target.x, y: target.y - 70, duration: 700, yoyo: true, hold: 350, onComplete: () => parrot.destroy() });
+        } else if (fired.powerUpId === "barnacle" || fired.powerUpId === "barnacleInfestation") {
+          const net = this.add.grid(source.x, source.y - 25, 70, 70, 12, 12, 0x7fa98a, 0.32, 0xd6e2bc, 0.9);
+          this.tweens.add({ targets: net, x: target.x, y: target.y, angle: 240, scale: 1.35, duration: 650, onComplete: () => net.destroy() });
         } else if (fired.powerUpId === "whiteFlag") {
           const flag = this.add.rectangle(target.x, target.y - 80, 48, 32, 0xffffff, 1).setStrokeStyle(4, INK);
           this.tweens.add({ targets: flag, y: "-=24", duration: 450 });
@@ -1157,6 +1160,8 @@ export class ArcadeGameplayScene extends Phaser.Scene {
       swordFight: "DUEL",
       cannonball: "CANNON",
       cannonballBarrage: "BARRAGE",
+      barnacle: "BARNACLE",
+      barnacleInfestation: "INFEST",
     };
     return names[id];
   }

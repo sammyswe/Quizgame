@@ -110,6 +110,17 @@ export function attachSockets(io: Server): void {
       configureGame(room, { length: c.length, rounds: [] });
     });
 
+    socket.on("avatar:choose", (index: unknown) => {
+      const room = currentRoom();
+      const playerId = currentPlayerId();
+      if (!room || !playerId || (room.phase !== "lobby" && room.phase !== "setup")) return;
+      if (typeof index !== "number" || !Number.isInteger(index) || index < 0 || index > 7) return;
+      const player = room.players.get(playerId);
+      if (!player) return;
+      player.avatar = `pirate-${index}`;
+      broadcastRoom(io, room);
+    });
+
     socket.on("game:start", () => {
       const room = currentRoom();
       if (!room || currentPlayerId() !== room.hostId) return;

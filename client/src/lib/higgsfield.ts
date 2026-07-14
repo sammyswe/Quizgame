@@ -105,8 +105,8 @@ const AVATAR_MOOD_CELL: Record<HfAvatarMood, number> = {
   winner: 6, // celebrate
 };
 
-export function avatarFrame(mood: HfAvatarMood = "idle"): CSSProperties {
-  const i = AVATAR_MOOD_CELL[mood];
+export function avatarFrame(mood: HfAvatarMood = "idle", variant?: number): CSSProperties {
+  const i = variant === undefined ? AVATAR_MOOD_CELL[mood] : ((variant % 9) + 9) % 9;
   return spriteStyle(HF.avatars, HF_GRIDS.avatars, i % 3, Math.floor(i / 3));
 }
 

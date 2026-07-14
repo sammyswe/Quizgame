@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { HF } from "../lib/higgsfield";
 
 /**
- * Full-bleed neon pirate ocean — Higgsfield Loot Drop painting (A1) with a
- * light particle wash on top so the world feels alive without burying UI.
+ * Interim excursion shell. A newly generated daylight deck background replaces
+ * this source once Higgsfield authentication is available.
  */
 export function Background() {
   const bubbles = useMemo(
@@ -36,7 +36,7 @@ export function Background() {
         alt=""
         className="absolute inset-0 h-full w-full scale-105 object-cover"
         style={{
-          filter: "saturate(1.08) contrast(1.05)",
+          filter: "sepia(0.18) saturate(0.78) hue-rotate(-12deg) brightness(1.12) contrast(0.92)",
           animation: "hf-ocean-drift 28s ease-in-out infinite alternate",
         }}
       />
@@ -45,12 +45,10 @@ export function Background() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 28%, rgba(7,11,30,0.15) 0%, rgba(7,11,30,0.55) 55%, rgba(7,11,30,0.78) 100%)",
+            "linear-gradient(180deg, rgba(93,169,194,0.18) 0%, rgba(18,67,88,0.42) 55%, rgba(8,32,48,0.78) 100%)",
         }}
       />
-      {/* Soft aurora accents matching the painting's cyan / magenta lights */}
-      <div className="aurora aurora-1 opacity-40" />
-      <div className="aurora aurora-2 opacity-30" />
+      <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-amber-100/10 to-transparent" />
 
       {bubbles.map((b, i) => (
         <span

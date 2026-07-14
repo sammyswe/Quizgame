@@ -92,6 +92,7 @@ export function publicPlayers(room: ServerRoom): PublicPlayer[] {
       ...(p.cannonballed ? (["cannonball"] as const) : []),
       ...(p.plankUntil ? (["walkThePlank"] as const) : []),
       ...(p.parrotTargetId ? (["parrot"] as const) : []),
+      ...(p.whiteFlagged ? (["whiteFlag"] as const) : []),
     ],
     streak: p.streak,
     mutinyTokens: 0,
@@ -168,7 +169,17 @@ export function privateState(room: ServerRoom, p: ServerPlayer): PrivatePlayerSt
     hasMutinied: p.mutinied || undefined,
     revealedAnswerIndex: p.revealedAnswerIndex,
     parrotTargetId: p.parrotTargetId,
-    horizon: p.horizon,
+    horizon: p.telescopeTargetId
+      ? (() => {
+          const target = room.players.get(p.telescopeTargetId);
+          const answer = room.answers.get(p.telescopeTargetId);
+          return target
+            ? answer?.choiceIndex === undefined
+              ? `${target.nickname} has not committed a course yet.`
+              : `${target.nickname} committed to island ${String.fromCharCode(65 + answer.choiceIndex)}.`
+            : undefined;
+        })()
+      : p.horizon,
     cannonballed: p.cannonballed || undefined,
     plankUntil: p.plankUntil,
     lootDropPool: room.isEventRound ? p.eventWager : undefined,
@@ -240,8 +251,10 @@ function resetQuestionState(p: ServerPlayer): void {
   p.disabledOptions = [];
   p.revealedAnswerIndex = undefined;
   p.parrotTargetId = undefined;
+  p.telescopeTargetId = undefined;
   p.cannonballed = false;
   p.plankUntil = undefined;
+  p.whiteFlagged = false;
 }
 
 export function startGame(room: ServerRoom): void {
@@ -352,6 +365,7 @@ export function maybeEndEarly(room: ServerRoom): void {
   const everyoneIn = [...room.players.values()]
     .filter((p) => p.connected && !p.marooned)
     .filter((p) => !p.mutinied)
+    .filter((p) => !p.whiteFlagged)
     .every((p) => room.answers.has(p.id));
   if (!everyoneIn) return;
   if (room.timer) clearTimeout(room.timer);
@@ -401,6 +415,7 @@ function endArcadeQuestion(room: ServerRoom): void {
       rumRush: p.rumRush,
       parrotTargetId: p.parrotTargetId,
       plankUntil: p.plankUntil,
+      surrendered: p.whiteFlagged,
     })),
     swordFights: room.swordFights,
     leaderId,
@@ -542,7 +557,7 @@ export function submitAnswer(
 ): void {
   if (room.phase !== "question") return;
   const p = room.players.get(playerId);
-  if (!p || p.marooned || p.mutinied) return;
+  if (!p || p.marooned || p.mutinied || p.whiteFlagged) return;
   const allocationPool = room.isEventRound ? p.eventWager : ARCADE.MPD_POOL;
   room.answers.set(playerId, {
     playerId,
@@ -625,7 +640,7 @@ export function usePowerUp(
         const wrong = q.options
           .map((_, i) => i)
           .filter((i) => i !== q.correctIndex && !p.disabledOptions.includes(i));
-        const removeCount = Math.floor(wrong.length / 2) || 1;
+        const removeCount = Math.max(1, wrong.length - 1);
         const shuffled = [...wrong].sort(() => Math.random() - 0.5);
         p.disabledOptions = [...p.disabledOptions, ...shuffled.slice(0, removeCount)];
       }
@@ -646,19 +661,9 @@ export function usePowerUp(
       break;
     }
     case "telescope": {
-      const events = eventRounds(room.totalRounds).filter((r) => r >= room.roundNumber);
-      const nextEvent = events[0];
-      const lines = [
-        nextEvent
-          ? `⚡ ${SPECIAL_EVENTS[eventForRound(nextEvent)].name} at round ${nextEvent} (${nextEvent - room.roundNumber} away)`
-          : "Calm seas — no more scheduled events.",
-        `🦑 Kraken sighting odds: ${Math.round(ARCADE.KRAKEN_CHANCE * 100)}% per round`,
-        `🐬 Dolphins strike when ${Math.round(ARCADE.DOLPHIN_THRESHOLD * 100)}%+ answer right`,
-      ];
-      p.horizon = lines.join("\n");
+      if (target) p.telescopeTargetId = target.id;
       emitter.toPlayer(room, playerId, "toast", {
-        icon: "🔭",
-        text: "You scan the horizon...",
+        text: target ? `Watching ${target.nickname}'s course through the telescope.` : "Pick a ship to watch.",
       });
       break;
     }
@@ -688,20 +693,12 @@ export function usePowerUp(
       break;
     }
     case "whiteFlag": {
-      const cash = p.streak * ARCADE.WHITE_FLAG_PER_STREAK;
-      if (cash > 0) {
-        p.score = applyDelta(p.score, cash).next;
-        emitter.toPlayer(room, playerId, "toast", {
-          icon: "🏳️",
-          text: `Streak surrendered for ${cash} gold.`,
-        });
-      } else {
-        emitter.toPlayer(room, playerId, "toast", {
-          icon: "🏳️",
-          text: "No streak to surrender. The flag flaps sadly.",
-        });
-      }
-      p.streak = 0;
+      p.whiteFlagged = true;
+      room.answers.delete(playerId);
+      emitter.toPlayer(room, playerId, "toast", {
+        text: `White flag raised. You sit this question out and preserve a ${p.streak}-answer streak.`,
+      });
+      maybeEndEarly(room);
       break;
     }
     case "secretX": {
@@ -764,6 +761,33 @@ export function usePowerUp(
           icon: "🧨",
           text: `BARRAGE! ${p.nickname} shells the whole crew!`,
         });
+      }
+      break;
+    }
+    case "barnacle": {
+      if (target && q) {
+        const available = q.options.map((_, index) => index).filter((index) => !target.disabledOptions.includes(index));
+        const covered = available[Math.floor(Math.random() * available.length)];
+        if (covered !== undefined) target.disabledOptions.push(covered);
+        emitter.toPlayer(room, target.id, "player:privateState", privateState(room, target));
+        emitter.toPlayer(room, target.id, "toast", {
+          text: `${p.nickname}'s barnacle net covered one of your island charts.`,
+        });
+      }
+      break;
+    }
+    case "barnacleInfestation": {
+      if (q) {
+        for (const other of room.players.values()) {
+          if (other.id === playerId || other.marooned) continue;
+          const available = q.options.map((_, index) => index).filter((index) => !other.disabledOptions.includes(index));
+          const covered = available[Math.floor(Math.random() * available.length)];
+          if (covered !== undefined) other.disabledOptions.push(covered);
+          emitter.toPlayer(room, other.id, "player:privateState", privateState(room, other));
+          emitter.toPlayer(room, other.id, "toast", {
+            text: `${p.nickname} infested your island charts with barnacles.`,
+          });
+        }
       }
       break;
     }

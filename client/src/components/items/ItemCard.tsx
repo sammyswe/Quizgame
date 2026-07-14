@@ -46,12 +46,15 @@ export function ItemCard({
 
       <div className={`flex items-center gap-3 ${compact ? "p-2.5" : "p-3.5"}`}>
         <motion.span
-          className={compact ? "text-3xl" : "text-4xl"}
+          className={`flex shrink-0 items-center justify-center rounded-full border-2 font-display ${
+            compact ? "h-11 w-11 text-lg" : "h-14 w-14 text-xl"
+          }`}
+          style={{ borderColor: style.frame, color: style.text, background: "#102b3d" }}
           animate={{ y: [0, -3, 0], rotate: [0, def.rarity === "legendary" ? 6 : 3, 0] }}
           transition={{ repeat: Infinity, duration: 2.4 }}
           aria-hidden
         >
-          {def.icon}
+          {def.name.slice(0, 2).toUpperCase()}
         </motion.span>
         <div className="min-w-0 flex-1 pr-10">
           <div className="font-display text-base leading-tight" style={{ color: style.text }}>
@@ -68,7 +71,7 @@ export function ItemCard({
             onClick={onPlay}
             className={`!min-h-0 shrink-0 !px-3.5 !py-2 !text-sm ${def.isAttack ? "btn-pink" : "btn-cyan"} ${playDisabled ? "opacity-40" : ""}`}
           >
-            {def.isAttack ? "🎯 Aim" : "Use"}
+            {def.isAttack ? "Aim" : "Use"}
           </motion.button>
         )}
       </div>

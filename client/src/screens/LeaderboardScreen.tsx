@@ -4,10 +4,7 @@ import { socket } from "../net/socket";
 import { useGameStore } from "../store/gameStore";
 import { AnimatedNumber, Screen, TimerBar } from "../components/ui";
 import { PirateAvatar } from "../components/players/PirateAvatar";
-import { EmojiBurst } from "../components/fx";
 import { sfx } from "../lib/sfx";
-
-const MEDALS = ["🥇", "🥈", "🥉"];
 
 /** Remember last round's ranks so we can show movement arrows + new-leader drama. */
 let previousRanks: Record<string, number> = {};
@@ -57,7 +54,7 @@ export function LeaderboardScreen() {
         transition={{ type: "spring", stiffness: 220, damping: 14 }}
         className="text-center font-display text-4xl text-neon-gold title-glow"
       >
-        🏆 The Ledger
+        THE FLEET LEDGER
       </motion.h1>
 
       {newLeader && (
@@ -65,10 +62,9 @@ export function LeaderboardScreen() {
           initial={{ scale: 0, rotate: -6 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ delay: 0.6, type: "spring", stiffness: 300, damping: 14 }}
-          className="relative mx-auto rounded-full border-2 border-neon-gold bg-amber-400/15 px-5 py-1.5 font-display text-lg text-neon-gold shadow-neon-gold"
+          className="relative mx-auto rounded-full border-2 border-[#f2c85b] bg-[#17384c]/95 px-5 py-1.5 font-display text-lg text-[#ffe18a] shadow-xl"
         >
-          <EmojiBurst emoji="👑" count={6} distance={70} duration={1} />
-          👑 NEW LEADER: {sorted[0]?.nickname}!
+          NEW CAPTAIN: {sorted[0]?.nickname}
         </motion.div>
       )}
 
@@ -83,7 +79,7 @@ export function LeaderboardScreen() {
               initial={{ opacity: 0, x: i % 2 === 0 ? -80 : 80, rotate: i % 2 === 0 ? -2 : 2 }}
               animate={{ opacity: 1, x: 0, rotate: 0 }}
               transition={{ delay: 0.2 + i * 0.16, type: "spring", stiffness: 220, damping: 18 }}
-              className={`neon-card relative flex items-center gap-3 overflow-hidden border-2 p-3 ${
+              className={`pirate-panel relative flex items-center gap-3 overflow-hidden p-3 ${
                 i === 0
                   ? "border-neon-gold/70 shadow-neon-gold"
                   : isLast
@@ -107,7 +103,7 @@ export function LeaderboardScreen() {
                 animate={{ scale: [0, 1.4, 1] }}
                 transition={{ delay: 0.35 + i * 0.16, duration: 0.4 }}
               >
-                {MEDALS[i] ?? `#${p.rank}`}
+                #{p.rank}
               </motion.span>
               <div className="relative">
                 <PirateAvatar
@@ -146,14 +142,14 @@ export function LeaderboardScreen() {
                   )}
                 </div>
                 <div className="flex gap-2 text-[11px] text-slate-400">
-                  {p.streak >= 2 && <span>🔥 {p.streak} streak</span>}
-                  {p.chestCount > 0 && <span>🎁 ×{p.chestCount}</span>}
-                  {p.itemCount > 0 && <span>🎒 ×{p.itemCount}</span>}
-                  {isLast && <span className="text-neon-red/80">🦈 shark territory</span>}
+                  {p.streak >= 2 && <span>{p.streak} streak</span>}
+                  {p.chestCount > 0 && <span>{p.chestCount} chest</span>}
+                  {p.itemCount > 0 && <span>{p.itemCount} item</span>}
+                  {isLast && <span className="text-neon-red/80">shark territory</span>}
                 </div>
               </div>
               <div className="relative text-right font-display text-2xl text-neon-gold">
-                🪙 <AnimatedNumber value={p.score} />
+                <AnimatedNumber value={p.score} /> gold
               </div>
             </motion.div>
           );
@@ -173,7 +169,7 @@ export function LeaderboardScreen() {
               <>
                 <br />
                 <span className="text-xs text-neon-gold">
-                  ⚡ {nextEventRound === nextRoundNumber ? "SPECIAL EVENT NOW" : `Special event at round ${nextEventRound}`}
+                  {nextEventRound === nextRoundNumber ? "SPECIAL VOYAGE NOW" : `Special voyage after question ${nextEventRound}`}
                 </span>
               </>
             )}
@@ -181,13 +177,13 @@ export function LeaderboardScreen() {
         ) : (
           <p className="animate-shimmer font-display text-xl text-neon-red">The final tally...</p>
         )}
-        <p className="mt-2 text-xs text-slate-500">💡 Got chests? Open them now → 🎒</p>
+        <p className="mt-2 text-xs text-slate-400">Open any waiting chests before the fleet moves on.</p>
         {isHost && (
           <button
             className="btn-ghost mt-2 !min-h-0 !px-4 !py-2 !text-sm"
             onClick={() => socket.emit("phase:advance")}
           >
-            Next round ⏭️
+            Next question
           </button>
         )}
       </div>

@@ -20,6 +20,8 @@ export type ArcadePlayerInput = {
   /** Epoch ms of the last answer lock. */
   lockedAt?: number;
   mutinied: boolean;
+  /** White Flag: deliberately sits out while preserving the streak. */
+  surrendered?: boolean;
   /** Sitting this question out (marooned last question). */
   skipped: boolean;
   rumRush: boolean;
@@ -101,7 +103,7 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
   };
 
   const isCorrect = (p: ArcadePlayerInput): boolean => {
-    if (p.skipped) return false;
+    if (p.skipped || p.surrendered) return false;
     if (p.mutinied) return false;
     if (effectiveChoice(p) !== input.correctIndex) return false;
     // Walk the Plank: answering after the deadline scores nothing.
@@ -111,7 +113,7 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
 
   // --- Base scoring: decaying pot + streak bonus -----------------------------
   for (const p of input.players) {
-    if (p.skipped) {
+    if (p.skipped || p.surrendered) {
       streaks[p.id] = p.streak;
       results[p.id] = {
         correct: false,
@@ -120,7 +122,7 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
         streak: p.streak,
         streakBonus: 0,
         potAtLock: 0,
-        skipped: true,
+        skipped: p.skipped || undefined,
       };
       continue;
     }
@@ -129,10 +131,11 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
       p.plankUntil !== undefined &&
       (p.lockedAt ?? Infinity) > p.plankUntil &&
       effectiveChoice(p) === input.correctIndex;
-    const pot = correct
+    const timedPot = correct
       ? potAt(p.lockedAt ?? input.questionStartedAt + input.questionDurationMs,
           input.questionStartedAt, input.questionDurationMs)
       : 0;
+    const pot = p.plankUntil ? Math.min(timedPot, ARCADE.PLANK_POT_CAP) : timedPot;
     const nextStreak = correct ? p.streak + 1 : 0;
     const bonus = correct ? streakBonus(nextStreak) : 0;
     let earned = pot + bonus;
@@ -307,7 +310,11 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
   }
 
   // --- Marooned: everyone right bar one ------------------------------------------
-  if (socialMechanicsEnabled && active.length >= ARCADE.MAROON_MIN_PLAYERS) {
+  if (
+    socialMechanicsEnabled &&
+    active.length >= ARCADE.MAROON_MIN_PLAYERS &&
+    active.every((player) => !player.surrendered && !player.mutinied)
+  ) {
     const wrong = active.filter((p) => !isCorrect(p));
     if (wrong.length === 1) {
       const odd = wrong[0];

@@ -47,6 +47,7 @@ export const ARCADE = {
   SWORD_FIGHT_STEAL: 60,
   SWORD_FIGHT_TIE_STEAL: 30,
   PLANK_SECONDS: 5,
+  PLANK_POT_CAP: 80,
 
   // --- Million Pound Drop fallback (the live pool normally comes from blockLoot) ---
   MPD_POOL: 100,

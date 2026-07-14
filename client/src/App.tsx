@@ -13,7 +13,6 @@ import { WinnerScreen } from "./screens/WinnerScreen";
 import { Hud } from "./components/Hud";
 import { ItemDrawer } from "./components/ItemDrawer";
 import { ChestModal } from "./components/ChestModal";
-import { ResultOverlay } from "./components/ResultOverlay";
 import { Toasts } from "./components/Toasts";
 import { DebugPanel } from "./components/DebugPanel";
 
@@ -86,7 +85,6 @@ export default function App() {
         </AnimatePresence>
       </div>
       {game && !inPhaser && <ItemDrawer />}
-      <ResultOverlay />
       <ChestModal />
       <Toasts />
       <MuteButton />
@@ -103,10 +101,10 @@ function MuteButton() {
         setMuted(!muted);
         setMutedState(!muted);
       }}
-      className="fixed bottom-20 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/40 text-base opacity-70 backdrop-blur transition hover:opacity-100"
+      className="fixed bottom-20 right-4 z-40 flex min-w-20 items-center justify-center rounded-xl border-2 border-[#b98750]/70 bg-[#102c40]/90 px-3 py-2 text-xs font-black opacity-80 backdrop-blur transition hover:opacity-100"
       aria-label={muted ? "Unmute sounds" : "Mute sounds"}
     >
-      {muted ? "🔇" : "🔊"}
+      {muted ? "MUTED" : "SOUND"}
     </button>
   );
 }

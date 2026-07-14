@@ -30,7 +30,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
     name: "White Flag",
     icon: "🏳️",
     rarity: "common",
-    description: "Surrender your streak — cash it in for gold now.",
+    description: "Sit out this question and preserve your streak.",
     target: "self",
     isAttack: false,
     animation: "aura",
@@ -40,8 +40,8 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
     name: "Telescope",
     icon: "🔭",
     rarity: "rare",
-    description: "See events on the horizon.",
-    target: "self",
+    description: "Privately see another pirate's committed answer.",
+    target: "otherPlayer",
     isAttack: false,
     animation: "aura",
   },
@@ -115,6 +115,26 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
     isAttack: true,
     animation: "projectile",
   },
+  barnacle: {
+    id: "barnacle",
+    name: "Barnacle Net",
+    icon: "BN",
+    rarity: "epic",
+    description: "Cover one answer on another pirate's screen.",
+    target: "otherPlayer",
+    isAttack: true,
+    animation: "projectile",
+  },
+  barnacleInfestation: {
+    id: "barnacleInfestation",
+    name: "Barnacle Infestation",
+    icon: "BI",
+    rarity: "legendary",
+    description: "Cover one answer for every other pirate.",
+    target: "allOthers",
+    isAttack: true,
+    animation: "projectile",
+  },
 };
 
 export const POWERUP_LIST = Object.values(POWERUPS);
@@ -123,8 +143,8 @@ export const POWERUP_LIST = Object.values(POWERUPS);
 export const POWERUPS_BY_RARITY: Record<Rarity, PowerUpId[]> = {
   common: ["eyepatch", "parrot", "whiteFlag"],
   rare: ["telescope", "rumRush", "cannonball", "walkThePlank"],
-  epic: ["hook", "swordFight"],
-  legendary: ["secretX", "cannonballBarrage"],
+  epic: ["hook", "swordFight", "barnacle"],
+  legendary: ["secretX", "cannonballBarrage", "barnacleInfestation"],
 };
 
 /** Roll a power-up of the given rarity. Pass rng for deterministic tests. */

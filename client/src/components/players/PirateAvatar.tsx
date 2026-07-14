@@ -47,7 +47,7 @@ const MOOD_RING: Record<AvatarMood, { color?: string; pulse: boolean; badge?: st
 
 export function PirateAvatar({
   playerId,
-  emoji: _emoji,
+  emoji,
   size = 44,
   mood = "idle",
   bobDelay = 0,
@@ -62,6 +62,7 @@ export function PirateAvatar({
   const moodCfg = MOOD_RING[mood];
   const ring = moodCfg.color ?? base;
   const wobble = mood === "nervous" || mood === "attacked";
+  const variant = emoji.startsWith("pirate-") ? Number.parseInt(emoji.slice(7), 10) : undefined;
 
   return (
     <motion.div
@@ -92,7 +93,7 @@ export function PirateAvatar({
         transition={{ repeat: Infinity, duration: 1.2 }}
       >
         <HfSprite
-          frame={avatarFrame(mood)}
+          frame={avatarFrame(mood, Number.isFinite(variant) ? variant : undefined)}
           size={size * 1.12}
           className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2"
           label="Pirate"

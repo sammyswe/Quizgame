@@ -37,6 +37,8 @@ export type ServerPlayer = {
   eventWager: number;
   /** Rum Rush pending on next correct answer. */
   rumRush: boolean;
+  /** White Flag: forfeits this question while preserving the current streak. */
+  whiteFlagged: boolean;
   /** Eyepatch / Secret X: wrong options hidden for this player. */
   disabledOptions: number[];
   /** Secret X revealed answer index (private). */
@@ -45,6 +47,7 @@ export type ServerPlayer = {
   parrotTargetId?: string;
   /** Telescope: horizon text (private). */
   horizon?: string;
+  telescopeTargetId?: string;
   /** Cannonball: answers visually holed this question. */
   cannonballed: boolean;
   /** Walk the Plank: must answer before this epoch ms. */
@@ -83,11 +86,11 @@ export type ServerRoom = {
   createdAt: number;
 };
 
-const AVATAR_POOL = ["🦜", "🐙", "🦈", "🐢", "🦑", "🦀", "🦞", "🐡", "🐬", "🐋"];
+const AVATAR_POOL = Array.from({ length: 8 }, (_, index) => `pirate-${index}`);
 
 export function nextAvatar(room: Pick<ServerRoom, "players">): string {
   const used = new Set([...room.players.values()].map((p) => p.avatar));
-  return AVATAR_POOL.find((a) => !used.has(a)) ?? "🏴‍☠️";
+  return AVATAR_POOL.find((a) => !used.has(a)) ?? "pirate-0";
 }
 
 export function createPlayer(
@@ -98,7 +101,7 @@ export function createPlayer(
   return {
     id,
     nickname: nickname.slice(0, 16),
-    avatar: "🏴‍☠️",
+    avatar: "pirate-0",
     isHost: false,
     isBot: false,
     connected: true,
@@ -113,6 +116,7 @@ export function createPlayer(
     blockLoot: 0,
     eventWager: 0,
     rumRush: false,
+    whiteFlagged: false,
     disabledOptions: [],
     cannonballed: false,
     poseidonUsed: false,

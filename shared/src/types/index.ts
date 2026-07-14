@@ -172,7 +172,9 @@ export type PowerUpId =
   | "walkThePlank"
   | "swordFight"
   | "cannonball"
-  | "cannonballBarrage";
+  | "cannonballBarrage"
+  | "barnacle"
+  | "barnacleInfestation";
 
 export type PowerUpTarget = "self" | "otherPlayer" | "allOthers";
 
@@ -549,6 +551,8 @@ export type ClientEvents = {
   ) => void;
   "room:rejoin": (roomCode: string, playerId: string, cb: (res: Ack<{ ok: true }>) => void) => void;
   "game:configure": (config: GameConfig) => void;
+  /** Lobby: choose one of the eight authored pirate identities. */
+  "avatar:choose": (index: number) => void;
   "game:start": () => void;
   "answer:submit": (payload: {
     choiceIndex?: number;

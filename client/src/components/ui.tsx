@@ -95,7 +95,7 @@ export function PlayerChip({
 export function Screen({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`mx-auto flex min-h-full w-full max-w-md flex-col px-4 pb-6 pt-4 ${className}`}
+      className={`mx-auto flex min-h-full w-full max-w-6xl flex-col px-6 pb-6 pt-4 ${className}`}
       style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
     >
       {children}

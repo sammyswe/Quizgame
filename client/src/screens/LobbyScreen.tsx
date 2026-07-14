@@ -7,7 +7,7 @@ import { Screen, SectionTitle } from "../components/ui";
 import { PirateAvatar } from "../components/players/PirateAvatar";
 import { sfx } from "../lib/sfx";
 
-const LENGTH_ORDER: GameLength[] = ["test", "short", "medium", "long"];
+const LENGTH_ORDER: GameLength[] = ["test"];
 
 /** Lobby + game setup. The host picks the length; the crew gathers. */
 export function LobbyScreen() {
@@ -19,6 +19,8 @@ export function LobbyScreen() {
   if (!game) return null;
 
   const length = game.config.length;
+  const me = game.players.find((player) => player.id === playerId);
+  const avatarIndex = me?.avatar.startsWith("pirate-") ? Number.parseInt(me.avatar.slice(7), 10) : 0;
 
   const shareUrl = `${window.location.origin}${window.location.pathname}?room=${game.roomCode}`;
 
@@ -43,37 +45,37 @@ export function LobbyScreen() {
         <motion.button
           onClick={copyLink}
           whileTap={{ scale: 0.96 }}
-          className="mx-auto mt-1 block rounded-2xl border border-neon-gold/50 bg-card px-8 py-3 font-display text-5xl tracking-[0.3em] text-neon-gold shadow-neon-gold"
+          className="mx-auto mt-1 block rounded-2xl border-4 border-[#75451f] bg-[#f0d99e] px-8 py-3 font-display text-5xl tracking-[0.3em] text-[#3b2618] shadow-xl"
           aria-label={`Room code ${game.roomCode}, tap to copy invite link`}
         >
           {game.roomCode}
         </motion.button>
         <button
           onClick={copyLink}
-          className="mt-2 text-xs text-neon-cyan underline underline-offset-2"
+          className="mt-2 text-xs font-bold text-[#bfefff] underline underline-offset-2"
         >
-          {copied ? "✅ Copied!" : "📋 Copy invite link"}
+          {copied ? "Copied!" : "Copy invite link"}
         </button>
       </div>
 
       <div>
         <SectionTitle>Crew ({game.players.length}/8)</SectionTitle>
-        <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="mt-2 grid max-w-sm grid-cols-1 gap-3">
           {game.players.map((p, i) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, scale: 0.5, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 18 }}
-              className={`neon-card flex items-center gap-2 p-3 ${p.id === playerId ? "border-neon-cyan/50 shadow-neon-cyan" : ""}`}
+              className={`pirate-panel flex items-center gap-2 p-3 ${p.id === playerId ? "ring-2 ring-[#f2c85b]" : ""}`}
             >
               <PirateAvatar playerId={p.id} emoji={p.avatar} size={40} bobDelay={i * 0.3} />
               <div className="min-w-0">
                 <div className="truncate text-sm font-black">
-                  {p.nickname} {p.id === playerId && <span className="text-neon-cyan">(you)</span>}
+                  {p.nickname} {p.id === playerId && <span className="text-[#ffe18a]">(you)</span>}
                 </div>
                 <div className="text-[10px] uppercase tracking-wide text-slate-500">
-                  {p.isHost ? "👑 Captain (host)" : p.isBot ? "🤖 Bot" : "Crew"}
+                  {p.isHost ? "Captain and host" : p.isBot ? "Bot crew" : "Crew"}
                 </div>
               </div>
             </motion.div>
@@ -86,26 +88,44 @@ export function LobbyScreen() {
         </div>
       </div>
 
+      <div className="pirate-panel p-4">
+        <SectionTitle>Choose your pirate</SectionTitle>
+        <div className="mt-3 flex flex-wrap justify-center gap-3">
+          {Array.from({ length: 8 }, (_, index) => (
+            <button
+              key={index}
+              type="button"
+              aria-label={`Choose pirate ${index + 1}`}
+              onClick={() => socket.emit("avatar:choose", index)}
+              className={`rounded-full p-1 transition active:scale-95 ${
+                avatarIndex === index ? "bg-[#f2c85b] ring-4 ring-[#fff0b2]" : "bg-[#14354b]/70"
+              }`}
+            >
+              <PirateAvatar playerId={`choice-${index}`} emoji={`pirate-${index}`} size={58} />
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div>
         <SectionTitle>Game length</SectionTitle>
-        <div className="mt-2 grid grid-cols-4 gap-2">
+        <div className="mt-2 grid grid-cols-4 gap-3">
           {LENGTH_ORDER.map((l) => (
             <button
               key={l}
               disabled={!isHost}
               onClick={() => setLength(l)}
-              className={`neon-card p-3 text-center transition ${
-                length === l ? "border-neon-gold/70 shadow-neon-gold" : "opacity-60"
+              className={`pirate-panel p-3 text-center transition ${
+                length === l ? "ring-4 ring-[#f2c85b]" : "opacity-65"
               } ${isHost ? "" : "pointer-events-none"}`}
             >
-              <div className="font-display text-sm text-neon-gold">{ARCADE_LENGTHS[l].label}</div>
+              <div className="font-display text-sm text-[#ffe18a]">{ARCADE_LENGTHS[l].label}</div>
               <div className="mt-0.5 text-[10px] text-slate-400">{ARCADE_LENGTHS[l].blurb}</div>
             </button>
           ))}
         </div>
-        <p className="mt-1.5 text-[11px] text-slate-500">
-          ⚡ Special event every {ARCADE.EVENT_EVERY}th round · 🎁 answer right in the first{" "}
-          {ARCADE.FIRST_ITEM_WINDOW} rounds for an item
+        <p className="mt-1.5 text-[11px] text-slate-400">
+          The first item arrives after question {ARCADE.FIRST_ITEM_WINDOW}.
         </p>
       </div>
 
@@ -120,7 +140,7 @@ export function LobbyScreen() {
             socket.emit("game:start");
           }}
         >
-          ⚔️ Start Game
+          SET SAIL
         </motion.button>
       ) : (
         <p className="animate-shimmer text-center font-display text-lg text-neon-cyan">
