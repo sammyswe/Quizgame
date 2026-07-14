@@ -18,6 +18,7 @@ import {
   type GameSnapshot,
   type TargetingIntent,
 } from "../GameEventBridge";
+import { playIslandPlunderCeremony } from "../plunder/IslandPlunderCeremony";
 
 const W = 1280;
 const H = 720;
@@ -55,6 +56,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   private armedItem?: TargetingIntent;
   private lastFiredKey = 0;
   private lastRevealKey = "";
+  private statusKey = "";
   private mutinyConfirming = false;
 
   constructor() {
@@ -70,6 +72,8 @@ export class ArcadeGameplayScene extends Phaser.Scene {
 
   create(): void {
     this.generateFallbackTextures();
+    // Re-hydrate immediately from the bridge (GameplayShell may have pushed before the scene booted).
+    this.applySnapshot(gameEventBridge.current);
     this.unsubscribe = gameEventBridge.subscribe((snapshot) => this.applySnapshot(snapshot));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribe?.());
   }
@@ -109,7 +113,14 @@ export class ArcadeGameplayScene extends Phaser.Scene {
           : game.phase === "question"
             ? "question"
             : "waiting";
-    const nextKey = `${mode}:${game.question?.id ?? "none"}`;
+    // Never rebuild when the question payload is momentarily missing — that caused the blank blue Q2.
+    if ((mode === "question" || mode === "reveal" || mode === "loot") && !game.question) {
+      if (this.children.length === 0) this.renderSeaWorld();
+      return;
+    }
+    // Ignore leaderboard ticks while the canvas is held invisible — keep last painted frame warm.
+    if (game.phase === "leaderboard") return;
+    const nextKey = `${mode}:${game.question?.id ?? "none"}:${game.phase}`;
 
     const firedChanged = snapshot.fired && snapshot.fired.key !== this.lastFiredKey;
     const targetingChanged = snapshot.targeting !== previous.targeting;
@@ -118,12 +129,31 @@ export class ArcadeGameplayScene extends Phaser.Scene {
 
     if (nextKey !== this.modeKey) {
       this.modeKey = nextKey;
+      this.statusKey = "";
       this.draftChoice = snapshot.priv?.selectedChoiceIndex;
       this.draftAllocation = [...(snapshot.priv?.lootAllocation ?? [0, 0, 0, 0])];
       this.mutinyConfirming = false;
+      if (mode === "reveal") this.lastRevealKey = "";
       this.renderMode(mode);
-    } else if (gameChanged || privateChanged) {
-      this.renderMode(mode);
+    } else if (mode === "question" || mode === "loot" || mode === "marooned") {
+      // Rebuild only when answer/lock/inventory state that the HUD shows actually changes.
+      const statusKey = [
+        me?.hasAnswered ? "1" : "0",
+        snapshot.priv?.selectedChoiceIndex ?? "x",
+        snapshot.priv?.hasMutinied ? "1" : "0",
+        snapshot.priv?.lootAllocation?.join(",") ?? "",
+        game.players.map((player) => `${player.id}:${player.hasAnswered ? 1 : 0}:${player.score}`).join("|"),
+        snapshot.priv?.powerUps?.map((item) => item.uid).join(",") ?? "",
+      ].join(";");
+      if ((privateChanged || gameChanged) && statusKey !== this.statusKey) {
+        this.statusKey = statusKey;
+        this.draftChoice = snapshot.priv?.selectedChoiceIndex;
+        this.draftAllocation = [...(snapshot.priv?.lootAllocation ?? [0, 0, 0, 0])];
+        this.renderMode(mode);
+      }
+    } else if (mode === "reveal" && gameChanged) {
+      if (this.islands.length === 0) this.renderMode(mode);
+      else this.playRevealSequence(game);
     }
 
     if (targetingChanged) {
@@ -330,8 +360,18 @@ export class ArcadeGameplayScene extends Phaser.Scene {
 
   private renderQuestion(): void {
     const game = this.snapshot.game;
-    if (!game?.question) return;
+    // Always paint the sea — never leave the Phaser clear-color blue empty.
     this.renderSeaWorld();
+    if (!game?.question) {
+      this.add.text(WORLD_W / 2, H / 2, "Charting the next island...", {
+        fontFamily: "Lilita One",
+        fontSize: "36px",
+        color: CREAM,
+        stroke: "#17233b",
+        strokeThickness: 8,
+      }).setOrigin(0.5);
+      return;
+    }
     this.createQuestionBanner(game);
     this.createLeaderboard(game);
     this.createTimer();
@@ -695,10 +735,6 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     this.createLeaderboard(game);
     this.createQuestionBanner(game);
     this.createRevealIslands(game);
-
-    const revealKey = game.revealEvents.map((event) => event.id).join("|");
-    if (revealKey === this.lastRevealKey) return;
-    this.lastRevealKey = revealKey;
     this.time.delayedCall(250, () => this.playRevealSequence(game));
   }
 
@@ -728,32 +764,81 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   private playRevealSequence(game: PublicGameState): void {
     const reveal = game.arcadeReveal;
     if (!reveal) return;
+    const revealKey = game.revealEvents.map((event) => event.id).join("|") + `:${reveal.correctIndex}`;
+    if (revealKey === this.lastRevealKey) return;
+    this.lastRevealKey = revealKey;
+
     const startPositions = game.players.map((player, index) => ({
       player,
       x: 370 + (index % 4) * 110,
       y: 585 + Math.floor(index / 4) * 45,
+      color: PLAYER_COLORS[index % PLAYER_COLORS.length] ?? 0x38bdf8,
     }));
     const answerByPlayer = new Map(reveal.answers.map((answer) => [answer.playerId, answer]));
 
-    startPositions.forEach(({ player, x, y }, index) => {
-      const answer = answerByPlayer.get(player.id);
-      if (game.arcade?.isEventRound && answer?.lootAllocation) {
-        answer.lootAllocation.forEach((amount, islandIndex) => {
-          const shipCount = Math.min(4, Math.ceil(amount / 50));
-          for (let shipIndex = 0; shipIndex < shipCount; shipIndex += 1) {
-            const mini = this.createShip(player, x + shipIndex * 12, y + shipIndex * 8, 0.34);
-            this.sailShip(mini, islandIndex, index * 70 + shipIndex * 80, reveal.correctIndex === islandIndex);
-          }
-        });
-      } else {
-        const ship = this.createShip(player, x, y, 0.55);
-        if (answer?.choiceIndex !== undefined) {
-          this.sailShip(ship, answer.choiceIndex, index * 80, reveal.correctIndex === answer.choiceIndex);
-        }
-      }
+    // Keep ship silhouettes moored at the fleet while the cinematic takes over.
+    startPositions.forEach(({ player, x, y }) => {
+      const ship = this.createShip(player, x, y, 0.52);
+      this.ships.set(player.id, ship);
     });
 
-    this.time.delayedCall(1450, () => {
+    this.showEventCard("LANDFALL", "The fleet storms their chosen islands...");
+
+    if (game.arcade?.isEventRound) {
+      // Loot Drop: staged voyage parties per island that received a wager.
+      for (let islandIndex = 0; islandIndex < 4; islandIndex += 1) {
+        const party = startPositions.flatMap(({ player, x, y, color }) => {
+          const answer = answerByPlayer.get(player.id);
+          const amount = answer?.lootAllocation?.[islandIndex] ?? 0;
+          if (amount <= 0) return [];
+          const ships = Math.min(3, Math.max(1, Math.ceil(amount / 40)));
+          return Array.from({ length: ships }, (_, shipIndex) => ({
+            x: x + shipIndex * 10,
+            y: y + shipIndex * 6,
+            color,
+            correct: reveal.correctIndex === islandIndex,
+          }));
+        });
+        if (party.length === 0) continue;
+        const [ix, iy] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
+        this.time.delayedCall(islandIndex * 420, () => {
+          playIslandPlunderCeremony(this, {
+            islandIndex,
+            islandX: ix,
+            islandY: iy,
+            shipStarts: party,
+          });
+        });
+      }
+    } else {
+      // Regular question: one cinematic per chosen island, correct island gets the full plunder beat.
+      for (let islandIndex = 0; islandIndex < 4; islandIndex += 1) {
+        const party = startPositions
+          .map(({ player, x, y, color }) => {
+            const answer = answerByPlayer.get(player.id);
+            if (answer?.choiceIndex !== islandIndex) return undefined;
+            return {
+              x,
+              y,
+              color,
+              correct: reveal.correctIndex === islandIndex,
+            };
+          })
+          .filter((entry): entry is { x: number; y: number; color: number; correct: boolean } => Boolean(entry));
+        if (party.length === 0) continue;
+        const [ix, iy] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
+        this.time.delayedCall(islandIndex * 280, () => {
+          playIslandPlunderCeremony(this, {
+            islandIndex,
+            islandX: ix,
+            islandY: iy,
+            shipStarts: party,
+          });
+        });
+      }
+    }
+
+    this.time.delayedCall(1600, () => {
       this.islands.forEach((island, index) => {
         const correct = index === reveal.correctIndex;
         island.glow.setFillStyle(correct ? 0xffde61 : 0xd94d3f, correct ? 0.34 : 0.12);
@@ -762,7 +847,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
       });
     });
 
-    let delay = 2500;
+    let delay = 3200;
     game.revealEvents.forEach((event) => {
       if (event.title.includes("POSEIDON")) {
         this.time.delayedCall(delay, () => this.playPoseidon(event.playerIds?.[0]));
@@ -780,22 +865,6 @@ export class ArcadeGameplayScene extends Phaser.Scene {
         this.time.delayedCall(delay, () => this.showEventCard(event.title, event.description));
         delay += 1250;
       }
-    });
-  }
-
-  private sailShip(ship: Phaser.GameObjects.Container, islandIndex: number, delay: number, correct: boolean): void {
-    const [x, y] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
-    this.tweens.add({
-      targets: ship,
-      x: x + Phaser.Math.Between(-60, 60),
-      y: y + 88 + Phaser.Math.Between(-12, 12),
-      duration: 900 + delay * 0.25,
-      delay,
-      ease: "Sine.easeInOut",
-      onComplete: () => {
-        if (correct) this.coinStream(x, y + 25, ship.x, ship.y);
-        else this.showFloating(ship.x, ship.y - 55, "NO TREASURE", "#ffb3a0");
-      },
     });
   }
 

@@ -24,13 +24,32 @@ export default function App() {
 
   const inGame =
     game && game.phase !== "lobby" && game.phase !== "setup" && game.phase !== "winner";
-  const inPhaser = game?.phase === "question" || game?.phase === "reveal";
+  // Hold one Phaser canvas for the whole block so Q2+ never remounts to a blank blue screen.
+  const holdPhaser =
+    game?.phase === "question" || game?.phase === "reveal" || game?.phase === "leaderboard";
+  const showPhaserCanvas = game?.phase === "question" || game?.phase === "reveal";
 
   let screen: React.ReactNode;
   let screenKey: string;
   if (!roomCode || !game) {
     screen = <LandingScreen />;
     screenKey = "landing";
+  } else if (holdPhaser) {
+    screen = (
+      <Suspense fallback={<div className="fixed inset-0 bg-[#153b5b]" />}>
+        <div className="relative min-h-full">
+          <div className={showPhaserCanvas ? "contents" : "invisible pointer-events-none fixed inset-0"}>
+            <GameplayShell />
+          </div>
+          {game.phase === "leaderboard" && (
+            <div className="relative z-20 min-h-full">
+              <LeaderboardScreen />
+            </div>
+          )}
+        </div>
+      </Suspense>
+    );
+    screenKey = "voyage-runtime";
   } else {
     switch (game.phase) {
       case "lobby":
@@ -41,26 +60,6 @@ export default function App() {
       case "round_intro":
         screen = <RoundIntroScreen />;
         screenKey = `intro-${game.arcade?.roundNumber ?? 0}`;
-        break;
-      case "question":
-        screen = (
-          <Suspense fallback={<div className="fixed inset-0 bg-[#153b5b]" />}>
-            <GameplayShell />
-          </Suspense>
-        );
-        screenKey = `q-${game.question?.id ?? game.questionNumber}`;
-        break;
-      case "reveal":
-        screen = (
-          <Suspense fallback={<div className="fixed inset-0 bg-[#153b5b]" />}>
-            <GameplayShell />
-          </Suspense>
-        );
-        screenKey = `reveal-${game.revealEvents[0]?.id ?? game.arcade?.roundNumber ?? 0}`;
-        break;
-      case "leaderboard":
-        screen = <LeaderboardScreen />;
-        screenKey = `board-${game.arcade?.roundNumber ?? 0}`;
         break;
       case "winner":
         screen = <WinnerScreen />;
@@ -74,9 +73,9 @@ export default function App() {
 
   return (
     <div className="relative min-h-full">
-      {!inPhaser && <Background />}
+      {!showPhaserCanvas && <Background />}
       <div className="relative z-10 min-h-full">
-        {inGame && !inPhaser && <Hud />}
+        {inGame && !showPhaserCanvas && <Hud />}
         <AnimatePresence mode="wait">
           <motion.div
             key={screenKey}
@@ -90,7 +89,7 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
       </div>
-      {game && !inPhaser && <ItemDrawer />}
+      {game && !showPhaserCanvas && <ItemDrawer />}
       <ChestModal />
       <Toasts />
       <MuteButton />

@@ -43,14 +43,18 @@ updated: 2026-07-14
 
 ## Next implementation slice
 
-1. **Sprite sheets first:** checklist + prompts live in `design/SPRITE_SHEET_CHECKLIST.md`
-   and `design/concept/SPRITE_SHEET_PROMPTS.md`. Owner wants all six sheets reviewed before
-   Phaser integration. Higgsfield `generate_image` currently fails with expired token —
-   re-auth MCP, then regenerate candidates.
-2. Owner approves/redoes each sheet until all six are APPROVED.
-3. Cutout, register, wire into Phaser; kill matching fallbacks.
-4. Then backgrounds / event keys / juice + SFX.
-5. Do **not** migrate off Phaser unless 3D/native becomes a product requirement.
+1. **Blank Q2 fix shipped:** Phaser shell stays mounted through question/reveal/leaderboard
+   (`voyage-runtime` key). Scene ignores empty question payloads and rehydrates from
+   `GameEventBridge.current` on boot.
+2. **Plunder ceremony shipped (procedural + HF hook):**
+   `client/src/game/plunder/IslandPlunderCeremony.ts` plays arrive→plunder→return per island
+   theme (ruins/cave/port/temple). Optional HF overlays: texture keys
+   `plunder-<theme>-0..2` or `plunder-<theme>-video` under
+   `client/src/assets/higgsfield/plunder/`. Prompts:
+   `design/concept/PLUNDER_ANIMATION_PROMPTS.md`. Cloud Higgsfield token still expired —
+   generate those overlays from a local agent.
+3. Sprite sheets still queued in `design/SPRITE_SHEET_CHECKLIST.md`.
+4. Do **not** migrate off Phaser unless 3D/native becomes a product requirement.
 
 ## Do not regress
 
