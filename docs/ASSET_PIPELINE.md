@@ -1,31 +1,37 @@
 # Asset Pipeline
 
-## Current state: zero binary assets
+## Current state: Higgsfield art on the arcade client
 
-Everything is code: emoji glyphs, inline SVG (ships, islands, hats, stalactites),
-CSS gradients/keyframes, Framer Motion, and WebAudio-synthesised sound. This keeps the
-prototype instantly deployable and diff-reviewable.
+The arcade React client ships a compressed WebP pack of Higgsfield Loot Drop art
+under `client/src/assets/higgsfield/loot-drop/` (~0.9 MB total).
 
-## Placeholder → production map
+| Asset | File | Wired into |
+| ----- | ---- | ---------- |
+| A1 ocean | `a1-background.webp` | `Background.tsx` |
+| A2 islands | `a2-islands-cut.webp` | Answer/`ChoiceGrid`, MPD trapdoors, `SceneBackdrop` |
+| A3 ships | `a3-ships-cut.webp` | `SceneBackdrop` `PirateShip` |
+| A5 chests | `a5-chests-cut.webp` | `ChestModal` ceremony |
+| A6 avatars | `a6-avatars-cut.webp` | `PirateAvatar` mood frames |
+| A9 rarity | `a9-rarity-cut.webp` | Chest rarity glow overlays |
 
-| Placeholder today             | Eventual professional asset                                 |
-| ----------------------------- | ----------------------------------------------------------- |
-| 🎁 emoji chest                | Rigged chest sprite sheet (idle/shake/burst) or Lottie      |
-| Emoji item icons (🔭🗡️☠️…)    | 15 illustrated item cards, one per item, same rarity frames |
-| `PirateShip` inline SVG       | Illustrated ship set (captain + chaser variants)            |
-| `Island` SVG humps            | Painted island set with per-round variants                  |
-| `PirateAvatar` emoji+hat      | Avatar system: base characters × hats × expressions         |
-| CSS aurora/fog/waves          | Parallax painted backdrop layers per round                  |
-| WebAudio synth (`lib/sfx.ts`) | Recorded SFX + music loops, mapped via `lib/soundEvents.ts` |
-| Emoji particles               | Sprite-based particle textures (coins, splinters, smoke)    |
+Helpers: `client/src/lib/higgsfield.ts` + `client/src/components/higgsfield/HfSprite.tsx`.
 
-## Rules for adding real assets later
+Raw Higgsfield PNG masters + the archived Phaser slice live in
+`experiments/loot-drop/` (reference only — not the default app entry).
 
-1. Keep filenames semantic: `assets/items/crown-heist.png`, `assets/ships/captain.svg`.
-2. Icons/illustrations: SVG preferred; raster at 2x for the max rendered size, WebP.
-3. Swap points are already centralised — item art goes into `ItemCard`, chest art into
-   `ChestModal`, ship art into `SceneBackdrop`'s `PirateShip`, sounds into `soundEvents.ts`.
-   No screen-level changes should be needed.
-4. Respect the palette in VISUAL_SYSTEM.md; art that fights the neon palette will glow wrong.
-5. Keep total asset payload < 3MB for the web prototype; lazy-load round-specific art.
-6. Sound files: short (<1.5s) UI stingers, -14 LUFS-ish, no licensing ambiguity.
+## Reprocessing cutouts
+
+```bash
+python3 scripts/chroma_key.py path/to/raw-sheet.png
+# then compress to WebP for the client (see prior agent commit / PIL recipe)
+```
+
+## Rules for new art
+
+1. Keep filenames meaningful: `a2-islands-cut.webp`, `assets/items/crown-heist.webp`.
+2. Prefer WebP for raster; SVG for new iconography when possible.
+3. Swap at central shells (`Background`, `SceneBackdrop`, `PirateAvatar`, `ChestModal`,
+   `ItemCard`) — avoid screen-level one-offs.
+4. Respect the neon palette in `VISUAL_SYSTEM.md`.
+5. Keep the packed client payload roughly under ~1–2 MB for the web prototype.
+6. Sound: still WebAudio in `lib/sfx.ts` / `lib/soundEvents.ts`.

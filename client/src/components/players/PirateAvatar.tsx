@@ -1,12 +1,20 @@
 import { motion } from "framer-motion";
+import { avatarFrame } from "../../lib/higgsfield";
+import { HfSprite } from "../higgsfield/HfSprite";
 
 /**
- * Animated pirate avatar: the player's emoji creature inside a coloured ring,
- * wearing a tricorn hat, bobbing idly. `mood` changes the ring/effects so the
- * table can see who's confident, cursed, attacked, or crowned.
+ * Animated pirate avatar: Higgsfield reaction portrait (A6) inside a coloured
+ * ring that keeps each player unique. `mood` swaps the expression frame.
  */
 export type AvatarMood =
-  "idle" | "answered" | "nervous" | "attacked" | "protected" | "cursed" | "accused" | "winner";
+  | "idle"
+  | "answered"
+  | "nervous"
+  | "attacked"
+  | "protected"
+  | "cursed"
+  | "accused"
+  | "winner";
 
 const RING_COLORS = [
   "#22d3ee",
@@ -39,7 +47,7 @@ const MOOD_RING: Record<AvatarMood, { color?: string; pulse: boolean; badge?: st
 
 export function PirateAvatar({
   playerId,
-  emoji,
+  emoji: _emoji,
   size = 44,
   mood = "idle",
   bobDelay = 0,
@@ -67,9 +75,8 @@ export function PirateAvatar({
         ease: "easeInOut",
       }}
     >
-      {/* Ring */}
       <motion.div
-        className="absolute bottom-0 rounded-full"
+        className="absolute bottom-0 overflow-hidden rounded-full"
         style={{
           width: size,
           height: size,
@@ -83,32 +90,14 @@ export function PirateAvatar({
             : {}
         }
         transition={{ repeat: Infinity, duration: 1.2 }}
-      />
-      {/* Face */}
-      <span
-        className="absolute bottom-0 flex items-center justify-center"
-        style={{ width: size, height: size, fontSize: size * 0.52 }}
-        aria-hidden
       >
-        {emoji}
-      </span>
-      {/* Tricorn hat */}
-      <svg
-        className="absolute -top-0.5 left-1/2 -translate-x-1/2"
-        width={size * 0.86}
-        height={size * 0.4}
-        viewBox="0 0 60 26"
-        aria-hidden
-      >
-        <path
-          d="M4 22 Q30 26 56 22 Q52 8 30 4 Q8 8 4 22 Z"
-          fill="#12122b"
-          stroke={base}
-          strokeWidth="2"
+        <HfSprite
+          frame={avatarFrame(mood)}
+          size={size * 1.12}
+          className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2"
+          label="Pirate"
         />
-        <circle cx="30" cy="13" r="3.4" fill={base} />
-      </svg>
-      {/* Mood badge */}
+      </motion.div>
       {moodCfg.badge && (
         <motion.span
           key={mood}

@@ -1,26 +1,25 @@
 import { useMemo } from "react";
+import { HF } from "../lib/higgsfield";
 
 /**
- * Animated neon ocean backdrop rendered behind every screen:
- * drifting aurora glows, rising bubbles, floating gold sparks, and a
- * slow-rolling wave silhouette at the bottom. Pure CSS animations — cheap,
- * and disabled automatically by prefers-reduced-motion.
+ * Full-bleed neon pirate ocean — Higgsfield Loot Drop painting (A1) with a
+ * light particle wash on top so the world feels alive without burying UI.
  */
 export function Background() {
   const bubbles = useMemo(
     () =>
-      Array.from({ length: 14 }, (_, i) => ({
+      Array.from({ length: 10 }, (_, i) => ({
         left: (i * 137.5) % 100,
         size: 3 + ((i * 7) % 9),
         duration: 9 + ((i * 3) % 10),
         delay: (i * 1.7) % 9,
-        opacity: 0.06 + ((i * 13) % 10) / 60,
+        opacity: 0.05 + ((i * 13) % 10) / 80,
       })),
     [],
   );
   const sparks = useMemo(
     () =>
-      Array.from({ length: 8 }, (_, i) => ({
+      Array.from({ length: 6 }, (_, i) => ({
         left: (17 + i * 41.5) % 100,
         top: (11 + i * 29) % 80,
         duration: 5 + (i % 4) * 1.6,
@@ -31,12 +30,28 @@ export function Background() {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-      {/* Drifting aurora glows */}
-      <div className="aurora aurora-1" />
-      <div className="aurora aurora-2" />
-      <div className="aurora aurora-3" />
+      {/* Higgsfield painted ocean — the visual anchor of the game */}
+      <img
+        src={HF.background}
+        alt=""
+        className="absolute inset-0 h-full w-full scale-105 object-cover"
+        style={{
+          filter: "saturate(1.08) contrast(1.05)",
+          animation: "hf-ocean-drift 28s ease-in-out infinite alternate",
+        }}
+      />
+      {/* Readability veil so neon cards stay crisp over busy art */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 28%, rgba(7,11,30,0.15) 0%, rgba(7,11,30,0.55) 55%, rgba(7,11,30,0.78) 100%)",
+        }}
+      />
+      {/* Soft aurora accents matching the painting's cyan / magenta lights */}
+      <div className="aurora aurora-1 opacity-40" />
+      <div className="aurora aurora-2 opacity-30" />
 
-      {/* Rising bubbles */}
       {bubbles.map((b, i) => (
         <span
           key={`b-${i}`}
@@ -52,7 +67,6 @@ export function Background() {
         />
       ))}
 
-      {/* Floating gold sparks */}
       {sparks.map((s, i) => (
         <span
           key={`s-${i}`}
@@ -65,20 +79,6 @@ export function Background() {
           }}
         />
       ))}
-
-      {/* Rolling wave silhouettes at the bottom */}
-      <svg className="wave wave-back" viewBox="0 0 2880 120" preserveAspectRatio="none">
-        <path
-          d="M0,64 C240,96 480,32 720,56 C960,80 1200,112 1440,88 C1680,64 1920,24 2160,48 C2400,72 2640,104 2880,72 L2880,120 L0,120 Z"
-          fill="rgba(34,211,238,0.06)"
-        />
-      </svg>
-      <svg className="wave wave-front" viewBox="0 0 2880 120" preserveAspectRatio="none">
-        <path
-          d="M0,80 C240,48 480,96 720,72 C960,48 1200,24 1440,56 C1680,88 1920,104 2160,72 C2400,40 2640,64 2880,88 L2880,120 L0,120 Z"
-          fill="rgba(192,132,252,0.08)"
-        />
-      </svg>
     </div>
   );
 }

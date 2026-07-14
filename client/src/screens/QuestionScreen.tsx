@@ -7,6 +7,8 @@ import { Screen, TimerBar } from "../components/ui";
 import { EmojiBurst, LockStamp, Shaker } from "../components/fx";
 import { CannonBlast } from "../components/effects/CannonBlast";
 import { PirateAvatar } from "../components/players/PirateAvatar";
+import { HfSprite } from "../components/higgsfield/HfSprite";
+import { islandFrame } from "../lib/higgsfield";
 import { sfx } from "../lib/sfx";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
@@ -234,23 +236,32 @@ function ChoiceGrid() {
             whileTap={{ scale: 0.94, rotate: 0 }}
             disabled={isDisabled}
             onClick={() => submit(i)}
-            className={`neon-card relative flex min-h-[64px] items-center gap-3 overflow-visible border-2 px-4 py-3.5 text-left transition-colors ${style.border} ${
+            className={`neon-card relative flex min-h-[72px] items-center gap-3 overflow-visible border-2 px-3 py-3 text-left transition-colors ${style.border} ${
               isMine
-                ? `bg-white/10 ${style.glow} animate-ring-pulse`
-                : `hover:bg-white/5 ${dimmed ? "" : style.glow.replace("shadow", "hover:shadow")}`
+                ? `bg-black/45 ${style.glow} animate-ring-pulse`
+                : `bg-black/35 hover:bg-black/45 ${dimmed ? "" : style.glow.replace("shadow", "hover:shadow")}`
             } ${isDisabled ? "opacity-20" : ""} ${
               isRevealed ? "!border-neon-gold ring-2 ring-neon-gold shadow-neon-gold" : ""
             }`}
             aria-pressed={isMine}
           >
-            <motion.span
-              animate={isMine ? { rotate: [0, -12, 12, 0], scale: [1, 1.25, 1] } : {}}
+            <motion.div
+              animate={isMine ? { scale: [1, 1.08, 1], y: [0, -2, 0] } : {}}
               transition={{ duration: 0.45 }}
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 bg-black/40 font-display text-xl ${style.border} ${style.text}`}
+              className="relative shrink-0"
               aria-hidden
             >
-              {isMine ? "✓" : LETTERS[i]}
-            </motion.span>
+              <HfSprite
+                frame={islandFrame(i)}
+                size={twoCol ? 56 : 64}
+                className="drop-shadow-[0_0_12px_rgba(46,230,255,0.4)]"
+              />
+              <span
+                className={`absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-black/80 font-display text-xs ${style.border} ${style.text}`}
+              >
+                {isMine ? "✓" : LETTERS[i]}
+              </span>
+            </motion.div>
             <span className="flex-1 text-base font-black leading-snug">
               {holed ? holeWords(opt) : opt}
             </span>
@@ -358,19 +369,17 @@ function TrapdoorAllocator() {
             initial={{ opacity: 0, x: i % 2 === 0 ? -50 : 50 }}
             animate={{ opacity: 1, x: 0, scale: amount > 0 ? 1.01 : 1 }}
             transition={{ type: "spring", stiffness: 240, damping: 20, delay: i * 0.07 }}
-            className={`neon-card relative flex items-center gap-2 border-2 p-2.5 transition-colors ${
+            className={`neon-card relative flex items-center gap-2 border-2 bg-black/35 p-2.5 transition-colors ${
               amount > 0 ? "border-neon-gold/60 shadow-neon-gold bg-amber-400/5" : "border-white/10"
             }`}
           >
-            {/* Trapdoor hatch */}
-            <motion.span
-              className="text-2xl"
+            <motion.div
               animate={amount > 0 ? { y: [0, -3, 0] } : {}}
               transition={{ repeat: Infinity, duration: 1.8 }}
               aria-hidden
             >
-              🚪
-            </motion.span>
+              <HfSprite frame={islandFrame(i)} size={52} label={`Trapdoor ${LETTERS[i]}`} />
+            </motion.div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-black">{opt}</div>
               <div className="mt-1.5 flex h-4 items-center gap-1">
