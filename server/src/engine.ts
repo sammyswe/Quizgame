@@ -500,7 +500,7 @@ function resolveEventRound(room: ServerRoom): void {
     const r: QuestionResult = {
       correct: kept > 0,
       correctIndex: q.correctIndex,
-      earned: delta,
+      earned: Math.max(0, p.eventWager + delta),
       streak: p.streak,
       streakBonus: 0,
       potAtLock: Math.max(0, p.eventWager + delta),
