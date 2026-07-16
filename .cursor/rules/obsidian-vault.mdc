@@ -1,0 +1,45 @@
+---
+description: Dual context sources — Obsidian vault + docs
+alwaysApply: true
+---
+
+# Obsidian vault + docs
+
+Treasure Trap has **two** agent-readable design sources. Use both.
+
+## Sources
+
+| Path | Role |
+| --- | --- |
+| `obsidian/` | Granular idea/design notebook: one mechanic per note, MOCs, Inbox, status tags |
+| `docs/` and especially `docs/context/` | Compact Cursor router (`INDEX.md`), `HANDOFF.md`, roadmap checklists, implementation ledgers |
+
+## Load order for product / design work
+
+1. `docs/context/INDEX.md` (task router)
+2. Relevant area MOC under `obsidian/_MOCs/` (e.g. `MOC - Items & Power-ups.md`)
+3. Atomic notes linked from that MOC for the specific mechanic
+4. Matching `docs/context/*.md` when you need the compact ledger / checklist
+5. Verify implementation claims in code
+
+For brainstorming / meeting outcomes, also check `obsidian/00-Inbox/`.
+
+## Status tags (shared vocabulary)
+
+`LOCKED` · `PILOT` · `IDEA` · `REJECTED` — same meaning in Obsidian frontmatter/tags and `docs/context/STATUS.md`.
+
+Never ship `IDEA` notes without an explicit request to promote them. Never treat `Archive/` or historical root docs as current truth.
+
+## Conflict resolution
+
+1. Latest explicit product-owner decision
+2. LOCKED record in `obsidian/` or `docs/context/`
+3. Active `.cursor/rules/`
+4. Shipped code (implementation truth, not necessarily design truth)
+5. `obsidian/Archive/` and older root `docs/` history
+
+## When decisions change
+
+Update the atomic Obsidian note **and** the relevant `docs/context/` file when both apply. Capture raw meeting notes in `obsidian/00-Inbox/` first, then file into atomic notes.
+
+Vault conventions: `obsidian/_meta/Conventions.md` and `obsidian/_meta/How Agents Use This Vault.md`.
