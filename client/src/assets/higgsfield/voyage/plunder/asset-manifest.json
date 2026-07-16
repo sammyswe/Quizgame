@@ -1,0 +1,27 @@
+{
+  "generatedWith": "Higgsfield MCP",
+  "sourceModel": "kling3_0_turbo",
+  "upscale": {
+    "provider": "bytedance",
+    "resolution": "4k",
+    "preset": "aigc",
+    "fps": 24,
+    "sourcePixels": "1280x720",
+    "outputPixels": "3840x2160"
+  },
+  "generatedAt": "2026-07-14",
+  "durationSec": 5,
+  "aspectRatio": "16:9",
+  "usage": "Full-bleed correct-island reveal cinematic",
+  "usedInGame": true,
+  "assets": [
+    { "id": "plunder-volcano", "file": "plunder-volcano.mp4", "biome": "volcano", "sourceJobId": "700d1020-f418-4e9f-afad-d4007c352a15", "upscaleJobId": "1f3fd4b9-278a-4a99-a0c7-55d8376e37ac" },
+    { "id": "plunder-jungle", "file": "plunder-jungle.mp4", "biome": "jungle", "sourceJobId": "33c2cf71-9e62-408c-95be-348df90141b0", "upscaleJobId": "ae3036d1-9fb1-4b45-83c2-4b8ba8efe246" },
+    { "id": "plunder-skull", "file": "plunder-skull.mp4", "biome": "skull", "sourceJobId": "3125c854-dc7b-4ebc-8549-2429dab542f8", "upscaleJobId": "046c9858-bba5-410e-a9be-ee3779f35502" },
+    { "id": "plunder-lagoon", "file": "plunder-lagoon.mp4", "biome": "lagoon", "sourceJobId": "3a8e0a11-7d83-4889-a54c-ccbcd800131c", "upscaleJobId": "eb988e87-e653-4fe1-aa4a-b922f2158fa8" },
+    { "id": "plunder-shipwreck", "file": "plunder-shipwreck.mp4", "biome": "shipwreck", "sourceJobId": "6f3efaad-5667-4bf2-9e4e-6dd4500652d7", "upscaleJobId": "2c65ba80-0887-4128-8f21-6d6faa755eff" },
+    { "id": "plunder-ruins", "file": "plunder-ruins.mp4", "biome": "ruins", "sourceJobId": "6e396684-d177-4380-b35b-bb7aed07e495", "upscaleJobId": "09441cc8-254f-4305-8ecc-ea1b8e85ae72" },
+    { "id": "plunder-lighthouse", "file": "plunder-lighthouse.mp4", "biome": "lighthouse", "sourceJobId": "327c472f-dde4-4ebb-97b9-2c9243e7cd90", "upscaleJobId": "409c7c21-8b26-4722-a5e0-72636c78d810" },
+    { "id": "plunder-mangrove", "file": "plunder-mangrove.mp4", "biome": "mangrove", "sourceJobId": "c329d9e7-d974-4b7e-b2a8-fc3b2a71ea1f", "upscaleJobId": "7f515be2-7f9d-459a-a53e-dd04a0b48d20" }
+  ]
+}

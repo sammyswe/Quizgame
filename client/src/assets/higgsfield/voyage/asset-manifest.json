@@ -1,0 +1,116 @@
+{
+  "generatedWith": "Higgsfield MCP",
+  "model": "nano_banana_pro / kling3_0_turbo (motion refs)",
+  "generatedAt": "2026-07-14",
+  "integratedIntoArcadeAt": "2026-07-14",
+  "artDirection": "STYLE-001 warm cartoon pirate excursion; casino accents only on chest ceremony",
+  "postProcessing": "scripts/process_voyage_assets.py — chroma_key + resize + cwebp",
+  "assets": [
+    { "id": "bg-seven-seas", "file": "bg-seven-seas.webp", "usedInGame": true, "usage": "Question/reveal sea background" },
+    { "id": "bg-lobby-deck", "file": "bg-lobby-deck.webp", "usedInGame": true, "usage": "Lobby React shell background" },
+    { "id": "bg-loot-map", "file": "bg-loot-map.webp", "usedInGame": true, "usage": "Loot Drop cabin map background" },
+    { "id": "sheet-islands", "file": "sheet-islands.webp", "grid": "2x2", "usedInGame": true },
+    { "id": "sheet-ships", "file": "sheet-ships.webp", "grid": "3x3", "usedInGame": true },
+    { "id": "sheet-avatars", "file": "sheet-avatars.webp", "grid": "3x3", "usedInGame": true },
+    { "id": "sheet-items", "file": "sheet-items.webp", "grid": "4x4", "usedInGame": true },
+    { "id": "sheet-fx", "file": "sheet-fx.webp", "grid": "4x2", "usedInGame": true },
+    { "id": "sheet-chest", "file": "sheet-chest.webp", "grid": "3x3", "usedInGame": true },
+    { "id": "poseidon-key", "file": "poseidon-key.webp", "usedInGame": true },
+    { "id": "shark-key", "file": "shark-key.webp", "usedInGame": true },
+    { "id": "maroon-key", "file": "maroon-key.webp", "usedInGame": true },
+    { "id": "anim-ship-idle", "file": "anim-ship-idle.webp", "grid": "2x4", "usedInGame": true },
+    { "id": "anim-ship-sail", "file": "anim-ship-sail.webp", "grid": "2x4", "usedInGame": true, "note": "legacy 8-frame; prefer sail-smooth" },
+    {
+      "id": "anim-ship-sail-smooth",
+      "file": "anim-ship-sail-smooth.webp",
+      "grid": "6x4",
+      "frames": 24,
+      "usedInGame": true,
+      "usage": "Quiz fleet bob + sail run",
+      "sourceVideo": "design/concept/video/ship_sail_smooth_v2.mp4",
+      "jobId": "79ee78a9-5500-4681-9174-9a02814a24bb",
+      "model": "kling3_0_turbo",
+      "startImageMediaId": "9e1ef127-d719-4e2e-b0ed-f2ac7c69bb2c"
+    },
+    { "id": "anim-ship-cheer", "file": "anim-ship-cheer.webp", "grid": "3x2", "usedInGame": true },
+    { "id": "anim-ship-wrong", "file": "anim-ship-wrong.webp", "grid": "3x2", "usedInGame": true },
+    { "id": "anim-waves", "file": "anim-waves.webp", "grid": "2x4", "usedInGame": true },
+    { "id": "anim-coins", "file": "anim-coins.webp", "grid": "2x4", "usedInGame": true },
+    { "id": "anim-poseidon-rise", "file": "anim-poseidon-rise.webp", "grid": "2x4", "usedInGame": true },
+    { "id": "anim-shark-attack", "file": "anim-shark-attack.webp", "grid": "2x4", "usedInGame": true },
+    { "id": "anim-treasure-drain", "file": "anim-treasure-drain.webp", "grid": "2x4", "usedInGame": true },
+    { "id": "anim-flag-flutter", "file": "anim-flag-flutter.webp", "grid": "2x4", "usedInGame": true },
+    { "id": "ui-lock-button", "file": "ui-lock-button.webp", "grid": "2x4", "usedInGame": true },
+    {
+      "id": "sheet-pot-drain",
+      "file": "sheet-pot-drain.webp",
+      "grid": "3x3",
+      "usedInGame": true,
+      "usage": "Question HUD chest states; cross-faded while gold bar drains",
+      "jobId": "ae7b619e-7a95-4853-8907-14b389b80e66",
+      "model": "nano_banana_pro"
+    },
+    {
+      "id": "sheet-pirates",
+      "file": "sheet-pirates.webp",
+      "grid": "4x2",
+      "usedInGame": true,
+      "usage": "Reveal plunder walk / smash / carry / board",
+      "jobId": "3bcc8f2f-8a0f-4e12-8aa2-c4db91a2b02e",
+      "model": "nano_banana_pro"
+    },
+    {
+      "id": "sheet-plunder-biomes",
+      "file": "sheet-plunder-biomes.webp",
+      "grid": "4x2",
+      "usedInGame": true,
+      "usage": "Per-biome plunder vignette over answer islands",
+      "jobId": "a817e15e-a69c-426e-ba8d-918870d40b05",
+      "model": "nano_banana_pro"
+    },
+    {
+      "id": "sheet-loot-particles",
+      "file": "sheet-loot-particles.webp",
+      "grid": "4x2",
+      "usedInGame": true,
+      "usage": "Coin/gem stream under question gold bar",
+      "jobId": "d5fbfb3e-ddee-43e7-8dcc-05534e6b1c1b",
+      "model": "nano_banana_pro"
+    },
+    {
+      "id": "ui-chest-full",
+      "file": "ui-chest-full.webp",
+      "usedInGame": false,
+      "reason": "Backup single full chest if 3x3 sheet fails",
+      "jobId": "d8d1b738-aef3-412d-bfff-5e3d86328ec1",
+      "model": "nano_banana_pro"
+    },
+    {
+      "id": "ui-chest-empty",
+      "file": "ui-chest-empty.webp",
+      "usedInGame": false,
+      "reason": "Backup empty chest cutout",
+      "jobId": "bb458958-8c4f-4907-88dc-e5f40364ae4f",
+      "model": "nano_banana_pro"
+    },
+    {
+      "id": "sheet-smash-fx",
+      "file": "sheet-smash-fx.webp",
+      "grid": "4x2",
+      "usedInGame": true,
+      "usage": "Biome-flavoured smash bursts during correct plunder",
+      "jobId": "dd9f1e15-4ff7-42d4-90cf-6e551a67e2bd",
+      "model": "nano_banana_pro"
+    },
+    {
+      "id": "sheet-wrong-react",
+      "file": "sheet-wrong-react.webp",
+      "grid": "4x2",
+      "usedInGame": true,
+      "usage": "Empty-island pirate reactions before sailing home",
+      "jobId": "3ecd2216-20c0-48d6-8f49-708036c0bb69",
+      "model": "nano_banana_pro"
+    }
+  ],
+  "sourceConcept": "design/concept/approved and design/concept/inbox"
+}

@@ -8,12 +8,12 @@ Model default: `nano_banana_pro`, `aspect_ratio: 1:1`, solid flat background for
 
 | # | Asset ID | Grid | Contents | Prompt ready | Job ID | Local path | Status | Owner note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `sheet_answer_islands` | 2×2 | Tropical ruins, sea cave, pirate port, jungle temple | ✅ | | | PENDING | |
-| 2 | `sheet_player_ships` | 4×2 | 8 coloured ships + captain golden-sail variant | ✅ | | | PENDING | |
-| 3 | `sheet_pirate_avatars` | 4×2 | 8 distinct pirate portrait medallions | ✅ | | | PENDING | |
-| 4 | `sheet_item_icons` | 4×4 | 13 item icons (cells 14–16 empty/spacer) | ✅ | | | PENDING | |
-| 5 | `sheet_item_world_fx` | 4×2 | Cannonball, hook, parrot, net, flag, patch, glint, rum aura | ✅ | | | PENDING | |
-| 6 | `sheet_chest_ceremony` | 3×2 | Closed → key → chain-break → glow → open → burst (Zone B casino) | ✅ | | | PENDING | |
+| 1 | `sheet_answer_islands` | 2×2 | Tropical ruins, sea cave, pirate port, jungle temple | ✅ | `4cc2cba5-23b9-4c13-ba3d-22ecba383e69` | `design/concept/approved/sheet_answer_islands.png` | APPROVED | |
+| 2 | `sheet_player_ships` | 4×2 (got ~3×3/9) | 8 coloured ships + captain golden-sail variant | ✅ | `0de00588-…` | `approved/` + `client/.../voyage/sheet-ships.webp` | INTEGRATED | |
+| 3 | `sheet_pirate_avatars` | 4×2 (got ~3×3/9) | 8 distinct pirate portrait medallions | ✅ | `c68c78ff-…` | voyage `sheet-avatars.webp` | INTEGRATED | |
+| 4 | `sheet_item_icons` | 4×4 | 13 item icons (cells 14–16 empty/spacer) | ✅ | `834b591f-…` | voyage `sheet-items.webp` | INTEGRATED | |
+| 5 | `sheet_item_world_fx` | 4×2 | Cannonball, hook, parrot, net, flag, patch, glint, rum aura | ✅ | `99eec2d0-…` | voyage `sheet-fx.webp` | INTEGRATED | |
+| 6 | `sheet_chest_ceremony` | 3×2 (got ~3×3/9) | Closed → key → chain-break → glow → open → burst (Zone B casino) | ✅ | `0a48968d-…` | voyage `sheet-chest.webp` | INTEGRATED | |
 
 ## Review order
 
@@ -37,7 +37,8 @@ Model default: `nano_banana_pro`, `aspect_ratio: 1:1`, solid flat background for
 
 | When | Asset | Model | Job ID | Result |
 | --- | --- | --- | --- | --- |
-| 2026-07-14 | all six sheets | `nano_banana_pro` 2k 1:1 | — | **FAIL** `Invalid or expired token` (also `nano_banana_2`). Catalog/`models_explore` works; `generate_image` blocked until Higgsfield MCP is re-authenticated in Cursor. Prompts ready in `design/concept/SPRITE_SHEET_PROMPTS.md`. |
+| 2026-07-14 | all six sheets (cloud) | `nano_banana_pro` 2k 1:1 | — | FAIL expired token |
+| 2026-07-14 | `sheet_answer_islands` | `nano_banana_pro` 2k 1:1 | `4cc2cba5-23b9-4c13-ba3d-22ecba383e69` | CANDIDATE saved to inbox |
 
 ## Owner unblock
 

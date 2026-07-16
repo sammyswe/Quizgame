@@ -1,5 +1,5 @@
 import { motion, useSpring, useTransform } from "framer-motion";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { PublicPlayer } from "@treasure-trap/shared";
 
 /** Animated coin counter — scores never just "change", they tick. */
@@ -92,11 +92,19 @@ export function PlayerChip({
 }
 
 /** Full-bleed screen wrapper with safe-area padding. */
-export function Screen({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function Screen({
+  children,
+  className = "",
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <div
-      className={`mx-auto flex min-h-full w-full max-w-6xl flex-col px-6 pb-6 pt-4 ${className}`}
-      style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+      className={`mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-6 pb-6 pt-4 ${className}`}
+      style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))", ...style }}
     >
       {children}
     </div>

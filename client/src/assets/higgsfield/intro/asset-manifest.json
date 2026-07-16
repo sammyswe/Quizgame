@@ -1,0 +1,12 @@
+{
+  "pack": "seven-seas-intro",
+  "approvedAt": "2026-07-14",
+  "model": "kling3_0_turbo",
+  "jobId": "bd7c25ee-cd7b-45f7-b7de-01d8fdb2d1f7",
+  "durationSec": 8,
+  "aspectRatio": "16:9",
+  "runtime": "entering-seven-seas.mp4",
+  "poster": "entering-seven-seas-poster.webp",
+  "usage": "RoundIntroScreen voyage start — plays once, full-bleed",
+  "notes": "Fleet names RUBY/COBALT/AMBER/VIOLET are cinematic props, not live player nicknames. Copy overlay: ENTERING THE SEVEN SEAS + PLUNDER YER LOOT!"
+}

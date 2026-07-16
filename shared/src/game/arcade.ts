@@ -1,4 +1,5 @@
 import { ARCADE } from "../config/arcade.js";
+import { ISLAND_LOOT_POINTS, type IslandLootId } from "../config/islands.js";
 import type { QuestionResult, RevealEvent } from "../types/index.js";
 import { addDelta, ev } from "./reveal.js";
 import type { ChestAward } from "./resolveQuestion.js";
@@ -36,6 +37,8 @@ export type ArcadeResolveInput = {
   correctIndex: number;
   questionStartedAt: number;
   questionDurationMs: number;
+  /** Secret loot under each answer island (index = option). */
+  islandLoot: IslandLootId[];
   players: ArcadePlayerInput[];
   swordFights: SwordFightInput[];
   leaderId?: string;
@@ -131,14 +134,22 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
       p.plankUntil !== undefined &&
       (p.lockedAt ?? Infinity) > p.plankUntil &&
       effectiveChoice(p) === input.correctIndex;
-    const timedPot = correct
-      ? potAt(p.lockedAt ?? input.questionStartedAt + input.questionDurationMs,
-          input.questionStartedAt, input.questionDurationMs)
+    const timedPot = potAt(
+      p.lockedAt ?? input.questionStartedAt + input.questionDurationMs,
+      input.questionStartedAt,
+      input.questionDurationMs,
+    );
+    const pot = correct
+      ? p.plankUntil
+        ? Math.min(timedPot, ARCADE.PLANK_POT_CAP)
+        : timedPot
       : 0;
-    const pot = p.plankUntil ? Math.min(timedPot, ARCADE.PLANK_POT_CAP) : timedPot;
+    const lootId = input.islandLoot[input.correctIndex] ?? "coins";
+    const lootPoints = correct ? ISLAND_LOOT_POINTS[lootId] : 0;
     const nextStreak = correct ? p.streak + 1 : 0;
     const bonus = correct ? streakBonus(nextStreak) : 0;
-    let earned = pot + bonus;
+    // Mystery island loot is the score; potAtLock tracks time pressure for UI/telemetry.
+    let earned = lootPoints + bonus;
     if (correct && p.rumRush) {
       earned *= 2;
       rumRushConsumed.push(p.id);

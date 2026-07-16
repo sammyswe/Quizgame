@@ -2,6 +2,8 @@ import type {
   Answer,
   Chest,
   GameConfig,
+  IslandBiomeId,
+  IslandLootId,
   OwnedPowerUp,
   Phase,
   PowerUpId,
@@ -15,6 +17,8 @@ export type ServerPlayer = {
   id: string;
   socketId?: string;
   nickname: string;
+  /** 3-letter hull mark for scout ships. */
+  monogram: string;
   avatar: string;
   isHost: boolean;
   isBot: boolean;
@@ -70,6 +74,10 @@ export type ServerRoom = {
   isEventRound: boolean;
   eventId?: SpecialEventId;
   currentQuestion?: Question;
+  /** Four biomes for the active question options (public). */
+  islandBiomes?: IslandBiomeId[];
+  /** Secret loot under each island — revealed only in arcadeReveal. */
+  islandLoot?: IslandLootId[];
   questionStartedAt: number;
   questionDurationMs: number;
   usedQuestionIds: Set<string>;
@@ -93,14 +101,21 @@ export function nextAvatar(room: Pick<ServerRoom, "players">): string {
   return AVATAR_POOL.find((a) => !used.has(a)) ?? "pirate-0";
 }
 
+export function monogramFromNickname(nickname: string): string {
+  const cleaned = nickname.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return (cleaned + "XXX").slice(0, 3);
+}
+
 export function createPlayer(
   id: string,
   nickname: string,
   opts: Partial<ServerPlayer> = {},
 ): ServerPlayer {
+  const trimmed = nickname.slice(0, 16);
   return {
     id,
-    nickname: nickname.slice(0, 16),
+    nickname: trimmed,
+    monogram: monogramFromNickname(trimmed),
     avatar: "pirate-0",
     isHost: false,
     isBot: false,

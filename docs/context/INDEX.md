@@ -1,8 +1,14 @@
 # Treasure Trap context index
 
-This is the canonical router for product context. Read this file before changing the game,
-then load only the documents listed for the task. Historical documents may describe an older
-seven-round prototype or an archived Phaser experiment; they are not current product truth.
+This is the canonical **compact** router for product context. Read this file before changing
+the game, then load only the documents listed for the task.
+
+**Also read the Obsidian vault** at `obsidian/` (start: `obsidian/_MOCs/Home.md`). Docs keep
+INDEX/HANDOFF/roadmap checklists for Cursor; Obsidian holds granular one-note-per-mechanic
+ideas, MOCs, and meeting Inbox. Agents use both — see `.cursor/rules/obsidian-vault.mdc`.
+
+Historical documents may describe an older seven-round prototype or an archived Phaser
+experiment; they are not current product truth (`obsidian/Archive/` mirrors that warning).
 
 ## Status language
 
@@ -41,8 +47,8 @@ See [STATUS.md](STATUS.md). In short:
 | Visual quality / stack / Higgsfield handoff | [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | `design/assets.csv`, `design/concept/` |
 | Multiplayer or protocol | [ARCHITECTURE.md](ARCHITECTURE.md) | `server/src/engine.ts`, `shared/src/types/index.ts` |
 | Planning or deployment | [ROADMAP.md](ROADMAP.md) | CI and hosting configuration |
-| Brainstorming | [IDEA_BANK.md](IDEA_BANK.md) | none until promoted |
-| Starting a new agent | this file, then [HANDOFF.md](HANDOFF.md) | current branch and tests |
+| Brainstorming | [IDEA_BANK.md](IDEA_BANK.md), `obsidian/00-Inbox/`, area MOCs | none until promoted |
+| Starting a new agent | this file, [HANDOFF.md](HANDOFF.md), `obsidian/_MOCs/Home.md` | current branch and tests |
 
 ## Canonical registry
 

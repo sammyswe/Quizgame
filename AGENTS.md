@@ -9,12 +9,16 @@ devices sail as a fleet, race toward answer islands, bluff, mutiny, fire pirate 
 survive high-stakes special rounds. Casino spectacle is deliberately concentrated in loot-box
 and jackpot moments; it is not the global visual skin.
 
-Start at `docs/context/INDEX.md`. It routes each task to the minimum canonical context and
-separates confirmed decisions from pilots and future ideas. Older root-level docs may describe
-the superseded seven-round prototype.
+Start at `docs/context/INDEX.md` **and** `obsidian/_MOCs/Home.md`. Docs provide the compact
+Cursor router and progress ledgers; the Obsidian vault is the granular idea/design notebook
+(one mechanic per note, MOCs, Inbox, status tags). Agents must use **both**. Older root-level
+docs and `obsidian/Archive/` may describe the superseded seven-round prototype.
 
 ## Repository layout
 
+- `obsidian/` — Obsidian vault: working design notebook + granular source of truth for ideas
+  and direction. Open this folder in Obsidian. See `obsidian/README.md`.
+- `docs/` / `docs/context/` — Compact agent routing (`INDEX.md`), `HANDOFF.md`, roadmaps.
 - `shared/` — TypeScript types, config constants, and **pure** game logic. No IO, no React,
   no sockets. Everything here is unit-testable. This is the source of truth for game rules.
 - `server/` — Authoritative Node + Socket.IO server. Owns rooms, phases, timers, scores,
@@ -37,9 +41,11 @@ the superseded seven-round prototype.
 9. **Keep shared types centralised** in `shared/src/types/index.ts`.
 10. **Tests for scoring and item logic.** New mechanics need Vitest coverage in `shared/src/game/__tests__/`.
 11. **Status is explicit.** Existing code is not automatically confirmed design. Use
-    LOCKED/PILOT/IDEA/REJECTED from `docs/context/STATUS.md`.
+    LOCKED/PILOT/IDEA/REJECTED from `docs/context/STATUS.md` and Obsidian note frontmatter.
 12. **Animation communicates rules.** Every shipped event needs immediate feedback, a readable
     staged result, sound, reduced motion and documented Higgsfield/fallback assets.
+13. **Read Obsidian + docs.** Granular direction lives in `obsidian/`; compact routing and
+    handoff live in `docs/context/`. Do not implement IDEA notes unless asked to promote them.
 
 ## Commands
 
