@@ -36,11 +36,11 @@ test("two players can create, join, and start a game", async ({ browser }) => {
   await expect(friend.getByText("Cap'n Test")).toBeVisible({ timeout: 15_000 });
 
   // Host starts the game.
-  await host.getByRole("button", { name: /start game/i }).click();
+  await host.getByRole("button", { name: /set sail/i }).click();
 
-  // Both players reach the first round intro (Round 1 of N).
-  await expect(host.getByText(/round 1 of/i)).toBeVisible({ timeout: 15_000 });
-  await expect(friend.getByText(/round 1 of/i)).toBeVisible({ timeout: 15_000 });
+  // Both players reach the Seven Seas introduction.
+  await expect(host.getByText(/the seven seas/i)).toBeVisible({ timeout: 15_000 });
+  await expect(friend.getByText(/the seven seas/i)).toBeVisible({ timeout: 15_000 });
 
   await hostContext.close();
   await friendContext.close();

@@ -1,6 +1,6 @@
 /**
  * Headless simulation of a full arcade game: 1 human-ish host client + 2 bots,
- * 10 rounds (test length), Million Pound Drop at round 10. Exercises answers,
+ * 10 regular questions plus Million Pound Drop. Exercises answers,
  * mutiny, power-ups (via debug chests), and asserts the game reaches a winner.
  *
  * Usage: node scripts/simulate-arcade.mjs   (server must be running on :3001)
@@ -25,6 +25,7 @@ function emitAck(socket, event, ...args) {
 const host = connect();
 let phase = "";
 let lastState;
+let lastPrivateState;
 let resultCount = 0;
 let chestCount = 0;
 let sawEventRound = false;
@@ -78,7 +79,7 @@ host.on("game:state", (state) => {
       setTimeout(() => {
         if (a2?.isEventRound) {
           const alloc = [0, 0, 0, 0];
-          alloc[Math.floor(Math.random() * 4)] = 100;
+          alloc[Math.floor(Math.random() * 4)] = lastPrivateState?.lootDropPool ?? 0;
           host.emit("answer:submit", { lootAllocation: alloc });
           log("  host allocated MPD gold");
         } else {
@@ -112,7 +113,7 @@ host.on("game:state", (state) => {
       log(`   results received: ${resultCount}, chests opened: ${chestCount}`);
       log(`   event round played: ${sawEventRound}`);
       log(`   drama seen: ${[...new Set(sawMaroonOrMutinyOrSea)].join(" | ") || "(none this run)"}`);
-      const ok = sawEventRound && resultCount >= 9;
+      const ok = sawEventRound && resultCount >= 11;
       console.log(ok ? "✅ SIMULATION PASSED" : "❌ SIMULATION FAILED");
       process.exit(ok ? 0 : 1);
     }
@@ -126,6 +127,7 @@ setInterval(() => {
 }, 5000);
 
 host.on("player:privateState", (priv) => {
+  lastPrivateState = priv;
   if (priv.chests.length > 0 && phase !== "reveal") {
     host.emit("chest:open", priv.chests[0].uid);
   }

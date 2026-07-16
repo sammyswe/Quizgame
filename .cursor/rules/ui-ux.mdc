@@ -6,17 +6,17 @@ alwaysApply: false
 
 # UI / UX rules
 
-- Visual direction: **neon pirate casino** — dark navy/purple backgrounds, neon cyan/gold/
-  pink/green glows, gold coins, treasure chests, map motifs, slot-machine item reveals.
-  It must feel like an arcade party game, never an admin dashboard.
+- Visual direction: **cartoon pirate excursion first** — animated fleet, warm storybook seas,
+  islands, charts, timber and sails. Concentrate neon/casino language in loot-box/jackpot
+  ceremonies and selected high-stakes peaks. Never make it an admin dashboard.
 - Mobile-first, portrait-friendly, iPhone-native feel. Max content width ~28rem, big
   tap targets (min 52px), readable text, strong contrast.
 - The UI teaches the game: short labels, icons, and animated sequencing instead of rules pages.
 - Animations (Framer Motion + Tailwind keyframes) must clarify game events, not hide them.
   Respect `prefers-reduced-motion` (global fallback lives in `styles/index.css`).
-- Never rely on colour alone for meaning — pair with icons/text (✅/💭, 🔒, etc.).
+- Never rely on colour alone for meaning — pair with authored symbols/text/state shapes.
 - Timers must always be visible during timed phases (`TimerBar` fed by server `timerEndsAt`).
-- Private information (missions, clues) must be clearly marked "🔒 private / only you see this".
+- Private information (mutiny, clues, inventory effects) must be clearly marked private.
 - Score changes only appear through the reveal queue (`RevealScreen`) or animated counters —
   never teleport numbers silently.
 - Microcopy follows the 3 C's (clarity > concision > character): every label is as short as
@@ -26,3 +26,4 @@ alwaysApply: false
   flavour lives in reveals and titles, instructions stay plain. Keep it 9+ friendly.
 - Round rules are taught by the intro screen in max 3 short bullets; everything else is
   learned by playing (progressive disclosure). No walls of text, ever.
+- Follow `docs/context/VISUAL_DIRECTION.md` and `docs/context/ANIMATION_AND_ASSETS.md`.

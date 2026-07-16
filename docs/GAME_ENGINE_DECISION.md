@@ -1,4 +1,8 @@
-# Game Engine Decision
+# Game Engine Decision — Phaser gameplay active
+
+> **Updated 2026-07-14:** Phaser now renders active in-round gameplay under `client/src/game/`.
+> React remains the shell. The older implementation under `experiments/loot-drop/` is archived
+> and must not supply network types. See `docs/context/ARCHITECTURE.md`.
 
 ## Decision: Phaser 3 (+ TypeScript) for the Loot Drop scene
 

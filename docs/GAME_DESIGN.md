@@ -1,4 +1,8 @@
-# Treasure Trap — Game Design (Prototype v0.1)
+# Treasure Trap — Game Design (historical prototype v0.1)
+
+> **Superseded:** Current confirmed mechanics and implementation mismatches live in
+> `docs/context/MECHANICS.md`, `ITEMS.md` and `SPECIAL_ROUNDS.md`. This file preserves the
+> earlier seven-round design for reference only.
 
 This documents what the prototype implements, what is simplified, and the intended final
 versions. Config sources of truth: `shared/src/config/*`.

@@ -1,4 +1,5 @@
 import { ARCADE } from "../config/arcade.js";
+import { ISLAND_LOOT_POINTS, type IslandLootId } from "../config/islands.js";
 import type { QuestionResult, RevealEvent } from "../types/index.js";
 import { addDelta, ev } from "./reveal.js";
 import type { ChestAward } from "./resolveQuestion.js";
@@ -20,6 +21,8 @@ export type ArcadePlayerInput = {
   /** Epoch ms of the last answer lock. */
   lockedAt?: number;
   mutinied: boolean;
+  /** White Flag: deliberately sits out while preserving the streak. */
+  surrendered?: boolean;
   /** Sitting this question out (marooned last question). */
   skipped: boolean;
   rumRush: boolean;
@@ -34,6 +37,8 @@ export type ArcadeResolveInput = {
   correctIndex: number;
   questionStartedAt: number;
   questionDurationMs: number;
+  /** Secret loot under each answer island (index = option). */
+  islandLoot: IslandLootId[];
   players: ArcadePlayerInput[];
   swordFights: SwordFightInput[];
   leaderId?: string;
@@ -41,6 +46,8 @@ export type ArcadeResolveInput = {
   rng?: () => number;
   /** Poseidon has already blessed these players this game. */
   poseidonUsed: Set<string>;
+  /** Mutiny and marooning are disabled during onboarding questions 1–5. */
+  socialMechanicsEnabled?: boolean;
 };
 
 export type ArcadeResolution = {
@@ -76,6 +83,7 @@ export function streakBonus(streak: number): number {
 
 export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResolution {
   const rng = input.rng ?? Math.random;
+  const socialMechanicsEnabled = input.socialMechanicsEnabled ?? true;
   const events: RevealEvent[] = [];
   const scoreDelta: Record<string, number> = {};
   const streaks: Record<string, number> = {};
@@ -98,7 +106,8 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
   };
 
   const isCorrect = (p: ArcadePlayerInput): boolean => {
-    if (p.skipped) return false;
+    if (p.skipped || p.surrendered) return false;
+    if (p.mutinied) return false;
     if (effectiveChoice(p) !== input.correctIndex) return false;
     // Walk the Plank: answering after the deadline scores nothing.
     if (p.plankUntil && (p.lockedAt ?? Infinity) > p.plankUntil) return false;
@@ -107,7 +116,7 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
 
   // --- Base scoring: decaying pot + streak bonus -----------------------------
   for (const p of input.players) {
-    if (p.skipped) {
+    if (p.skipped || p.surrendered) {
       streaks[p.id] = p.streak;
       results[p.id] = {
         correct: false,
@@ -116,7 +125,7 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
         streak: p.streak,
         streakBonus: 0,
         potAtLock: 0,
-        skipped: true,
+        skipped: p.skipped || undefined,
       };
       continue;
     }
@@ -125,13 +134,22 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
       p.plankUntil !== undefined &&
       (p.lockedAt ?? Infinity) > p.plankUntil &&
       effectiveChoice(p) === input.correctIndex;
+    const timedPot = potAt(
+      p.lockedAt ?? input.questionStartedAt + input.questionDurationMs,
+      input.questionStartedAt,
+      input.questionDurationMs,
+    );
     const pot = correct
-      ? potAt(p.lockedAt ?? input.questionStartedAt + input.questionDurationMs,
-          input.questionStartedAt, input.questionDurationMs)
+      ? p.plankUntil
+        ? Math.min(timedPot, ARCADE.PLANK_POT_CAP)
+        : timedPot
       : 0;
+    const lootId = input.islandLoot[input.correctIndex] ?? "coins";
+    const lootPoints = correct ? ISLAND_LOOT_POINTS[lootId] : 0;
     const nextStreak = correct ? p.streak + 1 : 0;
     const bonus = correct ? streakBonus(nextStreak) : 0;
-    let earned = pot + bonus;
+    // Mystery island loot is the score; potAtLock tracks time pressure for UI/telemetry.
+    let earned = lootPoints + bonus;
     if (correct && p.rumRush) {
       earned *= 2;
       rumRushConsumed.push(p.id);
@@ -216,24 +234,31 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
 
   // --- Mutiny -------------------------------------------------------------------
   const leader = input.leaderId ? byId.get(input.leaderId) : undefined;
-  const mutineers = active.filter((p) => p.mutinied && p.id !== input.leaderId);
+  const mutineers = socialMechanicsEnabled
+    ? active.filter((p) => p.mutinied && p.id !== input.leaderId)
+    : [];
   if (leader && mutineers.length > 0) {
+    const eligibleCrew = active.filter((p) => p.id !== leader.id);
+    const unanimous = eligibleCrew.length > 0 && mutineers.length === eligibleCrew.length;
     const leaderRight = isCorrect(leader);
-    if (!leaderRight) {
-      const delta: Record<string, number> = {};
+
+    if (unanimous && !leaderRight) {
+      const available = Math.max(0, leader.score + (scoreDelta[leader.id] ?? 0));
+      const tax = Math.min(ARCADE.MUTINY_CAPTAIN_TAX_TOTAL, available);
+      const each = Math.floor(tax / mutineers.length);
+      const delta: Record<string, number> = { [leader.id]: -(each * mutineers.length) };
+      addDelta(scoreDelta, leader.id, delta[leader.id] ?? 0);
       for (const m of mutineers) {
-        addDelta(scoreDelta, m.id, ARCADE.MUTINY_REWARD);
-        delta[m.id] = ARCADE.MUTINY_REWARD;
+        addDelta(scoreDelta, m.id, each);
+        delta[m.id] = each;
         const r = results[m.id];
         if (r) r.mutiny = "won";
       }
-      addDelta(scoreDelta, leader.id, -ARCADE.MUTINY_LEADER_PENALTY);
-      delta[leader.id] = -ARCADE.MUTINY_LEADER_PENALTY;
       events.push(
         ev(
           "accusationCorrect",
-          "MUTINY! ⚔️",
-          `The crew turned on ${leader.nickname} — and the captain FAILED! +${ARCADE.MUTINY_REWARD} to each mutineer.`,
+          "THE WHOLE CREW MUTINIED! ⚔️",
+          `${leader.nickname} failed alone and pays ${each} gold to every mutineer.`,
           {
             icon: "⚔️",
             playerIds: [leader.id, ...mutineers.map((m) => m.id)],
@@ -243,28 +268,34 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
           },
         ),
       );
-    } else {
-      const delta: Record<string, number> = {};
+    } else if (unanimous) {
       for (const m of mutineers) {
-        addDelta(scoreDelta, m.id, -ARCADE.MUTINY_FAIL_PENALTY);
-        delta[m.id] = -ARCADE.MUTINY_FAIL_PENALTY;
         const r = results[m.id];
         if (r) r.mutiny = "lost";
       }
-      const defense = ARCADE.MUTINY_LEADER_DEFENSE * mutineers.length;
-      addDelta(scoreDelta, leader.id, defense);
-      delta[leader.id] = defense;
       events.push(
         ev(
           "accusationWrong",
-          "Mutiny crushed! 👑",
-          `${leader.nickname} answered right — the mutineers walk the plank. −${ARCADE.MUTINY_FAIL_PENALTY} each.`,
+          "Captain beats the mutiny! 👑",
+          `${leader.nickname} answered correctly. The crew forfeited their answers and gets nothing.`,
           {
             icon: "👑",
             playerIds: [leader.id, ...mutineers.map((m) => m.id)],
-            pointsDelta: delta,
             animation: "mutiny",
             intensity: "big",
+          },
+        ),
+      );
+    } else if (mutineers.length > 1) {
+      events.push(
+        ev(
+          "scoreChanged",
+          "A divided mutiny...",
+          `${mutineers.length} pirates forfeited their answers, but the whole crew did not join them.`,
+          {
+            icon: "🏴",
+            playerIds: mutineers.map((m) => m.id),
+            animation: "mutiny",
           },
         ),
       );
@@ -290,7 +321,11 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
   }
 
   // --- Marooned: everyone right bar one ------------------------------------------
-  if (active.length >= ARCADE.MAROON_MIN_PLAYERS) {
+  if (
+    socialMechanicsEnabled &&
+    active.length >= ARCADE.MAROON_MIN_PLAYERS &&
+    active.every((player) => !player.surrendered && !player.mutinied)
+  ) {
     const wrong = active.filter((p) => !isCorrect(p));
     if (wrong.length === 1) {
       const odd = wrong[0];
@@ -356,36 +391,6 @@ export function resolveArcadeQuestion(input: ArcadeResolveInput): ArcadeResoluti
             pointsDelta: { [leader.id]: -dragged },
             animation: "plunder",
             intensity: "big",
-          },
-        ),
-      );
-    }
-  }
-
-  // Poseidon: blesses a struggling pirate once per game.
-  if (leader) {
-    const leaderTotal = Math.max(1, leader.score + (scoreDelta[leader.id] ?? 0));
-    const struggling = active
-      .filter((p) => p.id !== leader.id && !input.poseidonUsed.has(p.id))
-      .filter(
-        (p) => (p.score + (scoreDelta[p.id] ?? 0)) / leaderTotal < ARCADE.POSEIDON_POOR_PCT,
-      )
-      .sort((a, b) => a.score + (scoreDelta[a.id] ?? 0) - (b.score + (scoreDelta[b.id] ?? 0)));
-    const blessed = struggling[0];
-    if (blessed && !isCorrect(blessed) && rng() < 0.5) {
-      addDelta(scoreDelta, blessed.id, ARCADE.POSEIDON_BLESSING);
-      poseidonBlessed.push(blessed.id);
-      events.push(
-        ev(
-          "scoreChanged",
-          "POSEIDON RISES! 🔱",
-          `The sea god pities ${blessed.nickname} and returns ${ARCADE.POSEIDON_BLESSING} gold from the deep.`,
-          {
-            icon: "🔱",
-            playerIds: [blessed.id],
-            pointsDelta: { [blessed.id]: ARCADE.POSEIDON_BLESSING },
-            animation: "curse",
-            intensity: "medium",
           },
         ),
       );

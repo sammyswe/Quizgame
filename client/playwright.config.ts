@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 60_000,
   use: {
     baseURL: "http://localhost:5173",
-    viewport: { width: 390, height: 844 }, // iPhone-ish portrait
+    viewport: { width: 1280, height: 720 }, // primary play surface: ordinary laptop landscape
   },
   webServer: [
     {

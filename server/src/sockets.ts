@@ -19,7 +19,7 @@ import {
 } from "./engine.js";
 import { createNewRoom, getRoom, joinRoom } from "./roomManager.js";
 import { botName, runBotsForPhase } from "./bots.js";
-import { createPlayer, nextAvatar } from "./state.js";
+import { createPlayer, monogramFromNickname, nextAvatar } from "./state.js";
 
 type SocketData = {
   roomCode?: string;
@@ -108,6 +108,30 @@ export function attachSockets(io: Server): void {
       const c = config as GameConfig;
       if (!c || !["test", "short", "medium", "long"].includes(c.length)) return;
       configureGame(room, { length: c.length, rounds: [] });
+    });
+
+    socket.on("avatar:choose", (index: unknown) => {
+      const room = currentRoom();
+      const playerId = currentPlayerId();
+      if (!room || !playerId || (room.phase !== "lobby" && room.phase !== "setup")) return;
+      if (typeof index !== "number" || !Number.isInteger(index) || index < 0 || index > 7) return;
+      const player = room.players.get(playerId);
+      if (!player) return;
+      player.avatar = `pirate-${index}`;
+      broadcastRoom(io, room);
+    });
+
+    socket.on("monogram:set", (raw: unknown) => {
+      const room = currentRoom();
+      const playerId = currentPlayerId();
+      if (!room || !playerId || (room.phase !== "lobby" && room.phase !== "setup")) return;
+      if (typeof raw !== "string") return;
+      const cleaned = raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 3);
+      if (cleaned.length < 1) return;
+      const player = room.players.get(playerId);
+      if (!player) return;
+      player.monogram = (cleaned + monogramFromNickname(player.nickname)).slice(0, 3);
+      broadcastRoom(io, room);
     });
 
     socket.on("game:start", () => {

@@ -2,6 +2,8 @@ import type {
   Answer,
   Chest,
   GameConfig,
+  IslandBiomeId,
+  IslandLootId,
   OwnedPowerUp,
   Phase,
   PowerUpId,
@@ -15,6 +17,8 @@ export type ServerPlayer = {
   id: string;
   socketId?: string;
   nickname: string;
+  /** 3-letter hull mark for scout ships. */
+  monogram: string;
   avatar: string;
   isHost: boolean;
   isBot: boolean;
@@ -31,8 +35,14 @@ export type ServerPlayer = {
   maroonPending: boolean;
   /** Earned the first-5 jackpot item already. */
   jackpotEarned: boolean;
+  /** Positive trivia earnings accumulated in the current 10-question block. */
+  blockLoot: number;
+  /** Score committed to the active Loot Drop special. */
+  eventWager: number;
   /** Rum Rush pending on next correct answer. */
   rumRush: boolean;
+  /** White Flag: forfeits this question while preserving the current streak. */
+  whiteFlagged: boolean;
   /** Eyepatch / Secret X: wrong options hidden for this player. */
   disabledOptions: number[];
   /** Secret X revealed answer index (private). */
@@ -41,6 +51,7 @@ export type ServerPlayer = {
   parrotTargetId?: string;
   /** Telescope: horizon text (private). */
   horizon?: string;
+  telescopeTargetId?: string;
   /** Cannonball: answers visually holed this question. */
   cannonballed: boolean;
   /** Walk the Plank: must answer before this epoch ms. */
@@ -58,9 +69,15 @@ export type ServerRoom = {
   /** 1-based current round number; 0 before the game starts. */
   roundNumber: number;
   totalRounds: number;
+  /** Number of post-block special rounds already started. */
+  specialsPlayed: number;
   isEventRound: boolean;
   eventId?: SpecialEventId;
   currentQuestion?: Question;
+  /** Four biomes for the active question options (public). */
+  islandBiomes?: IslandBiomeId[];
+  /** Secret loot under each island — revealed only in arcadeReveal. */
+  islandLoot?: IslandLootId[];
   questionStartedAt: number;
   questionDurationMs: number;
   usedQuestionIds: Set<string>;
@@ -77,11 +94,16 @@ export type ServerRoom = {
   createdAt: number;
 };
 
-const AVATAR_POOL = ["🦜", "🐙", "🦈", "🐢", "🦑", "🦀", "🦞", "🐡", "🐬", "🐋"];
+const AVATAR_POOL = Array.from({ length: 8 }, (_, index) => `pirate-${index}`);
 
 export function nextAvatar(room: Pick<ServerRoom, "players">): string {
   const used = new Set([...room.players.values()].map((p) => p.avatar));
-  return AVATAR_POOL.find((a) => !used.has(a)) ?? "🏴‍☠️";
+  return AVATAR_POOL.find((a) => !used.has(a)) ?? "pirate-0";
+}
+
+export function monogramFromNickname(nickname: string): string {
+  const cleaned = nickname.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return (cleaned + "XXX").slice(0, 3);
 }
 
 export function createPlayer(
@@ -89,10 +111,12 @@ export function createPlayer(
   nickname: string,
   opts: Partial<ServerPlayer> = {},
 ): ServerPlayer {
+  const trimmed = nickname.slice(0, 16);
   return {
     id,
-    nickname: nickname.slice(0, 16),
-    avatar: "🏴‍☠️",
+    nickname: trimmed,
+    monogram: monogramFromNickname(trimmed),
+    avatar: "pirate-0",
     isHost: false,
     isBot: false,
     connected: true,
@@ -104,7 +128,10 @@ export function createPlayer(
     marooned: false,
     maroonPending: false,
     jackpotEarned: false,
+    blockLoot: 0,
+    eventWager: 0,
     rumRush: false,
+    whiteFlagged: false,
     disabledOptions: [],
     cannonballed: false,
     poseidonUsed: false,
@@ -121,6 +148,7 @@ export function createRoom(code: string, host: ServerPlayer): ServerRoom {
     config: { length: "test", rounds: [] },
     roundNumber: 0,
     totalRounds: 10,
+    specialsPlayed: 0,
     isEventRound: false,
     questionStartedAt: 0,
     questionDurationMs: 0,

@@ -12,8 +12,10 @@ import {
   normaliseAllocation,
   oddsForRank,
   pickQuestions,
+  pickQuestionBiomes,
   resolveArcadeQuestion,
   resolveLootDrop,
+  rollIslandLoot,
   rollPowerUp,
   rollRarity,
   type ChestAward,
@@ -78,6 +80,7 @@ export function publicPlayers(room: ServerRoom): PublicPlayer[] {
   return [...room.players.values()].map((p) => ({
     id: p.id,
     nickname: p.nickname,
+    monogram: p.monogram,
     avatar: p.avatar,
     isHost: p.id === room.hostId,
     isBot: p.isBot,
@@ -86,6 +89,14 @@ export function publicPlayers(room: ServerRoom): PublicPlayer[] {
     roundLoot: 0,
     chestCount: p.chests.length,
     itemCount: p.powerUps.length,
+    powerUpIds: p.powerUps.map((item) => item.powerUpId),
+    activePowerUpEffects: [
+      ...(p.rumRush ? (["rumRush"] as const) : []),
+      ...(p.cannonballed ? (["cannonball"] as const) : []),
+      ...(p.plankUntil ? (["walkThePlank"] as const) : []),
+      ...(p.parrotTargetId ? (["parrot"] as const) : []),
+      ...(p.whiteFlagged ? (["whiteFlag"] as const) : []),
+    ],
     streak: p.streak,
     mutinyTokens: 0,
     hasAnswered: room.answers.has(p.id),
@@ -111,11 +122,25 @@ export function publicState(room: ServerRoom): PublicGameState {
           prompt: room.currentQuestion.prompt,
           options: room.currentQuestion.options,
           difficulty: room.currentQuestion.difficulty,
+          biomes: room.islandBiomes,
         }
       : undefined,
     timerEndsAt: room.timerEndsAt,
     players: publicPlayers(room),
     revealEvents: room.phase === "reveal" ? room.revealEvents : [],
+    arcadeReveal:
+      room.phase === "reveal" && room.currentQuestion
+        ? {
+            correctIndex: room.currentQuestion.correctIndex,
+            islandLoot: room.islandLoot,
+            answers: [...room.answers.values()].map((answer) => ({
+              playerId: answer.playerId,
+              choiceIndex: answer.choiceIndex,
+              lootAllocation: answer.lootAllocation,
+              lockedAt: answer.lockedAt,
+            })),
+          }
+        : undefined,
     arcade:
       room.roundNumber > 0
         ? {
@@ -149,9 +174,22 @@ export function privateState(room: ServerRoom, p: ServerPlayer): PrivatePlayerSt
     hasMutinied: p.mutinied || undefined,
     revealedAnswerIndex: p.revealedAnswerIndex,
     parrotTargetId: p.parrotTargetId,
-    horizon: p.horizon,
+    horizon: p.telescopeTargetId
+      ? (() => {
+          const target = room.players.get(p.telescopeTargetId);
+          const answer = room.answers.get(p.telescopeTargetId);
+          return target
+            ? answer?.choiceIndex === undefined
+              ? `${target.nickname} has not committed a course yet.`
+              : `${target.nickname} committed to island ${String.fromCharCode(65 + answer.choiceIndex)}.`
+            : undefined;
+        })()
+      : p.horizon,
     cannonballed: p.cannonballed || undefined,
     plankUntil: p.plankUntil,
+    lootDropPool: room.isEventRound ? p.eventWager : undefined,
+    selectedChoiceIndex: room.answers.get(p.id)?.choiceIndex,
+    lootAllocation: room.answers.get(p.id)?.lootAllocation,
     disabledOptions: p.disabledOptions.length > 0 ? p.disabledOptions : undefined,
   };
 }
@@ -205,6 +243,8 @@ function resetPlayerForGame(p: ServerPlayer): void {
   p.powerUps = [];
   p.chests = [];
   p.jackpotEarned = false;
+  p.blockLoot = 0;
+  p.eventWager = 0;
   p.poseidonUsed = false;
   p.marooned = false;
   p.maroonPending = false;
@@ -216,13 +256,16 @@ function resetQuestionState(p: ServerPlayer): void {
   p.disabledOptions = [];
   p.revealedAnswerIndex = undefined;
   p.parrotTargetId = undefined;
+  p.telescopeTargetId = undefined;
   p.cannonballed = false;
   p.plankUntil = undefined;
+  p.whiteFlagged = false;
 }
 
 export function startGame(room: ServerRoom): void {
   room.totalRounds = ARCADE_LENGTHS[room.config.length].rounds;
   room.roundNumber = 0;
+  room.specialsPlayed = 0;
   room.usedQuestionIds = new Set();
   room.winnerId = undefined;
   for (const p of room.players.values()) resetPlayerForGame(p);
@@ -233,6 +276,7 @@ export function resetToLobby(room: ServerRoom): void {
   if (room.timer) clearTimeout(room.timer);
   room.timer = undefined;
   room.roundNumber = 0;
+  room.specialsPlayed = 0;
   room.currentQuestion = undefined;
   room.usedQuestionIds = new Set();
   room.answers = new Map();
@@ -245,22 +289,28 @@ export function resetToLobby(room: ServerRoom): void {
 }
 
 function nextArcadeRound(room: ServerRoom): void {
-  room.roundNumber += 1;
-  if (room.roundNumber > room.totalRounds) {
-    declareWinner(room);
-    return;
-  }
-  room.isEventRound = room.roundNumber % ARCADE.EVENT_EVERY === 0;
-  room.eventId = room.isEventRound ? eventForRound(room.roundNumber) : undefined;
-
-  if (room.isEventRound) {
+  const completedBlocks = Math.floor(room.roundNumber / ARCADE.EVENT_EVERY);
+  if (completedBlocks > room.specialsPlayed) {
+    room.specialsPlayed += 1;
+    room.isEventRound = true;
+    room.eventId = eventForRound(room.roundNumber);
+    for (const p of room.players.values()) {
+      p.eventWager = Math.floor(Math.min(p.score, p.blockLoot) / 10) * 10;
+    }
     const meta = SPECIAL_EVENTS[room.eventId ?? "millionPoundDrop"];
     ticker(room, `${meta.icon} SPECIAL EVENT: ${meta.name}!`);
     setPhase(room, "round_intro", TIMING.ROUND_INTRO_MS, () => beginArcadeQuestion(room));
     return;
   }
+  if (room.roundNumber >= room.totalRounds) {
+    declareWinner(room);
+    return;
+  }
+  room.roundNumber += 1;
+  room.isEventRound = false;
+  room.eventId = undefined;
   if (room.roundNumber === 1) {
-    ticker(room, `⚓ The voyage begins — ${room.totalRounds} rounds!`);
+    ticker(room, `The voyage begins — ${room.totalRounds} questions across the Seven Seas.`);
     setPhase(room, "round_intro", TIMING.ARCADE_INTRO_MS, () => beginArcadeQuestion(room));
     return;
   }
@@ -288,15 +338,21 @@ function drawQuestion(room: ServerRoom): Question {
 }
 
 function beginArcadeQuestion(room: ServerRoom): void {
-  // Apply pending maroons; free last question's castaways.
+  // Special rounds never consume a maroon skip; defer it to the next regular question.
   for (const p of room.players.values()) {
-    p.marooned = p.maroonPending;
-    p.maroonPending = false;
+    if (room.isEventRound) {
+      p.marooned = false;
+    } else {
+      p.marooned = p.maroonPending;
+      p.maroonPending = false;
+    }
     resetQuestionState(p);
   }
   room.answers = new Map();
   room.swordFights = [];
   room.currentQuestion = drawQuestion(room);
+  room.islandBiomes = pickQuestionBiomes();
+  room.islandLoot = rollIslandLoot();
   room.questionDurationMs = room.isEventRound ? TIMING.ARCADE_EVENT_MS : TIMING.ARCADE_QUESTION_MS;
   room.questionStartedAt = Date.now();
   for (const p of room.players.values()) {
@@ -315,6 +371,8 @@ export function maybeEndEarly(room: ServerRoom): void {
   if (room.phase !== "question") return;
   const everyoneIn = [...room.players.values()]
     .filter((p) => p.connected && !p.marooned)
+    .filter((p) => !p.mutinied)
+    .filter((p) => !p.whiteFlagged)
     .every((p) => room.answers.has(p.id));
   if (!everyoneIn) return;
   if (room.timer) clearTimeout(room.timer);
@@ -351,6 +409,7 @@ function endArcadeQuestion(room: ServerRoom): void {
     correctIndex: q.correctIndex,
     questionStartedAt: room.questionStartedAt,
     questionDurationMs: room.questionDurationMs,
+    islandLoot: room.islandLoot ?? ["coins", "coins", "coins", "coins"],
     players: [...room.players.values()].map((p) => ({
       id: p.id,
       nickname: p.nickname,
@@ -364,12 +423,14 @@ function endArcadeQuestion(room: ServerRoom): void {
       rumRush: p.rumRush,
       parrotTargetId: p.parrotTargetId,
       plankUntil: p.plankUntil,
+      surrendered: p.whiteFlagged,
     })),
     swordFights: room.swordFights,
     leaderId,
     poseidonUsed: new Set(
       [...room.players.values()].filter((p) => p.poseidonUsed).map((p) => p.id),
     ),
+    socialMechanicsEnabled: room.roundNumber > ARCADE.FIRST_ITEM_WINDOW,
   });
 
   applyScoreDelta(room, res.scoreDelta);
@@ -379,14 +440,15 @@ function endArcadeQuestion(room: ServerRoom): void {
     if (res.rumRushConsumed.includes(p.id)) p.rumRush = false;
     if (res.poseidonBlessed.includes(p.id)) p.poseidonUsed = true;
     if (res.newlyMarooned.includes(p.id)) p.maroonPending = true;
+    p.blockLoot += Math.max(0, res.results[p.id]?.earned ?? 0);
   }
 
-  // First-5 jackpot: your first correct answer in rounds 1..5 = an item reward.
+  // Item onboarding: everyone receives their first item after regular question 5.
   const jackpotWinners: ServerPlayer[] = [];
-  if (room.roundNumber <= ARCADE.FIRST_ITEM_WINDOW) {
+  if (room.roundNumber === ARCADE.FIRST_ITEM_WINDOW) {
     for (const p of room.players.values()) {
       const r = res.results[p.id];
-      if (r?.correct && !p.jackpotEarned) {
+      if (r && !p.jackpotEarned) {
         p.jackpotEarned = true;
         r.jackpot = true;
         jackpotWinners.push(p);
@@ -430,17 +492,8 @@ function startReveal(room: ServerRoom, events: RevealEvent[], after: () => void)
 }
 
 function afterArcadeReveal(room: ServerRoom): void {
-  const isLast = room.roundNumber >= room.totalRounds;
-  if (isLast) {
-    declareWinner(room);
-    return;
-  }
-  // Breather every 5th round and after events; otherwise straight on.
-  if (room.roundNumber % 5 === 0 || room.isEventRound) {
-    setPhase(room, "leaderboard", TIMING.ARCADE_LEADERBOARD_MS, () => nextArcadeRound(room));
-    return;
-  }
-  nextArcadeRound(room);
+  // Every question lands on the fleet standings so rank changes are always visible.
+  setPhase(room, "leaderboard", TIMING.ARCADE_LEADERBOARD_MS, () => nextArcadeRound(room));
 }
 
 // ---------------------------------------------------------------------------
@@ -450,31 +503,52 @@ function afterArcadeReveal(room: ServerRoom): void {
 function resolveEventRound(room: ServerRoom): void {
   const q = room.currentQuestion;
   if (!q) return;
+  const ranks = ranksNow(room);
+  const leaderId = leaderIdNow(room);
   const inputs = [...room.players.values()]
-    .filter((p) => !p.marooned)
     .map((p) => ({
       id: p.id,
       nickname: p.nickname,
       allocation: room.answers.get(p.id)?.lootAllocation,
+      pool: p.eventWager,
+      rank: ranks[p.id] ?? 1,
+      isLeader: p.id === leaderId,
+      poseidonUsed: p.poseidonUsed,
     }));
-  const res = resolveLootDrop(inputs, q.correctIndex);
-  // resolveLootDrop returns deltas of surviving loot (gain only).
+  const res = resolveLootDrop(inputs, q.correctIndex, [], {
+    enableWildcards: true,
+    wagered: true,
+  });
   applyScoreDelta(room, res.lootDelta);
   for (const award of res.chests) grantChest(room, award);
+  if (res.sharkRewardPlayerId) {
+    grantChest(room, { playerId: res.sharkRewardPlayerId, source: "underdog" });
+    res.events.push(
+      ev(
+        "chestEarned",
+        "Shark trophy! 🦈",
+        "The lowest-ranked pirate survives the attack and earns a special catch-up chest.",
+        { icon: "🦈", playerIds: [res.sharkRewardPlayerId], animation: "chest" },
+      ),
+    );
+  }
 
   for (const p of room.players.values()) {
-    const alloc = normaliseAllocation(room.answers.get(p.id)?.lootAllocation);
+    const alloc = normaliseAllocation(room.answers.get(p.id)?.lootAllocation, p.eventWager);
     const kept = alloc[q.correctIndex] ?? 0;
+    const delta = res.lootDelta[p.id] ?? 0;
     const r: QuestionResult = {
-      correct: kept > 0,
+      correct: kept > 0 || res.poseidonBlessed.includes(p.id),
       correctIndex: q.correctIndex,
-      earned: kept,
+      earned: Math.max(0, p.eventWager + delta),
       streak: p.streak,
       streakBonus: 0,
-      potAtLock: kept,
-      skipped: p.marooned || undefined,
+      potAtLock: Math.max(0, p.eventWager + delta),
     };
     emitter.toPlayer(room, p.id, "question:result", r);
+    if (res.poseidonBlessed.includes(p.id)) p.poseidonUsed = true;
+    p.blockLoot = 0;
+    p.eventWager = 0;
   }
 
   startReveal(room, res.events, () => afterArcadeReveal(room));
@@ -491,12 +565,17 @@ export function submitAnswer(
 ): void {
   if (room.phase !== "question") return;
   const p = room.players.get(playerId);
-  if (!p || p.marooned) return;
+  if (!p || p.marooned || p.mutinied || p.whiteFlagged) return;
+  if (room.answers.has(playerId)) {
+    emitter.toPlayer(room, playerId, "error", "Your course is already confirmed.");
+    return;
+  }
+  const allocationPool = room.isEventRound ? p.eventWager : ARCADE.MPD_POOL;
   room.answers.set(playerId, {
     playerId,
     choiceIndex: payload.choiceIndex,
     lootAllocation: payload.lootAllocation
-      ? normaliseAllocation(payload.lootAllocation, ARCADE.MPD_POOL)
+      ? normaliseAllocation(payload.lootAllocation, allocationPool)
       : undefined,
     lockedAt: Date.now(),
   });
@@ -506,6 +585,10 @@ export function submitAnswer(
 
 export function declareMutiny(room: ServerRoom, playerId: string): void {
   if (room.phase !== "question" || room.isEventRound) return;
+  if (room.roundNumber <= ARCADE.FIRST_ITEM_WINDOW) {
+    emitter.toPlayer(room, playerId, "error", "Mutiny unlocks after question 5.");
+    return;
+  }
   const p = room.players.get(playerId);
   if (!p || p.marooned || p.mutinied) return;
   if (leaderIdNow(room) === playerId) {
@@ -513,12 +596,14 @@ export function declareMutiny(room: ServerRoom, playerId: string): void {
     return;
   }
   p.mutinied = true;
+  room.answers.delete(playerId);
   // Secret: only the mutineer knows. No broadcast, just their private echo.
   emitter.toPlayer(room, playerId, "player:privateState", privateState(room, p));
   emitter.toPlayer(room, playerId, "toast", {
     icon: "🏴",
-    text: "Mutiny declared. If the captain fails, you profit...",
+    text: "Mutiny declared. Your answer is forfeited — nobody else knows.",
   });
+  maybeEndEarly(room);
 }
 
 // ---------------------------------------------------------------------------
@@ -567,7 +652,7 @@ export function usePowerUp(
         const wrong = q.options
           .map((_, i) => i)
           .filter((i) => i !== q.correctIndex && !p.disabledOptions.includes(i));
-        const removeCount = Math.floor(wrong.length / 2) || 1;
+        const removeCount = Math.max(1, wrong.length - 1);
         const shuffled = [...wrong].sort(() => Math.random() - 0.5);
         p.disabledOptions = [...p.disabledOptions, ...shuffled.slice(0, removeCount)];
       }
@@ -588,19 +673,9 @@ export function usePowerUp(
       break;
     }
     case "telescope": {
-      const events = eventRounds(room.totalRounds).filter((r) => r >= room.roundNumber);
-      const nextEvent = events[0];
-      const lines = [
-        nextEvent
-          ? `⚡ ${SPECIAL_EVENTS[eventForRound(nextEvent)].name} at round ${nextEvent} (${nextEvent - room.roundNumber} away)`
-          : "Calm seas — no more scheduled events.",
-        `🦑 Kraken sighting odds: ${Math.round(ARCADE.KRAKEN_CHANCE * 100)}% per round`,
-        `🐬 Dolphins strike when ${Math.round(ARCADE.DOLPHIN_THRESHOLD * 100)}%+ answer right`,
-      ];
-      p.horizon = lines.join("\n");
+      if (target) p.telescopeTargetId = target.id;
       emitter.toPlayer(room, playerId, "toast", {
-        icon: "🔭",
-        text: "You scan the horizon...",
+        text: target ? `Watching ${target.nickname}'s course through the telescope.` : "Pick a ship to watch.",
       });
       break;
     }
@@ -630,20 +705,12 @@ export function usePowerUp(
       break;
     }
     case "whiteFlag": {
-      const cash = p.streak * ARCADE.WHITE_FLAG_PER_STREAK;
-      if (cash > 0) {
-        p.score = applyDelta(p.score, cash).next;
-        emitter.toPlayer(room, playerId, "toast", {
-          icon: "🏳️",
-          text: `Streak surrendered for ${cash} gold.`,
-        });
-      } else {
-        emitter.toPlayer(room, playerId, "toast", {
-          icon: "🏳️",
-          text: "No streak to surrender. The flag flaps sadly.",
-        });
-      }
-      p.streak = 0;
+      p.whiteFlagged = true;
+      room.answers.delete(playerId);
+      emitter.toPlayer(room, playerId, "toast", {
+        text: `White flag raised. You sit this question out and preserve a ${p.streak}-answer streak.`,
+      });
+      maybeEndEarly(room);
       break;
     }
     case "secretX": {
@@ -709,21 +776,48 @@ export function usePowerUp(
       }
       break;
     }
+    case "barnacle": {
+      if (target && q) {
+        const available = q.options.map((_, index) => index).filter((index) => !target.disabledOptions.includes(index));
+        const covered = available[Math.floor(Math.random() * available.length)];
+        if (covered !== undefined) target.disabledOptions.push(covered);
+        emitter.toPlayer(room, target.id, "player:privateState", privateState(room, target));
+        emitter.toPlayer(room, target.id, "toast", {
+          text: `${p.nickname}'s barnacle net covered one of your island charts.`,
+        });
+      }
+      break;
+    }
+    case "barnacleInfestation": {
+      if (q) {
+        for (const other of room.players.values()) {
+          if (other.id === playerId || other.marooned) continue;
+          const available = q.options.map((_, index) => index).filter((index) => !other.disabledOptions.includes(index));
+          const covered = available[Math.floor(Math.random() * available.length)];
+          if (covered !== undefined) other.disabledOptions.push(covered);
+          emitter.toPlayer(room, other.id, "player:privateState", privateState(room, other));
+          emitter.toPlayer(room, other.id, "toast", {
+            text: `${p.nickname} infested your island charts with barnacles.`,
+          });
+        }
+      }
+      break;
+    }
   }
 
-  // Attacks are public spectacle; sneaky items stay quiet.
+  // Every item is visible on the shared fleet board; private information stays in private state.
+  const targetIds =
+    def.target === "allOthers"
+      ? [...room.players.keys()].filter((id) => id !== playerId)
+      : target
+        ? [target.id]
+        : [playerId];
+  emitter.toRoom(room, "powerup:fired", {
+    byId: playerId,
+    targetIds,
+    powerUpId: owned.powerUpId,
+  });
   if (def.isAttack) {
-    const targetIds =
-      def.target === "allOthers"
-        ? [...room.players.keys()].filter((id) => id !== playerId)
-        : target
-          ? [target.id]
-          : [];
-    emitter.toRoom(room, "powerup:fired", {
-      byId: playerId,
-      targetIds,
-      powerUpId: owned.powerUpId,
-    });
     ticker(room, `${def.icon} ${p.nickname} fires ${def.name}!`);
   }
   emitter.broadcast(room);
@@ -782,6 +876,10 @@ export function forceChest(room: ServerRoom, playerId: string, _rarity?: Rarity)
 // ---------------------------------------------------------------------------
 
 export function hostAdvance(room: ServerRoom, playerId: string): void {
+  if (room.phase === "round_intro" && room.players.has(playerId)) {
+    skipTimer(room);
+    return;
+  }
   if (playerId !== room.hostId) return;
   if (room.phase === "winner") {
     resetToLobby(room);

@@ -8,7 +8,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   eyepatch: {
     id: "eyepatch",
     name: "Eyepatch",
-    icon: "🏴‍☠️",
+    icon: "EP",
     rarity: "common",
     description: "50/50 — removes half the wrong answers.",
     target: "self",
@@ -18,7 +18,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   parrot: {
     id: "parrot",
     name: "Parrot",
-    icon: "🦜",
+    icon: "PA",
     rarity: "common",
     description: "Copy another pirate's answer.",
     target: "otherPlayer",
@@ -28,9 +28,9 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   whiteFlag: {
     id: "whiteFlag",
     name: "White Flag",
-    icon: "🏳️",
+    icon: "WF",
     rarity: "common",
-    description: "Surrender your streak — cash it in for gold now.",
+    description: "Sit out this question and preserve your streak.",
     target: "self",
     isAttack: false,
     animation: "aura",
@@ -38,17 +38,17 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   telescope: {
     id: "telescope",
     name: "Telescope",
-    icon: "🔭",
+    icon: "TE",
     rarity: "rare",
-    description: "See events on the horizon.",
-    target: "self",
+    description: "Privately see another pirate's committed answer.",
+    target: "otherPlayer",
     isAttack: false,
     animation: "aura",
   },
   rumRush: {
     id: "rumRush",
     name: "Rum Rush",
-    icon: "🍾",
+    icon: "RR",
     rarity: "rare",
     description: "Double your next correct reward.",
     target: "self",
@@ -58,7 +58,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   cannonball: {
     id: "cannonball",
     name: "Cannonball",
-    icon: "💣",
+    icon: "CB",
     rarity: "rare",
     description: "Blast holes in the middle of a pirate's answers.",
     target: "otherPlayer",
@@ -68,7 +68,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   walkThePlank: {
     id: "walkThePlank",
     name: "Walk the Plank",
-    icon: "🪵",
+    icon: "WP",
     rarity: "rare",
     description: "Force a pirate to answer in 5 seconds — or score nothing.",
     target: "otherPlayer",
@@ -78,7 +78,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   hook: {
     id: "hook",
     name: "Hook",
-    icon: "🪝",
+    icon: "HK",
     rarity: "epic",
     description: "Steal a random power-up from a pirate.",
     target: "otherPlayer",
@@ -88,7 +88,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   swordFight: {
     id: "swordFight",
     name: "Sword Fight",
-    icon: "⚔️",
+    icon: "SF",
     rarity: "epic",
     description: "Duel a pirate on this question. Winner steals gold.",
     target: "otherPlayer",
@@ -98,7 +98,7 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   secretX: {
     id: "secretX",
     name: "Secret X",
-    icon: "❌",
+    icon: "SX",
     rarity: "legendary",
     description: "X marks the spot — reveals the correct answer.",
     target: "self",
@@ -108,9 +108,29 @@ export const POWERUPS: Record<PowerUpId, PowerUpDef> = {
   cannonballBarrage: {
     id: "cannonballBarrage",
     name: "Cannonball Barrage",
-    icon: "🧨",
+    icon: "BR",
     rarity: "legendary",
     description: "Blast holes in EVERYONE else's answers.",
+    target: "allOthers",
+    isAttack: true,
+    animation: "projectile",
+  },
+  barnacle: {
+    id: "barnacle",
+    name: "Barnacle Net",
+    icon: "BN",
+    rarity: "epic",
+    description: "Cover one answer on another pirate's screen.",
+    target: "otherPlayer",
+    isAttack: true,
+    animation: "projectile",
+  },
+  barnacleInfestation: {
+    id: "barnacleInfestation",
+    name: "Barnacle Infestation",
+    icon: "BI",
+    rarity: "legendary",
+    description: "Cover one answer for every other pirate.",
     target: "allOthers",
     isAttack: true,
     animation: "projectile",
@@ -123,8 +143,8 @@ export const POWERUP_LIST = Object.values(POWERUPS);
 export const POWERUPS_BY_RARITY: Record<Rarity, PowerUpId[]> = {
   common: ["eyepatch", "parrot", "whiteFlag"],
   rare: ["telescope", "rumRush", "cannonball", "walkThePlank"],
-  epic: ["hook", "swordFight"],
-  legendary: ["secretX", "cannonballBarrage"],
+  epic: ["hook", "swordFight", "barnacle"],
+  legendary: ["secretX", "cannonballBarrage", "barnacleInfestation"],
 };
 
 /** Roll a power-up of the given rarity. Pass rng for deterministic tests. */

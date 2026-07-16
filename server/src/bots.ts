@@ -42,13 +42,14 @@ export function runBotsForPhase(room: ServerRoom): void {
         q && accurate ? q.correctIndex : Math.floor(Math.random() * optionCount);
 
       if (room.isEventRound) {
-        // Million Pound Drop: pile onto one trapdoor, sometimes hedge.
+        // Loot Drop: risk the entire previous block wager, sometimes hedge.
         const alloc = [0, 0, 0, 0];
         if (Math.random() < 0.5) {
-          alloc[choiceIndex] = 100;
+          alloc[choiceIndex] = bot.eventWager;
         } else {
-          alloc[choiceIndex] = 60;
-          alloc[(choiceIndex + 1) % 4] = 40;
+          const primary = Math.floor((bot.eventWager * 0.6) / 10) * 10;
+          alloc[choiceIndex] = primary;
+          alloc[(choiceIndex + 1) % 4] = bot.eventWager - primary;
         }
         submitAnswer(room, bot.id, { lootAllocation: alloc });
         return;

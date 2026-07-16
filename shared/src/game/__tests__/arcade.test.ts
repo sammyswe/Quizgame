@@ -32,6 +32,7 @@ function resolve(
     correctIndex: 0,
     questionStartedAt: START,
     questionDurationMs: DUR,
+    islandLoot: ["coins", "rubies", "emeralds", "pearls"],
     players,
     swordFights: [],
     poseidonUsed: new Set(),
@@ -41,7 +42,7 @@ function resolve(
 }
 
 describe("decaying pot", () => {
-  it("pays POT_MAX for an instant answer and POT_MIN at the buzzer", () => {
+  it("drains from POT_MAX to POT_MIN (0) at the buzzer", () => {
     expect(potAt(START, START, DUR)).toBe(ARCADE.POT_MAX);
     expect(potAt(START + DUR, START, DUR)).toBe(ARCADE.POT_MIN);
   });
@@ -51,11 +52,18 @@ describe("decaying pot", () => {
     expect(mid).toBe(Math.round((ARCADE.POT_MAX + ARCADE.POT_MIN) / 2));
   });
 
-  it("faster answers earn more gold", () => {
+  it("records lower potAtLock for slower locks (score uses island loot)", () => {
     const fast = player({ id: "fast", choiceIndex: 0, lockedAt: START + 1000 });
     const slow = player({ id: "slow", choiceIndex: 0, lockedAt: START + 18_000 });
     const res = resolve([fast, slow, player({ id: "third", choiceIndex: 1 })]);
-    expect(res.scoreDelta.fast!).toBeGreaterThan(res.scoreDelta.slow!);
+    expect(res.results.fast!.potAtLock).toBeGreaterThan(res.results.slow!.potAtLock);
+    expect(res.scoreDelta.fast).toBe(res.scoreDelta.slow);
+  });
+
+  it("awards mystery loot points on a correct answer", () => {
+    const p = player({ id: "crew", choiceIndex: 0, lockedAt: START });
+    const res = resolve([p], { islandLoot: ["idol", "coins", "coins", "coins"] });
+    expect(res.scoreDelta.crew).toBe(50);
   });
 });
 
@@ -81,24 +89,42 @@ describe("streaks", () => {
 });
 
 describe("mutiny", () => {
-  it("mutineers profit when the leader answers wrong", () => {
+  it("taxes a wrong captain only when every eligible crew member mutinies", () => {
     const leader = player({ id: "lead", choiceIndex: 1 });
     const m1 = player({ id: "m1", choiceIndex: 0, lockedAt: START, mutinied: true });
     const m2 = player({ id: "m2", choiceIndex: 1, mutinied: true });
     const res = resolve([leader, m1, m2], { leaderId: "lead" });
     expect(res.results.m1?.mutiny).toBe("won");
-    expect(res.scoreDelta.lead).toBe(-ARCADE.MUTINY_LEADER_PENALTY);
-    // m2 wrong answer earns 0 pot but +MUTINY_REWARD
-    expect(res.scoreDelta.m2).toBe(ARCADE.MUTINY_REWARD);
+    expect(res.scoreDelta.lead).toBe(-ARCADE.MUTINY_CAPTAIN_TAX_TOTAL);
+    expect(res.scoreDelta.m1).toBe(ARCADE.MUTINY_CAPTAIN_TAX_TOTAL / 2);
+    expect(res.scoreDelta.m2).toBe(ARCADE.MUTINY_CAPTAIN_TAX_TOTAL / 2);
   });
 
-  it("mutineers pay when the leader answers right", () => {
+  it("gives unanimous mutineers nothing when the captain answers right", () => {
     const leader = player({ id: "lead", choiceIndex: 0, lockedAt: START });
     const m1 = player({ id: "m1", choiceIndex: 1, mutinied: true });
     const m2 = player({ id: "m2", choiceIndex: 1, mutinied: true });
     const res = resolve([leader, m1, m2], { leaderId: "lead" });
     expect(res.results.m1?.mutiny).toBe("lost");
-    expect(res.scoreDelta.m1).toBe(-ARCADE.MUTINY_FAIL_PENALTY);
+    expect(res.scoreDelta.m1 ?? 0).toBe(0);
+    expect(res.scoreDelta.m2 ?? 0).toBe(0);
+    expect(res.scoreDelta.lead).toBeGreaterThan(0);
+  });
+
+  it("only forfeits answers for a divided mutiny", () => {
+    const res = resolve(
+      [
+        player({ id: "lead", choiceIndex: 1 }),
+        player({ id: "m1", choiceIndex: 0, mutinied: true }),
+        player({ id: "m2", choiceIndex: 0, mutinied: true }),
+        player({ id: "crew", choiceIndex: 0, lockedAt: START }),
+      ],
+      { leaderId: "lead" },
+    );
+    expect(res.scoreDelta.m1 ?? 0).toBe(0);
+    expect(res.scoreDelta.m2 ?? 0).toBe(0);
+    expect(res.scoreDelta.lead ?? 0).toBe(0);
+    expect(res.scoreDelta.crew).toBe(1); // coins loot on correct island
   });
 
   it("a lone mutineer is marooned, win or lose", () => {
@@ -108,6 +134,19 @@ describe("mutiny", () => {
     const res = resolve([leader, lone, other], { leaderId: "lead" });
     expect(res.newlyMarooned).toContain("lone");
     expect(res.chests.some((c) => c.playerId === "lone" && c.source === "marooned")).toBe(true);
+  });
+
+  it("disables mutiny and marooning during onboarding", () => {
+    const res = resolve(
+      [
+        player({ id: "lead", choiceIndex: 0, lockedAt: START }),
+        player({ id: "m", choiceIndex: 1, mutinied: true }),
+        player({ id: "crew", choiceIndex: 0, lockedAt: START }),
+      ],
+      { leaderId: "lead", socialMechanicsEnabled: false },
+    );
+    expect(res.newlyMarooned).toEqual([]);
+    expect(res.events.some((e) => e.title.includes("MUTINY"))).toBe(false);
   });
 });
 
@@ -160,6 +199,31 @@ describe("power-up interactions", () => {
     expect(res.scoreDelta.v ?? 0).toBe(0);
   });
 
+  it("walk the plank caps an on-time answer below the maximum pot", () => {
+    const victim = player({
+      id: "v",
+      choiceIndex: 0,
+      lockedAt: START,
+      plankUntil: START + 5_000,
+    });
+    const res = resolve([victim, player({ id: "b", choiceIndex: 1 })]);
+    expect(res.results.v?.potAtLock).toBe(ARCADE.PLANK_POT_CAP);
+  });
+
+  it("white flag forfeits the answer while preserving the streak", () => {
+    const surrendered = player({
+      id: "flag",
+      choiceIndex: 0,
+      lockedAt: START,
+      streak: 4,
+      surrendered: true,
+    });
+    const res = resolve([surrendered, player({ id: "b", choiceIndex: 1 })]);
+    expect(res.scoreDelta.flag ?? 0).toBe(0);
+    expect(res.streaks.flag).toBe(4);
+    expect(res.results.flag?.skipped).toBeUndefined();
+  });
+
   it("sword fight: the correct pirate steals from the wrong one", () => {
     const winner = player({ id: "w", choiceIndex: 0, lockedAt: START });
     const loser = player({ id: "l", choiceIndex: 1, score: 500 });
@@ -181,7 +245,7 @@ describe("random sea events", () => {
     expect(dolphin).toBeDefined();
     // everyone lost a slice
     for (const p of players) {
-      expect(res.scoreDelta[p.id]!).toBeLessThan(ARCADE.POT_MAX + ARCADE.STREAK_BONUS_CAP);
+      expect(res.scoreDelta[p.id]!).toBeLessThan(50 + ARCADE.STREAK_BONUS_CAP);
     }
   });
 
@@ -194,20 +258,15 @@ describe("random sea events", () => {
     expect(res.scoreDelta.lead).toBeLessThan(0);
   });
 
-  it("poseidon blesses a struggling pirate at most once", () => {
+  it("does not fire Poseidon during regular questions", () => {
     const leader = player({ id: "lead", choiceIndex: 0, lockedAt: START, score: 1000 });
     const poor = player({ id: "poor", choiceIndex: 1, score: 50 });
-    const withBlessing = resolve([leader, poor, player({ id: "c", choiceIndex: 1, score: 500 })], {
+    const res = resolve([leader, poor, player({ id: "c", choiceIndex: 1, score: 500 })], {
       leaderId: "lead",
       rng: () => 0.3,
     });
-    expect(withBlessing.poseidonBlessed).toContain("poor");
-    const alreadyUsed = resolve([leader, poor, player({ id: "c", choiceIndex: 1, score: 500 })], {
-      leaderId: "lead",
-      rng: () => 0.3,
-      poseidonUsed: new Set(["poor"]),
-    });
-    expect(alreadyUsed.poseidonBlessed).toHaveLength(0);
+    expect(res.poseidonBlessed).toHaveLength(0);
+    expect(res.events.some((e) => e.title.includes("POSEIDON"))).toBe(false);
   });
 });
 

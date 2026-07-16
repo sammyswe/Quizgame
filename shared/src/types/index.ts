@@ -32,13 +32,29 @@ export type ObscureQuestion = {
   options: ObscureOption[];
 };
 
-/** What clients see during the question phase (no correctIndex!). */
+/** Voyage island biomes shown publicly on answer islands. */
+export type IslandBiomeId =
+  | "volcano"
+  | "jungle"
+  | "skull"
+  | "lagoon"
+  | "shipwreck"
+  | "ruins"
+  | "lighthouse"
+  | "mangrove";
+
+/** Mystery loot revealed after lock — never sent during question. */
+export type IslandLootId = "coins" | "rubies" | "emeralds" | "pearls" | "idol" | "empty";
+
+/** What clients see during the question phase (no correctIndex / no loot!). */
 export type PublicQuestion = {
   id: string;
   category: Category | "obscure";
   prompt: string;
   options: string[];
   difficulty: Difficulty;
+  /** Four biomes mapped to options A–D for this question. */
+  biomes?: IslandBiomeId[];
 };
 
 // ----- Rounds ---------------------------------------------------------------
@@ -78,7 +94,7 @@ export type ArcadeState = {
   questionDurationMs: number;
   potMax: number;
   potMin: number;
-  /** First-5 jackpot: who has already earned their item. */
+  /** Post-question-5 onboarding reward: who has received their first item. */
   firstFiveEarned: string[];
   maroonedIds: string[];
   leaderId?: string;
@@ -172,7 +188,9 @@ export type PowerUpId =
   | "walkThePlank"
   | "swordFight"
   | "cannonball"
-  | "cannonballBarrage";
+  | "cannonballBarrage"
+  | "barnacle"
+  | "barnacleInfestation";
 
 export type PowerUpTarget = "self" | "otherPlayer" | "allOthers";
 
@@ -433,6 +451,8 @@ export type ScoreChange = {
 export type PublicPlayer = {
   id: string;
   nickname: string;
+  /** 3-letter hull mark for tiny scout ships. */
+  monogram: string;
   avatar: string;
   isHost: boolean;
   isBot: boolean;
@@ -442,6 +462,10 @@ export type PublicPlayer = {
   roundLoot: number;
   chestCount: number;
   itemCount: number;
+  /** Publicly visible booty bag contents; item ownership is part of the fleet board. */
+  powerUpIds: PowerUpId[];
+  /** Public status effects currently visible on this player's ship. */
+  activePowerUpEffects: PowerUpId[];
   streak: number;
   mutinyTokens: number;
   hasAnswered: boolean;
@@ -469,6 +493,12 @@ export type PrivatePlayerState = {
   cannonballed?: boolean;
   /** Walk the Plank: answer before this epoch ms or score nothing. */
   plankUntil?: number;
+  /** Your private wager available in the active Loot Drop special. */
+  lootDropPool?: number;
+  /** Reconnect-safe echo of your committed regular answer. */
+  selectedChoiceIndex?: number;
+  /** Reconnect-safe echo of your committed Loot Drop allocation. */
+  lootAllocation?: number[];
   mission?: ActiveMission & { def: MissionDef };
   /** Spyglass: option indexes greyed out for this player. */
   disabledOptions?: number[];
@@ -503,6 +533,18 @@ export type PublicGameState = {
   timerEndsAt: number;
   players: PublicPlayer[];
   revealEvents: RevealEvent[];
+  /** Structured reveal geometry. Present only after choices are no longer secret. */
+  arcadeReveal?: {
+    correctIndex: number;
+    /** Secret island loot revealed with the answer (index = option). */
+    islandLoot?: IslandLootId[];
+    answers: Array<{
+      playerId: string;
+      choiceIndex?: number;
+      lootAllocation?: number[];
+      lockedAt: number;
+    }>;
+  };
   auction?: AuctionState;
   falseMap?: FalseMapInfo;
   pairs?: PairState[];
@@ -529,6 +571,10 @@ export type ClientEvents = {
   ) => void;
   "room:rejoin": (roomCode: string, playerId: string, cb: (res: Ack<{ ok: true }>) => void) => void;
   "game:configure": (config: GameConfig) => void;
+  /** Lobby: choose one of the eight authored pirate identities. */
+  "avatar:choose": (index: number) => void;
+  /** 3-letter hull mark for scout ships (A–Z / 0–9). */
+  "monogram:set": (monogram: string) => void;
   "game:start": () => void;
   "answer:submit": (payload: {
     choiceIndex?: number;

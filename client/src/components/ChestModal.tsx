@@ -220,7 +220,7 @@ export function ChestModal() {
                 style={{ filter: `drop-shadow(0 0 30px ${style.frame})` }}
                 aria-hidden
               >
-                {reveal.powerUpDef.icon}
+                {reveal.powerUpDef.name.slice(0, 2).toUpperCase()}
               </motion.span>
               <EmojiBurst emoji="✨" count={particleCount(10, intensity)} distance={110} duration={1.2} />
             </div>

@@ -5,14 +5,15 @@ import type { GameLength, SpecialEventId } from "../types/index.js";
  * Rounds are single questions; every 10th round is a special event.
  */
 export const ARCADE = {
-  /** Get 1 correct answer within the first N rounds → jackpot item chest. */
+  /** Social mechanics unlock and the onboarding item is granted after this regular question. */
   FIRST_ITEM_WINDOW: 5,
-  /** A special event replaces every Nth round. */
+  /** A special event follows every N regular questions. */
   EVENT_EVERY: 10,
 
-  // --- Decaying question pot (answer fast = earn more) ---
+  // --- Decaying question pot (time pressure; unanswered at 0 = no score) ---
   POT_MAX: 100,
-  POT_MIN: 30,
+  /** LOCKED: pot drains to zero; timeout with no lock earns nothing. */
+  POT_MIN: 0,
 
   // --- Streaks ---
   STREAK_BONUS_PER: 10, // +10 per streak level from streak 2 upward
@@ -25,6 +26,8 @@ export const ARCADE = {
   MUTINY_LEADER_PENALTY: 60, // leader, when mutinied and wrong
   MUTINY_FAIL_PENALTY: 40, // each mutineer, when the leader answers right
   MUTINY_LEADER_DEFENSE: 20, // leader bonus per failed mutineer
+  /** Total score the captain pays across the crew when a unanimous mutiny catches them wrong. */
+  MUTINY_CAPTAIN_TAX_TOTAL: 60,
 
   // --- Marooned ---
   /** Marooned players skip the next question and get a bonus chest. */
@@ -37,13 +40,17 @@ export const ARCADE = {
   KRAKEN_STEAL_PCT: 0.1, // of the leader's gold
   POSEIDON_BLESSING: 50,
   POSEIDON_POOR_PCT: 0.35, // "doing poorly" = below this fraction of the leader's gold
+  POSEIDON_RESCUE_CHANCE: 0.5,
+  SHARK_THRESHOLD: 0.75,
+  SHARK_LOSS_PCT: 0.05,
 
   // --- Power-ups ---
   SWORD_FIGHT_STEAL: 60,
   SWORD_FIGHT_TIE_STEAL: 30,
   PLANK_SECONDS: 5,
+  PLANK_POT_CAP: 80,
 
-  // --- Million Pound Drop ---
+  // --- Million Pound Drop fallback (the live pool normally comes from blockLoot) ---
   MPD_POOL: 100,
 } as const;
 
@@ -63,10 +70,10 @@ export const SPECIAL_EVENTS: Record<
   millionPoundDrop: {
     name: "Million Pound Drop",
     icon: "💷",
-    tagline: "Your gold. Four trapdoors. One survives.",
+    tagline: "Your block's treasure. Four ventures. One returns.",
     howTo: [
-      "Split 100 gold across the trapdoors",
-      "Wrong trapdoors OPEN — that gold is gone",
+      "Send your last 10 questions' treasure across four ventures",
+      "Wrong ventures fail — that gold is gone",
       "Talk it out. Or don't.",
     ],
   },

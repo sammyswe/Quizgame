@@ -7,6 +7,7 @@ export * from "./config/missions.js";
 export * from "./config/finalActions.js";
 export * from "./config/powerups.js";
 export * from "./config/arcade.js";
+export * from "./config/islands.js";
 export * from "./game/arcade.js";
 export * from "./game/questions.js";
 export * from "./game/rounds.js";

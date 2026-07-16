@@ -6,14 +6,12 @@ alwaysApply: false
 
 # Game logic rules
 
-- **All new mechanics require counterplay.** Before adding an attack, decide and document
-  its counter (in the config `counterplay` field and docs/GAME_DESIGN.md). Examples:
-  traps ↔ accusations, steals ↔ banking/protection, boosts ↔ answering wrong,
-  leader attacks ↔ protected score, curses ↔ not attacking into them.
+- **All new attacks require a bound/counter.** Document warning, counterplay, cap, scarcity or
+  recovery in config and `docs/context/ITEMS.md`.
 - **All items must be distinct.** No two items may feel like the same move with different
   numbers. Keep items simple, readable, single-use.
-- Chest rarity odds are position-based (Mario Kart style): lower-ranked players get better
-  odds. The tables live in `shared/src/config/chests.ts` and must each sum to 1.
+- Power-up rarity uses rank plus score gap (Mario Kart style): trailing players get stronger
+  comeback odds without predictable sandbagging. Probability tables must sum to 1.
 - Keep game mechanics easy to understand — if a mechanic needs a paragraph to explain in
   the UI, simplify it.
 - Scores never go below `SCORING.MIN_SCORE` (0). Use `applyDelta`/`clampScore`.
@@ -21,6 +19,6 @@ alwaysApply: false
   never a player's whole score.
 - Every score change must emit a `RevealEvent` — the reveal queue is the only way players
   learn what happened.
-- Secret missions must only be visible to the assigned player (private state channel).
+- Mutiny choices, allocations and private item effects use the private state channel.
 - Round resolvers in `shared/src/game/` stay pure: inputs in, `{events, deltas, chests}` out.
 - Add or update Vitest tests in `shared/src/game/__tests__/` for any scoring/item change.
