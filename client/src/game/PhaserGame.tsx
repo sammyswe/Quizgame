@@ -33,5 +33,11 @@ export function PhaserGame() {
     return () => game.destroy(true);
   }, []);
 
-  return <div ref={hostRef} className="absolute inset-0 overflow-hidden" aria-label="Treasure Trap game" />;
+  return (
+    <div
+      ref={hostRef}
+      className="pointer-events-auto absolute inset-0 overflow-hidden"
+      aria-label="Treasure Trap game"
+    />
+  );
 }

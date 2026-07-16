@@ -12,6 +12,9 @@ it is not the global visual skin.
 
 Target: Gen Z / party players, suitable for ages 9+. Tone: cheeky, fast, dramatic, funny.
 
+Granular product direction also lives in the Obsidian vault (`obsidian/`). Agents read both
+`obsidian/` and `docs/context/` — see `obsidian-vault` rule.
+
 ## Non-negotiables
 
 - Always preserve the product vision above. Never turn this into a plain quiz app.

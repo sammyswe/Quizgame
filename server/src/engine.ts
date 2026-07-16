@@ -12,8 +12,10 @@ import {
   normaliseAllocation,
   oddsForRank,
   pickQuestions,
+  pickQuestionBiomes,
   resolveArcadeQuestion,
   resolveLootDrop,
+  rollIslandLoot,
   rollPowerUp,
   rollRarity,
   type ChestAward,
@@ -78,6 +80,7 @@ export function publicPlayers(room: ServerRoom): PublicPlayer[] {
   return [...room.players.values()].map((p) => ({
     id: p.id,
     nickname: p.nickname,
+    monogram: p.monogram,
     avatar: p.avatar,
     isHost: p.id === room.hostId,
     isBot: p.isBot,
@@ -119,6 +122,7 @@ export function publicState(room: ServerRoom): PublicGameState {
           prompt: room.currentQuestion.prompt,
           options: room.currentQuestion.options,
           difficulty: room.currentQuestion.difficulty,
+          biomes: room.islandBiomes,
         }
       : undefined,
     timerEndsAt: room.timerEndsAt,
@@ -128,6 +132,7 @@ export function publicState(room: ServerRoom): PublicGameState {
       room.phase === "reveal" && room.currentQuestion
         ? {
             correctIndex: room.currentQuestion.correctIndex,
+            islandLoot: room.islandLoot,
             answers: [...room.answers.values()].map((answer) => ({
               playerId: answer.playerId,
               choiceIndex: answer.choiceIndex,
@@ -346,6 +351,8 @@ function beginArcadeQuestion(room: ServerRoom): void {
   room.answers = new Map();
   room.swordFights = [];
   room.currentQuestion = drawQuestion(room);
+  room.islandBiomes = pickQuestionBiomes();
+  room.islandLoot = rollIslandLoot();
   room.questionDurationMs = room.isEventRound ? TIMING.ARCADE_EVENT_MS : TIMING.ARCADE_QUESTION_MS;
   room.questionStartedAt = Date.now();
   for (const p of room.players.values()) {
@@ -402,6 +409,7 @@ function endArcadeQuestion(room: ServerRoom): void {
     correctIndex: q.correctIndex,
     questionStartedAt: room.questionStartedAt,
     questionDurationMs: room.questionDurationMs,
+    islandLoot: room.islandLoot ?? ["coins", "coins", "coins", "coins"],
     players: [...room.players.values()].map((p) => ({
       id: p.id,
       nickname: p.nickname,

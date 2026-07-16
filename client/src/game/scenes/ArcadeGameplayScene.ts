@@ -8,31 +8,46 @@ import {
   type PublicGameState,
   type PublicPlayer,
 } from "@treasure-trap/shared";
-import seaBackgroundUrl from "../../assets/higgsfield/loot-drop/a1-background.webp";
-import islandSheetUrl from "../../assets/higgsfield/loot-drop/a2-islands-cut.webp";
-import shipSheetUrl from "../../assets/higgsfield/loot-drop/a3-ships-cut.webp";
-import chestSheetUrl from "../../assets/higgsfield/loot-drop/a5-chests-cut.webp";
+import { FX_INDEX, ITEM_ICON_INDEX, preloadVoyageAssets, VOYAGE } from "../assets/voyageAssets";
+import { PLUNDER_VIDEO } from "../assets/voyagePlunderVideos";
 import {
   gameEventBridge,
   type FiredPowerUp,
   type GameSnapshot,
   type TargetingIntent,
 } from "../GameEventBridge";
-import { playIslandPlunderCeremony } from "../plunder/IslandPlunderCeremony";
 
 const W = 1280;
 const H = 720;
-const WORLD_W = 1010;
-const LEADERBOARD_X = 1138;
+/** Full-bleed landscape question world (fleet rank sidebar removed). */
+const WORLD_W = 1280;
+/** Desktop 2×2 grid — smaller islands, big gutters so they never feel smushed. */
 const ISLAND_POSITIONS: ReadonlyArray<readonly [number, number]> = [
-  [235, 270],
-  [740, 270],
-  [235, 480],
-  [740, 480],
+  [250, 275],
+  [1030, 275],
+  [250, 505],
+  [1030, 505],
 ];
+/** Open water at the geometric centre of the four islands — fleet staging point. */
+const FLEET_HOME = { x: W / 2, y: 390 } as const;
+const ISLAND_DISPLAY: readonly [number, number] = [300, 225];
+const QUESTION_BAR = { x: 160, y: 14, w: 900, h: 58 } as const;
+/** Top-right loot chest — fixed pixel box, inset so it never clips the canvas. */
+const POT_CHEST_POS = { x: 1208, y: 48 } as const;
+const GOLD_BAR = { x: 160, y: 80, w: 900, h: 14 } as const;
+const CHEST_BASE_SIZE = { w: 64, h: 60 } as const;
+const BIOME_FRAME: Record<string, number> = {
+  volcano: 0,
+  jungle: 1,
+  skull: 2,
+  lagoon: 3,
+  shipwreck: 4,
+  ruins: 5,
+  lighthouse: 6,
+  mangrove: 7,
+};
 const PLAYER_COLORS = [0x38bdf8, 0xf97316, 0xa78bfa, 0x22c55e, 0xfb7185, 0xfacc15, 0x2dd4bf, 0xe879f9];
 const INK = 0x17233b;
-const CREAM = "#fff6d6";
 const GOLD = 0xffcf45;
 
 type IslandView = {
@@ -46,6 +61,8 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   private snapshot: GameSnapshot = {};
   private unsubscribe?: () => void;
   private modeKey = "";
+  /** Narrow rebuild key for in-question UI (lock / inventory) without wiping every tick. */
+  private questionUiKey = "";
   private draftChoice?: number;
   private draftAllocation = [0, 0, 0, 0];
   private ships = new Map<string, Phaser.GameObjects.Container>();
@@ -53,48 +70,138 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   private timerText?: Phaser.GameObjects.Text;
   private potText?: Phaser.GameObjects.Text;
   private potChest?: Phaser.GameObjects.Container;
+  private potBarFill?: Phaser.GameObjects.Graphics;
+  private potChestA?: Phaser.GameObjects.Image;
+  private potChestB?: Phaser.GameObjects.Image;
+  private potFrameA = 0;
+  private lastDrainEmitAt = 0;
+  private hudVisible = true;
+  private hudNodes: Phaser.GameObjects.GameObject[] = [];
+  private flagMarkers = new Map<number, Phaser.GameObjects.Container>();
   private armedItem?: TargetingIntent;
   private lastFiredKey = 0;
   private lastRevealKey = "";
-  private statusKey = "";
   private mutinyConfirming = false;
+  /** Queue so every arriving ship gets a full cinematic without overlapping fullscreen. */
+  private plunderCinematicQueue: Array<() => void> = [];
+  private plunderCinematicBusy = false;
+  /** Tracks sheet slice stamps so rebuilt WebPs re-frame after HMR. */
+  private sheetSliceStamp = new Map<string, string>();
 
   constructor() {
     super("ArcadeGameplay");
   }
 
   preload(): void {
-    this.load.image("hf-sea", seaBackgroundUrl);
-    this.load.image("hf-islands", islandSheetUrl);
-    this.load.image("hf-ships", shipSheetUrl);
-    this.load.image("hf-chests", chestSheetUrl);
+    // Do NOT preload plunder MP4s here — 8×~5MB videos stall Phaser create()
+    // and leave a blank blue canvas between questions.
+    preloadVoyageAssets(this.load);
   }
 
   create(): void {
     this.generateFallbackTextures();
-    // Re-hydrate immediately from the bridge (GameplayShell may have pushed before the scene booted).
-    this.applySnapshot(gameEventBridge.current);
+    this.sliceVoyageSheets();
     this.unsubscribe = gameEventBridge.subscribe((snapshot) => this.applySnapshot(snapshot));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribe?.());
   }
 
   override update(): void {
     const game = this.snapshot.game;
-    if (!game || !this.timerText) return;
-    const remaining = Math.max(0, game.timerEndsAt - Date.now());
-    const seconds = Math.ceil(remaining / 1000);
-    this.timerText.setText(`${seconds}s`);
-
-    if (game.phase === "question" && !game.arcade?.isEventRound && game.arcade && this.potText) {
-      const pot = potAt(Date.now(), game.arcade.questionStartedAt, game.arcade.questionDurationMs);
-      this.potText.setText(`${pot}`);
-      const ratio = (pot - game.arcade.potMin) / Math.max(1, game.arcade.potMax - game.arcade.potMin);
-      this.potText.setColor(ratio < 0.3 ? "#ff7f66" : "#ffd45f");
-      this.potChest?.setScale(0.82 + ratio * 0.18);
-      if (ratio < 0.25 && this.potChest && !this.tweens.isTweening(this.potChest)) {
-        this.tweens.add({ targets: this.potChest, angle: { from: -2, to: 2 }, duration: 80, yoyo: true, repeat: 3 });
-      }
+    if (!game) return;
+    if (this.timerText) {
+      const remaining = Math.max(0, game.timerEndsAt - Date.now());
+      this.timerText.setText(`${Math.ceil(remaining / 1000)}s`);
     }
+
+    if (game.phase === "question" && !game.arcade?.isEventRound && game.arcade) {
+      this.tickPotDrain(game);
+    }
+  }
+
+  /** Smooth pot UI every frame — gold bar + coin stream + blended chest frames. */
+  private tickPotDrain(game: PublicGameState): void {
+    const arcade = game.arcade;
+    if (!arcade) return;
+    const pot = potAt(Date.now(), arcade.questionStartedAt, arcade.questionDurationMs);
+    const ratio = pot / Math.max(1, arcade.potMax);
+    this.potText?.setText(`${pot}`);
+    this.potText?.setColor(ratio < 0.28 ? "#ff7f66" : "#ffd45f");
+
+    if (this.potBarFill) {
+      this.potBarFill.clear();
+      const fillW = Math.max(2, GOLD_BAR.w * ratio);
+      this.potBarFill.fillStyle(ratio < 0.28 ? 0xff6b4a : 0xffc94a, 1);
+      this.potBarFill.fillRoundedRect(GOLD_BAR.x + 2, GOLD_BAR.y + 2, fillW - 4, GOLD_BAR.h - 4, 6);
+      this.potBarFill.fillStyle(0xfff2a8, 0.35);
+      this.potBarFill.fillRoundedRect(GOLD_BAR.x + 4, GOLD_BAR.y + 3, Math.max(0, fillW - 10), 4, 3);
+    }
+
+    // Chest shell: fixed on-screen box. Only sprite frame (coin pile) changes.
+    if (this.potChestA && this.textures.exists(VOYAGE.potDrain.key)) {
+      const durationSec = Math.max(1, arcade.questionDurationMs / 1000);
+      const elapsedSec = Math.max(
+        0,
+        Math.floor((Date.now() - arcade.questionStartedAt) / 1000),
+      );
+      const maxOpen = 5;
+      const frame = Math.min(maxOpen, Math.floor((elapsedSec / durationSec) * (maxOpen + 0.99)));
+      if (frame !== this.potFrameA) {
+        this.potFrameA = frame;
+        const key = `f${frame}`;
+        if (this.potChestA.texture.has(key)) this.potChestA.setFrame(key);
+        if (this.potChestB?.texture.has(key)) this.potChestB.setFrame(key);
+      }
+      this.lockChestDisplaySize();
+      this.potChestA.setAlpha(1);
+      this.potChestB?.setAlpha(0);
+    }
+
+    // Continuous loot stream UNDER the question bar (not a choppy sheet flicker).
+    const now = Date.now();
+    const emitEvery = ratio > 0.05 ? Math.max(40, 55 + ratio * 90) : 99999;
+    if (now - this.lastDrainEmitAt >= emitEvery) {
+      this.lastDrainEmitAt = now;
+      this.emitDrainCoin(ratio);
+    }
+  }
+
+  private emitDrainCoin(ratio: number): void {
+    // Chest is top-right — coins stream left along the gold bar as loot drains.
+    const startX = POT_CHEST_POS.x - 18;
+    const startY = GOLD_BAR.y + GOLD_BAR.h / 2;
+    const endX = GOLD_BAR.x + GOLD_BAR.w * (1 - Math.max(0.08, ratio)) + Phaser.Math.Between(-12, 12);
+    const useSheet = this.textures.exists(VOYAGE.lootParticles.key);
+    if (useSheet) {
+      this.ensureSheetFrames(VOYAGE.lootParticles.key, VOYAGE.lootParticles.cols, VOYAGE.lootParticles.rows);
+      const frame = Phaser.Math.Between(0, 3);
+      const coin = this.add
+        .image(startX, startY, VOYAGE.lootParticles.key, `f${frame}`)
+        .setDisplaySize(22, 22)
+        .setDepth(36)
+        .setAlpha(0.95);
+      this.tweens.add({
+        targets: coin,
+        x: endX,
+        y: startY + Phaser.Math.Between(-6, 10),
+        angle: 220,
+        alpha: 0,
+        duration: 700 + Phaser.Math.Between(0, 220),
+        ease: "Cubic.easeOut",
+        onComplete: () => coin.destroy(),
+      });
+      return;
+    }
+    const coin = this.add.image(startX, startY, "coin").setDisplaySize(18, 18).setDepth(36);
+    this.tweens.add({
+      targets: coin,
+      x: endX,
+      y: startY + Phaser.Math.Between(-4, 8),
+      angle: 180,
+      alpha: 0,
+      duration: 680,
+      ease: "Cubic.easeOut",
+      onComplete: () => coin.destroy(),
+    });
   }
 
   private applySnapshot(snapshot: GameSnapshot): void {
@@ -104,23 +211,20 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     if (!game) return;
 
     const me = game.players.find((player) => player.id === snapshot.playerId);
+    // Keep the last question/reveal world under the leaderboard overlay —
+    // never switch to a blank "waiting" sea that looks like a crash.
     const mode = game.phase === "reveal"
       ? "reveal"
-      : game.phase === "question" && me?.marooned
-        ? "marooned"
-        : game.phase === "question" && game.arcade?.isEventRound
-          ? "loot"
-          : game.phase === "question"
-            ? "question"
-            : "waiting";
-    // Never rebuild when the question payload is momentarily missing — that caused the blank blue Q2.
-    if ((mode === "question" || mode === "reveal" || mode === "loot") && !game.question) {
-      if (this.children.length === 0) this.renderSeaWorld();
-      return;
-    }
-    // Ignore leaderboard ticks while the canvas is held invisible — keep last painted frame warm.
-    if (game.phase === "leaderboard") return;
-    const nextKey = `${mode}:${game.question?.id ?? "none"}:${game.phase}`;
+      : game.phase === "leaderboard"
+        ? "board"
+        : game.phase === "question" && me?.marooned
+          ? "marooned"
+          : game.phase === "question" && game.arcade?.isEventRound
+            ? "loot"
+            : game.phase === "question"
+              ? "question"
+              : "waiting";
+    const nextKey = `${mode}:${game.question?.id ?? game.questionNumber ?? "none"}:${game.phase}`;
 
     const firedChanged = snapshot.fired && snapshot.fired.key !== this.lastFiredKey;
     const targetingChanged = snapshot.targeting !== previous.targeting;
@@ -129,31 +233,30 @@ export class ArcadeGameplayScene extends Phaser.Scene {
 
     if (nextKey !== this.modeKey) {
       this.modeKey = nextKey;
-      this.statusKey = "";
+      this.questionUiKey = "";
       this.draftChoice = snapshot.priv?.selectedChoiceIndex;
       this.draftAllocation = [...(snapshot.priv?.lootAllocation ?? [0, 0, 0, 0])];
       this.mutinyConfirming = false;
-      if (mode === "reveal") this.lastRevealKey = "";
+      this.lastRevealKey = "";
       this.renderMode(mode);
-    } else if (mode === "question" || mode === "loot" || mode === "marooned") {
-      // Rebuild only when answer/lock/inventory state that the HUD shows actually changes.
-      const statusKey = [
+    } else if (mode === "question") {
+      // Pot drain is tick-driven — do NOT wipe the scene every public-state pulse.
+      const uiKey = [
         me?.hasAnswered ? "1" : "0",
         snapshot.priv?.selectedChoiceIndex ?? "x",
-        snapshot.priv?.hasMutinied ? "1" : "0",
-        snapshot.priv?.lootAllocation?.join(",") ?? "",
-        game.players.map((player) => `${player.id}:${player.hasAnswered ? 1 : 0}:${player.score}`).join("|"),
-        snapshot.priv?.powerUps?.map((item) => item.uid).join(",") ?? "",
-      ].join(";");
-      if ((privateChanged || gameChanged) && statusKey !== this.statusKey) {
-        this.statusKey = statusKey;
-        this.draftChoice = snapshot.priv?.selectedChoiceIndex;
-        this.draftAllocation = [...(snapshot.priv?.lootAllocation ?? [0, 0, 0, 0])];
+        this.draftChoice ?? "d",
+        snapshot.priv?.powerUps?.length ?? 0,
+        snapshot.priv?.hasMutinied ? "m" : "n",
+        me?.marooned ? "maroon" : "free",
+      ].join(":");
+      if (uiKey !== this.questionUiKey) {
+        this.questionUiKey = uiKey;
         this.renderMode(mode);
       }
-    } else if (mode === "reveal" && gameChanged) {
-      if (this.islands.length === 0) this.renderMode(mode);
-      else this.playRevealSequence(game);
+    } else if (mode === "reveal" || mode === "board") {
+      // Sail / plunder / board freeze must survive server ticks — never wipe mid-sequence.
+    } else if (gameChanged || privateChanged) {
+      this.renderMode(mode);
     }
 
     if (targetingChanged) {
@@ -175,12 +278,33 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     this.timerText = undefined;
     this.potText = undefined;
     this.potChest = undefined;
+    this.potBarFill = undefined;
+    this.potChestA = undefined;
+    this.potChestB = undefined;
+    this.potFrameA = 0;
+    this.lastDrainEmitAt = 0;
+    this.hudNodes = [];
+    this.plunderCinematicQueue = [];
+    this.plunderCinematicBusy = false;
+    this.cameras.main.setZoom(1);
+    this.cameras.main.centerOn(W / 2, H / 2);
 
-    if (mode === "loot") this.renderLootDrop();
-    else if (mode === "marooned") this.renderMarooned();
-    else if (mode === "reveal") this.renderReveal();
-    else if (mode === "question") this.renderQuestion();
-    else this.renderSeaWorld();
+    try {
+      if (mode === "loot") this.renderLootDrop();
+      else if (mode === "marooned") this.renderMarooned();
+      else if (mode === "reveal") this.renderReveal();
+      else if (mode === "question") this.renderQuestion();
+      else if (mode === "board") {
+        // Freeze a readable sea under the React leaderboard — do not wipe to empty.
+        this.renderSeaWorld();
+        this.createFleet(this.snapshot.game!);
+      } else this.renderSeaWorld();
+    } catch (error) {
+      // Never leave a wiped blue canvas if a sprite frame is missing after HMR.
+      console.error("[ArcadeGameplay] render failed", error);
+      this.renderSeaWorld();
+      this.showNotice("Charting waters…", "#ffe18a");
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -188,31 +312,129 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
 
   private renderSeaWorld(): void {
-    const bg = this.add.image(WORLD_W / 2, H / 2, "hf-sea").setDisplaySize(WORLD_W, H).setTint(0xffd7a8);
-    bg.setAlpha(0.14).setDepth(-3);
-
-    const sky = this.add.graphics();
-    sky.fillGradientStyle(0x74cbea, 0x74cbea, 0xf6c978, 0xf6c978, 0.72);
-    sky.fillRect(0, 0, WORLD_W, 300);
-    sky.setDepth(-2);
-
-    const water = this.add.graphics();
-    water.fillGradientStyle(0x267fa6, 0x267fa6, 0x0d547d, 0x0d547d, 0.88);
-    water.fillRect(0, 300, WORLD_W, 420);
-    water.setDepth(-1);
-
-    for (let row = 0; row < 8; row += 1) {
-      const wave = this.add.tileSprite(WORLD_W / 2, 340 + row * 48, WORLD_W, 48, "wave");
-      wave.setAlpha(0.12 + row * 0.018).setTint(row % 2 ? 0xb9efff : 0x73d3e8);
+    const bgKey = this.textures.exists(VOYAGE.bgQuiz.key) ? VOYAGE.bgQuiz.key : VOYAGE.bgSea.key;
+    if (this.textures.exists(bgKey)) {
+      const bg = this.add.image(WORLD_W / 2, H / 2, bgKey).setDisplaySize(WORLD_W * 1.04, H * 1.04).setDepth(-3);
       this.tweens.add({
-        targets: wave,
-        tilePositionX: row % 2 ? 180 : -180,
-        duration: 14000 + row * 900,
+        targets: bg,
+        x: { from: WORLD_W / 2 - 10, to: WORLD_W / 2 + 10 },
+        y: { from: H / 2 - 4, to: H / 2 + 4 },
+        duration: 14000,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    } else {
+      const sky = this.add.graphics();
+      sky.fillGradientStyle(0x74cbea, 0x74cbea, 0xf6c978, 0xf6c978, 0.72);
+      sky.fillRect(0, 0, WORLD_W, 300);
+      sky.setDepth(-2);
+      const water = this.add.graphics();
+      water.fillGradientStyle(0x267fa6, 0x267fa6, 0x0d547d, 0x0d547d, 0.88);
+      water.fillRect(0, 300, WORLD_W, 420);
+      water.setDepth(-1);
+      this.addSun();
+    }
+
+    this.spawnAliveSeaAmbience();
+
+    const veil = this.add.graphics();
+    veil.fillStyle(0x0d2a40, 0.08);
+    veil.fillRect(0, 0, WORLD_W, H);
+    veil.setDepth(-1);
+  }
+
+  /** Soft living water — drift, shimmer and crests without collage props. */
+  private spawnAliveSeaAmbience(): void {
+    // Slow cloud banks across the sky band.
+    for (let i = 0; i < 3; i += 1) {
+      const cloud = this.add.ellipse(
+        -80 + i * 420,
+        70 + (i % 2) * 36,
+        160 + i * 40,
+        36 + (i % 2) * 10,
+        0xffffff,
+        0.1 + i * 0.02,
+      ).setDepth(-2.5);
+      this.tweens.add({
+        targets: cloud,
+        x: WORLD_W + 120,
+        duration: 28000 + i * 6000,
         repeat: -1,
         ease: "Linear",
       });
     }
-    this.addSun();
+
+    // Gentle water shimmer ribbons between islands.
+    for (let i = 0; i < 4; i += 1) {
+      const band = this.add.ellipse(
+        200 + i * 280,
+        360 + (i % 2) * 80,
+        220,
+        18,
+        0xb8eff2,
+        0.08,
+      ).setDepth(-1.5);
+      this.tweens.add({
+        targets: band,
+        alpha: { from: 0.04, to: 0.14 },
+        scaleX: { from: 0.9, to: 1.08 },
+        x: band.x + (i % 2 ? 30 : -30),
+        duration: 2600 + i * 350,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    }
+
+    // Sparse low crests in open water only (not over islands).
+    if (this.textures.exists(VOYAGE.waves.key)) {
+      this.ensureAnim("voyage-wave-crest", VOYAGE.waves.key, 4, 5, -1);
+      const spots: Array<readonly [number, number]> = [
+        [640, 340],
+        [480, 420],
+        [800, 420],
+        [640, 500],
+      ];
+      spots.forEach(([x, y], i) => {
+        const wave = this.add
+          .sprite(x, y, VOYAGE.waves.key, "f0")
+          .setDisplaySize(120, 56)
+          .setAlpha(0.28)
+          .setDepth(-1.2);
+        wave.play("voyage-wave-crest");
+        this.tweens.add({
+          targets: wave,
+          x: x + (i % 2 ? 24 : -24),
+          alpha: { from: 0.16, to: 0.32 },
+          duration: 3000 + i * 280,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
+      });
+    }
+
+    // Tiny drifting sparkles / foam puffs.
+    for (let i = 0; i < 8; i += 1) {
+      const spark = this.add.circle(
+        80 + i * 150,
+        300 + (i % 3) * 90,
+        2 + (i % 3),
+        0xfff6d0,
+        0.35,
+      ).setDepth(-1.1);
+      this.tweens.add({
+        targets: spark,
+        y: spark.y - 18,
+        alpha: { from: 0.1, to: 0.45 },
+        duration: 2200 + i * 180,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+        delay: i * 120,
+      });
+    }
   }
 
   private addSun(): void {
@@ -222,135 +444,82 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   }
 
   private createQuestionBanner(game: PublicGameState): void {
-    const panel = this.add.graphics();
-    panel.fillStyle(0x152b42, 0.93);
-    panel.lineStyle(5, 0xe8c267, 1);
-    panel.fillRoundedRect(115, 16, 780, 96, 22);
-    panel.strokeRoundedRect(115, 16, 780, 96, 22);
-    this.add.text(505, 62, game.question?.prompt ?? "Charting the next waters...", {
-      fontFamily: "Nunito, sans-serif",
-      fontStyle: "900",
-      fontSize: "25px",
-      color: CREAM,
-      align: "center",
-      wordWrap: { width: 720 },
-      stroke: "#0a1426",
-      strokeThickness: 4,
-    }).setOrigin(0.5);
-  }
-
-  private createLeaderboard(game: PublicGameState): void {
-    const panel = this.add.graphics();
-    panel.fillStyle(0xf2dfb2, 0.96);
-    panel.lineStyle(6, 0x74401f, 1);
-    panel.fillRoundedRect(1020, 18, 236, 594, 18);
-    panel.strokeRoundedRect(1020, 18, 236, 594, 18);
-    this.add.text(LEADERBOARD_X, 45, "FLEET RANK", {
-      fontFamily: "Lilita One, sans-serif",
-      fontSize: "25px",
-      color: "#3b2417",
-    }).setOrigin(0.5);
-
-    const sorted = [...game.players].sort((a, b) => a.rank - b.rank);
-    sorted.forEach((player, index) => {
-      const y = 86 + index * 62;
-      const mine = player.id === this.snapshot.playerId;
-      const captain = game.arcade?.leaderId === player.id;
-      const row = this.add.graphics();
-      row.fillStyle(mine ? 0x2c6581 : 0x9c6c3d, mine ? 0.98 : 0.18);
-      row.fillRoundedRect(1035, y - 24, 206, 50, 12);
-      row.lineStyle(2, captain ? GOLD : 0x7c4b2c, captain ? 1 : 0.4);
-      row.strokeRoundedRect(1035, y - 24, 206, 50, 12);
-      this.add.text(1048, y, `${player.rank}`, {
-        fontFamily: "Lilita One",
-        fontSize: "22px",
-        color: captain ? "#b36b00" : mine ? "#ffffff" : "#3b2417",
-      }).setOrigin(0, 0.5);
-      this.add.text(1080, y - 8, player.nickname, {
-        fontFamily: "Nunito",
+    const { x, y, w, h } = QUESTION_BAR;
+    const panel = this.add.graphics().setDepth(28);
+    panel.fillStyle(0xf0d9a0, 0.96);
+    panel.lineStyle(5, 0x7a4a22, 1);
+    panel.fillRoundedRect(x, y, w, h, 16);
+    panel.strokeRoundedRect(x, y, w, h, 16);
+    panel.fillStyle(0xe8c57a, 0.45);
+    panel.fillRoundedRect(x + 14, y + 8, w - 28, 12, 6);
+    const prompt = this.add
+      .text(x + w / 2, y + h / 2 + 2, game.question?.prompt ?? "Charting the next waters...", {
+        fontFamily: "Nunito, sans-serif",
         fontStyle: "900",
-        fontSize: "15px",
-        color: mine ? "#ffffff" : "#3b2417",
-      }).setOrigin(0, 0.5);
-      this.add.text(1080, y + 12, `${player.score} gold · streak ${player.streak}`, {
-        fontFamily: "Nunito",
-        fontStyle: "700",
-        fontSize: "11px",
-        color: mine ? "#d7f4ff" : "#70513c",
-      }).setOrigin(0, 0.5);
-      if (captain) this.drawCrown(1220, y - 14, 0.65);
-    });
+        fontSize: "21px",
+        color: "#2f1c10",
+        align: "center",
+        wordWrap: { width: w - 36 },
+      })
+      .setOrigin(0.5)
+      .setDepth(29);
+    this.trackHud(panel, prompt);
   }
 
+  /** Scores now show on the post-question leaderboard screen — no in-question sidebar. */
+  private createLeaderboard(_game: PublicGameState): void {}
+
+  /** Numeric timer removed — draining pot chest is the clock. */
   private createTimer(): void {
-    const timerPanel = this.add.graphics();
-    timerPanel.fillStyle(0x13263d, 0.92);
-    timerPanel.lineStyle(3, 0xf0d17b, 0.9);
-    timerPanel.fillRoundedRect(910, 24, 88, 56, 16);
-    timerPanel.strokeRoundedRect(910, 24, 88, 56, 16);
-    this.timerText = this.add.text(954, 52, "", {
-      fontFamily: "Lilita One",
-      fontSize: "28px",
-      color: "#fff2bd",
-    }).setOrigin(0.5);
+    this.timerText = undefined;
   }
 
   private createInventory(game: PublicGameState, priv?: PrivatePlayerState): void {
-    const dock = this.add.graphics();
-    dock.fillStyle(0x10243a, 0.95);
-    dock.lineStyle(4, 0x9c6a3d, 1);
-    dock.fillRoundedRect(20, 625, 970, 80, 18);
-    dock.strokeRoundedRect(20, 625, 970, 80, 18);
-
-    this.add.text(38, 640, "BOOTY", {
-      fontFamily: "Lilita One",
-      fontSize: "17px",
-      color: "#f4d986",
-    });
-    const slots = 5;
-    for (let i = 0; i < slots; i += 1) {
-      const x = 112 + i * 112;
-      const item = priv?.powerUps[i];
-      const slot = this.add.graphics();
-      slot.fillStyle(item ? 0x24506a : 0x091725, item ? 1 : 0.7);
-      slot.lineStyle(3, item ? 0xe7bd57 : 0x456279, item ? 1 : 0.55);
-      slot.fillRoundedRect(x, 637, 98, 56, 12);
-      slot.strokeRoundedRect(x, 637, 98, 56, 12);
-      if (item) {
-        const def = POWERUPS[item.powerUpId];
-        const button = this.add.text(x + 49, 665, this.shortItemName(item.powerUpId), {
-          fontFamily: "Nunito",
-          fontStyle: "900",
-          fontSize: "12px",
-          color: "#fff5cf",
-          align: "center",
-          wordWrap: { width: 88 },
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        button.on("pointerdown", () => this.armOrUseItem(item.uid, item.powerUpId));
-        button.setData("fullName", def.name);
-      } else {
-        this.add.text(x + 49, 665, "EMPTY", {
-          fontFamily: "Nunito",
-          fontStyle: "900",
-          fontSize: "11px",
-          color: "#587184",
-        }).setOrigin(0.5);
-      }
+    const items = priv?.powerUps ?? [];
+    if (items.length === 0) {
+      // Compact empty booty chip — does not dominate the shore.
+      const chip = this.add.container(72, 676).setDepth(50);
+      const bg = this.add.rectangle(0, 0, 96, 36, 0x10243a, 0.75).setStrokeStyle(3, 0x9c6a3d);
+      const label = this.add.text(0, 0, "BOOTY", {
+        fontFamily: "Lilita One",
+        fontSize: "14px",
+        color: "#f4d986",
+      }).setOrigin(0.5);
+      chip.add([bg, label]);
+      this.trackHud(chip);
+      return;
     }
-
+    const dock = this.add.graphics().setDepth(50);
+    dock.fillStyle(0x10243a, 0.92);
+    dock.lineStyle(3, 0x9c6a3d, 1);
+    dock.fillRoundedRect(16, 648, 52 + items.length * 72, 56, 14);
+    dock.strokeRoundedRect(16, 648, 52 + items.length * 72, 56, 14);
+    const title = this.add.text(28, 666, "BOOTY", {
+      fontFamily: "Lilita One",
+      fontSize: "12px",
+      color: "#f4d986",
+    }).setOrigin(0, 0.5).setDepth(51);
+    this.trackHud(dock, title);
+    items.slice(0, 5).forEach((item, i) => {
+      const x = 78 + i * 70;
+      if (this.textures.exists(VOYAGE.items.key)) {
+        const icon = this.add.image(x, 676, VOYAGE.items.key).setDepth(51);
+        this.cropGridImage(icon, VOYAGE.items.cols, VOYAGE.items.rows, ITEM_ICON_INDEX[item.powerUpId] ?? 0);
+        icon.setDisplaySize(36, 36).setInteractive({ useHandCursor: true });
+        icon.on("pointerdown", () => this.armOrUseItem(item.uid, item.powerUpId));
+        this.trackHud(icon);
+      }
+    });
     const me = game.players.find((player) => player.id === this.snapshot.playerId);
     if (me) {
-      this.add.text(700, 647, `${me.score} GOLD`, {
+      const gold = this.add.text(1180, 676, `${me.score}g`, {
         fontFamily: "Lilita One",
-        fontSize: "22px",
+        fontSize: "18px",
         color: "#ffd45f",
-      });
-      this.add.text(700, 674, `RANK ${me.rank}   ·   STREAK ${me.streak}`, {
-        fontFamily: "Nunito",
-        fontStyle: "900",
-        fontSize: "13px",
-        color: "#d8ecf5",
-      });
+        stroke: "#17233b",
+        strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(51);
+      this.trackHud(gold);
     }
   }
 
@@ -360,131 +529,244 @@ export class ArcadeGameplayScene extends Phaser.Scene {
 
   private renderQuestion(): void {
     const game = this.snapshot.game;
-    // Always paint the sea — never leave the Phaser clear-color blue empty.
+    if (!game) return;
+    this.flagMarkers.clear();
     this.renderSeaWorld();
-    if (!game?.question) {
-      this.add.text(WORLD_W / 2, H / 2, "Charting the next island...", {
-        fontFamily: "Lilita One",
-        fontSize: "36px",
-        color: CREAM,
-        stroke: "#17233b",
-        strokeThickness: 8,
-      }).setOrigin(0.5);
+    if (!game.question) {
+      this.showNotice("Charting the next waters…", "#ffe18a");
       return;
     }
     this.createQuestionBanner(game);
-    this.createLeaderboard(game);
-    this.createTimer();
-    this.createQuestionIslands(game);
-    this.createFleet(game);
     this.createPotChest(game);
+    this.createQuestionIslands(game, true);
+    this.createFleet(game);
     this.createInventory(game, this.snapshot.priv);
-    this.createConfirmButton(game);
     this.createMutinyButton(game);
     this.renderTargeting();
+    this.applyHudVisibility();
   }
 
-  private createQuestionIslands(game: PublicGameState): void {
-    this.islands = game.question?.options.slice(0, 4).map((option, index) => {
-      const [x, y] = ISLAND_POSITIONS[index] ?? ISLAND_POSITIONS[0]!;
-      const glow = this.add.ellipse(x, y + 18, 330, 178, 0xffde6c, 0).setStrokeStyle(5, 0xffdc66, 0);
-      const island = this.add.image(x, y, "hf-islands");
-      this.cropGridImage(island, 2, 2, index);
-      island.setDisplaySize(210, 150).setTint(0xfff0c7).setInteractive({ useHandCursor: true });
-      const plaque = this.add.graphics();
-      plaque.fillStyle(0x142b43, 0.95);
-      plaque.lineStyle(4, this.draftChoice === index ? GOLD : 0x8bb5c7, 1);
-      plaque.fillRoundedRect(x - 174, y + 52, 348, 66, 14);
-      plaque.strokeRoundedRect(x - 174, y + 52, 348, 66, 14);
-      const display = this.snapshot.priv?.cannonballed ? this.holeWords(option) : option;
-      const answer = this.add.text(x, y + 84, display, {
-        fontFamily: "Nunito",
-        fontStyle: "900",
-        fontSize: "18px",
-        color: "#fff6d6",
-        align: "center",
-        wordWrap: { width: 316 },
-      }).setOrigin(0.5);
-      const disabled = this.snapshot.priv?.disabledOptions?.includes(index);
-      if (disabled) {
-        island.setAlpha(0.28);
-        answer.setAlpha(0.22);
-        this.add.text(x, y + 82, "BLOCKED", {
-          fontFamily: "Lilita One",
-          fontSize: "21px",
-          color: "#ff8066",
-        }).setOrigin(0.5).setAngle(-8);
-      } else {
-        island.on("pointerover", () => {
-          glow.setFillStyle(0xffde6c, 0.18).setStrokeStyle(5, 0xffdc66, 0.9);
-          this.tweens.add({ targets: island, scaleX: island.scaleX * 1.04, scaleY: island.scaleY * 1.04, duration: 100 });
+  private createQuestionIslands(game: PublicGameState, interactive = true): void {
+    const biomes = game.question?.biomes;
+    const sheet = this.textures.exists(VOYAGE.biomes.key) ? VOYAGE.biomes : VOYAGE.islands;
+    this.ensureSheetFrames(sheet.key, sheet.cols, sheet.rows);
+    const [iw, ih] = ISLAND_DISPLAY;
+    this.islands =
+      game.question?.options.slice(0, 4).map((option, index) => {
+        const [x, y] = ISLAND_POSITIONS[index] ?? ISLAND_POSITIONS[0]!;
+        const selected = interactive && this.draftChoice === index;
+        const glow = this.add.ellipse(x, y + 24, iw * 0.9, ih * 0.55, 0xffffff, 0).setDepth(2);
+        const biome = biomes?.[index];
+        const frame = biome ? (BIOME_FRAME[biome] ?? index) : index;
+        const island = this.add
+          .image(x, y, sheet.key, `f${frame % (sheet.cols * sheet.rows)}`)
+          .setDisplaySize(iw, ih)
+          .setDepth(3);
+        if (interactive) island.setInteractive({ useHandCursor: true });
+        if (selected) island.setTint(0xfff1c4);
+        this.tweens.add({
+          targets: island,
+          y: y - 4,
+          duration: 2600 + index * 140,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
         });
-        island.on("pointerout", () => glow.setFillStyle(0xffde6c, 0).setStrokeStyle(5, 0xffdc66, 0));
-        island.on("pointerdown", () => this.chooseIsland(index));
-      }
-      if (this.snapshot.priv?.revealedAnswerIndex === index) {
-        glow.setFillStyle(0xffe16a, 0.28).setStrokeStyle(8, GOLD, 1);
-        this.add.text(x + 144, y + 40, "X", {
-          fontFamily: "Lilita One",
-          fontSize: "44px",
-          color: "#d8382f",
-          stroke: "#fff0bd",
-          strokeThickness: 5,
-        }).setOrigin(0.5).setAngle(-8);
-      }
-      const root = this.add.container(0, 0, [glow, island, plaque, answer]);
-      return { root, glow, answer };
-    }) ?? [];
+        const signX = x + 28;
+        const signY = y + 72;
+        const scrim = this.add.graphics().setDepth(4);
+        scrim.fillStyle(0x1a120c, selected ? 0.62 : 0.4);
+        scrim.fillRoundedRect(signX - 72, signY - 16, 144, 32, 8);
+        if (selected) {
+          scrim.lineStyle(2, GOLD, 0.9);
+          scrim.strokeRoundedRect(signX - 72, signY - 16, 144, 32, 8);
+        }
+        const display = this.snapshot.priv?.cannonballed ? this.holeWords(option) : option;
+        const answer = this.add
+          .text(signX, signY, display, {
+            fontFamily: "Nunito",
+            fontStyle: "900",
+            fontSize: "14px",
+            color: "#fff8e6",
+            align: "center",
+            wordWrap: { width: 136 },
+          })
+          .setOrigin(0.5)
+          .setDepth(5);
+        const disabled = this.snapshot.priv?.disabledOptions?.includes(index);
+        if (disabled) {
+          island.setAlpha(0.28);
+          answer.setAlpha(0.22);
+          scrim.setAlpha(0.2);
+        } else if (interactive) {
+          island.on("pointerover", () => {
+            if (!selected) island.setTint(0xfff6dc);
+          });
+          island.on("pointerout", () => {
+            if (!selected) island.clearTint();
+            else island.setTint(0xfff1c4);
+          });
+          island.on("pointerdown", () => this.chooseIsland(index));
+        }
+        if (selected) this.raiseIslandFlag(index);
+        const root = this.add.container(0, 0, [glow, island, scrim, answer]);
+        return { root, glow, answer };
+      }) ?? [];
   }
 
   private createFleet(game: PublicGameState): void {
     const visible = game.players.filter((player) => !player.marooned).sort((a, b) => a.rank - b.rank);
+    const n = Math.max(1, visible.length);
+    // Compact cluster in the open water between the four islands.
+    const span = Math.min(280, 48 + n * 72);
+    const startX = FLEET_HOME.x - span / 2;
+    const y = FLEET_HOME.y;
+    const dock = this.add.ellipse(FLEET_HOME.x, y + 16, span + 90, 32, 0x0a3050, 0.2).setDepth(18);
+    this.tweens.add({ targets: dock, alpha: { from: 0.14, to: 0.26 }, duration: 1800, yoyo: true, repeat: -1 });
     visible.forEach((player, index) => {
-      const column = index % 4;
-      const row = Math.floor(index / 4);
-      const x = 325 + column * 118 - row * 28;
-      const y = 560 + row * 54 + (column % 2) * 8;
-      const ship = this.createShip(player, x, y, 0.62);
+      const x = startX + (n === 1 ? span / 2 : (index / Math.max(1, n - 1)) * span);
+      const isLeader = player.rank === 1;
+      const scale = isLeader ? 1.08 : 0.9;
+      const ship = this.createShip(player, x, y, scale, isLeader);
+      ship.setDepth(20);
       this.ships.set(player.id, ship);
+      this.tweens.add({
+        targets: ship,
+        y: y - 5,
+        duration: 2000 + index * 150,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      if (player.id === this.snapshot.playerId && player.hasAnswered) {
+        const choice = this.snapshot.priv?.selectedChoiceIndex ?? this.draftChoice;
+        if (choice !== undefined) this.leanShipTowardIsland(player.id, choice);
+      }
+    });
+  }
+
+  /** Anticipation nudge when a course is picked — sleek commit, not full sail yet. */
+  private leanShipTowardIsland(playerId: string, islandIndex: number): void {
+    const ship = this.ships.get(playerId);
+    const [islandX, islandY] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
+    if (!ship) return;
+    const homeX = Number(ship.getData("homeX") ?? ship.x);
+    const homeY = Number(ship.getData("homeY") ?? ship.y);
+    const hull = ship.getData("hullSprite") as Phaser.GameObjects.Sprite | undefined;
+    if (hull?.anims) {
+      this.ensureAnim("voyage-ship-sail-run", VOYAGE.shipSailSmooth.key, 24, 28, -1);
+      hull.play("voyage-ship-sail-run");
+    }
+    const leanX = Phaser.Math.Linear(homeX, islandX, 0.18);
+    const leanY = Phaser.Math.Linear(homeY, islandY + 90, 0.18);
+    const bank = Phaser.Math.Clamp(((leanX - homeX) / 80) * 10, -12, 12);
+    this.tweens.killTweensOf(ship);
+    this.tweens.add({
+      targets: ship,
+      x: leanX,
+      y: leanY,
+      angle: bank,
+      duration: 480,
+      ease: "Cubic.easeOut",
+    });
+    this.tweens.add({
+      targets: ship,
+      angle: { from: bank - 1.5, to: bank + 1.5 },
+      duration: 1600,
+      delay: 480,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
     });
   }
 
   private createPotChest(game: PublicGameState): void {
     const arcade = game.arcade;
     if (!arcade) return;
-    const root = this.add.container(68, 144);
-    const glow = this.add.circle(0, 0, 58, 0xffd45f, 0.18);
-    const chest = this.add.image(0, 0, "hf-chests");
-    this.cropGridImage(chest, 4, 5, 0);
-    chest.setDisplaySize(92, 84);
-    const coins: Phaser.GameObjects.Arc[] = [];
-    for (let i = 0; i < 7; i += 1) {
-      const coin = this.add.circle(-32 + i * 10, 40 - (i % 2) * 7, 6, GOLD, 1).setStrokeStyle(2, 0x9d641c);
-      coins.push(coin);
-      this.tweens.add({
-        targets: coin,
-        y: coin.y + 20,
-        alpha: 0,
-        duration: 1800 + i * 180,
-        delay: i * 130,
-        repeat: -1,
-      });
-    }
-    this.potText = this.add.text(0, 72, `${arcade.potMax}`, {
-      fontFamily: "Lilita One",
-      fontSize: "28px",
-      color: "#ffd45f",
-      stroke: "#17233b",
-      strokeThickness: 5,
-    }).setOrigin(0.5);
-    root.add([glow, chest, ...coins, this.potText]);
+
+    // Gold loot bar sits UNDER the question parchment — continuous drain readout.
+    const track = this.add.graphics().setDepth(30);
+    track.fillStyle(0x2a1a0c, 0.85);
+    track.lineStyle(3, 0x8a5a28, 1);
+    track.fillRoundedRect(GOLD_BAR.x, GOLD_BAR.y, GOLD_BAR.w, GOLD_BAR.h, 8);
+    track.strokeRoundedRect(GOLD_BAR.x, GOLD_BAR.y, GOLD_BAR.w, GOLD_BAR.h, 8);
+    this.potBarFill = this.add.graphics().setDepth(31);
+    this.potBarFill.fillStyle(0xffc94a, 1);
+    this.potBarFill.fillRoundedRect(GOLD_BAR.x + 2, GOLD_BAR.y + 2, GOLD_BAR.w - 4, GOLD_BAR.h - 4, 6);
+    this.trackHud(track, this.potBarFill);
+
+    // Compact top-right chest — locked pixel size so sheet frames can't spill.
+    const root = this.add.container(POT_CHEST_POS.x, POT_CHEST_POS.y).setDepth(34);
+    const glow = this.add.circle(0, 4, 34, 0xffd45f, 0.16);
+    const sheet = this.textures.exists(VOYAGE.potDrain.key) ? VOYAGE.potDrain : VOYAGE.chest;
+    this.ensureSheetFrames(sheet.key, sheet.cols, sheet.rows);
+    this.potChestA = this.add.image(0, 0, sheet.key, "f0").setOrigin(0.5);
+    this.potChestB = this.add.image(0, 0, sheet.key, "f0").setOrigin(0.5).setAlpha(0);
+    this.lockChestDisplaySize();
+    this.potText = this.add
+      .text(0, 40, `${arcade.potMax}`, {
+        fontFamily: "Lilita One",
+        fontSize: "16px",
+        color: "#ffd45f",
+        stroke: "#17233b",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5);
+    root.add([glow, this.potChestA, this.potChestB, this.potText]);
     this.potChest = root;
+    this.trackHud(root);
+  }
+
+  /** Keep every drain-sheet frame in the same fixed box (frames vary in native size). */
+  private lockChestDisplaySize(): void {
+    for (const img of [this.potChestA, this.potChestB]) {
+      if (!img) continue;
+      this.tweens.killTweensOf(img);
+      img.setScale(1);
+      img.setDisplaySize(CHEST_BASE_SIZE.w, CHEST_BASE_SIZE.h);
+    }
   }
 
   private createConfirmButton(game: PublicGameState): void {
     const me = game.players.find((player) => player.id === this.snapshot.playerId);
     const committed = me?.hasAnswered || Boolean(this.snapshot.priv?.hasMutinied);
-    const button = this.makeButton(840, 664, 250, 58, committed ? "ANSWER LOCKED" : "CONFIRM COURSE", committed ? 0x2f6572 : 0xb34227);
+    const label = committed ? "ANSWER LOCKED" : "CONFIRM COURSE";
+    if (this.textures.exists(VOYAGE.lockButton.key)) {
+      const frame = committed ? 2 : 1;
+      const plaque = this.add.image(840, 664, VOYAGE.lockButton.key);
+      this.cropGridImage(plaque, VOYAGE.lockButton.cols, VOYAGE.lockButton.rows, frame);
+      plaque.setDisplaySize(270, 78).setAlpha(committed ? 0.8 : 1);
+      this.add.text(840, 664, label, {
+        fontFamily: "Lilita One",
+        fontSize: "18px",
+        color: "#fff4cf",
+        stroke: "#17233b",
+        strokeThickness: 4,
+        align: "center",
+        wordWrap: { width: 230 },
+      }).setOrigin(0.5);
+      if (!committed) {
+        plaque.setInteractive({ useHandCursor: true });
+        plaque.on("pointerover", () => {
+          this.cropGridImage(plaque, VOYAGE.lockButton.cols, VOYAGE.lockButton.rows, 0);
+        });
+        plaque.on("pointerout", () => {
+          this.cropGridImage(plaque, VOYAGE.lockButton.cols, VOYAGE.lockButton.rows, 1);
+        });
+        plaque.on("pointerdown", () => {
+          if (this.draftChoice === undefined) {
+            this.showNotice("Choose an island first", "#ffb58f");
+            this.cameras.main.shake(100, 0.004);
+            return;
+          }
+          plaque.setScale(0.94);
+          gameEventBridge.send({ type: "answer", choiceIndex: this.draftChoice });
+          this.cameras.main.zoomTo(1.015, 100, "Sine.easeOut", true);
+        });
+      }
+      return;
+    }
+    const button = this.makeButton(840, 664, 250, 58, label, committed ? 0x2f6572 : 0xb34227);
     button.setAlpha(committed ? 0.75 : 1);
     if (!committed) {
       button.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
@@ -530,8 +812,65 @@ export class ArcadeGameplayScene extends Phaser.Scene {
       this.showNotice("Your course is already locked", "#ffb58f");
       return;
     }
+    if (this.draftChoice === index) {
+      gameEventBridge.send({ type: "answer", choiceIndex: index });
+      this.showNotice("COURSE SET!", "#ffe18a");
+      this.cameras.main.shake(70, 0.0025);
+      return;
+    }
     this.draftChoice = index;
     this.renderMode("question");
+    this.playTelescopeSelect(index);
+  }
+
+  /** Telescope peek — NO camera zoom/pan (that looked broken). */
+  private playTelescopeSelect(index: number): void {
+    const [ix, iy] = ISLAND_POSITIONS[index] ?? ISLAND_POSITIONS[0]!;
+    const r = 102;
+    const g = this.add.graphics().setDepth(90).setAlpha(0);
+    g.fillStyle(0x061018, 0.74);
+    g.fillRect(0, 0, W, Math.max(0, iy - r));
+    g.fillRect(0, iy + r, W, Math.max(0, H - (iy + r)));
+    g.fillRect(0, iy - r, Math.max(0, ix - r), r * 2);
+    g.fillRect(ix + r, iy - r, Math.max(0, W - (ix + r)), r * 2);
+    g.lineStyle(10, 0x1a120c, 0.95);
+    g.strokeCircle(ix, iy, r + 8);
+    g.lineStyle(5, 0xc9a24a, 0.95);
+    g.strokeCircle(ix, iy, r);
+    this.tweens.add({
+      targets: g,
+      alpha: 1,
+      duration: 160,
+      yoyo: true,
+      hold: 240,
+      onComplete: () => g.destroy(),
+    });
+    this.showNotice("Tap again to lock course", "#ffe18a");
+  }
+
+  private raiseIslandFlag(index: number): void {
+    this.flagMarkers.forEach((marker) => marker.destroy());
+    this.flagMarkers.clear();
+    const [x, y] = ISLAND_POSITIONS[index] ?? ISLAND_POSITIONS[0]!;
+    const root = this.add.container(x + 52, y - 58).setDepth(40);
+    const pole = this.add.rectangle(0, 14, 5, 44, 0x5b3a1e).setStrokeStyle(2, INK);
+    const flag = this.add.triangle(14, 0, 0, -12, 30, 0, 0, 12, GOLD).setStrokeStyle(2, INK);
+    root.add([pole, flag]);
+    root.setScale(0.25);
+    this.tweens.add({ targets: root, scale: 1, y: root.y - 8, duration: 240, ease: "Back.easeOut" });
+    this.flagMarkers.set(index, root);
+  }
+
+  private trackHud(...nodes: Phaser.GameObjects.GameObject[]): void {
+    this.hudNodes.push(...nodes);
+  }
+
+  private applyHudVisibility(): void {
+    for (const node of this.hudNodes) {
+      if ("setVisible" in node && typeof node.setVisible === "function") {
+        node.setVisible(this.hudVisible);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -551,20 +890,22 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   }
 
   private renderMapWorld(): void {
+    if (this.textures.exists(VOYAGE.bgLoot.key)) {
+      this.add.image(WORLD_W / 2, H / 2, VOYAGE.bgLoot.key).setDisplaySize(WORLD_W, H).setDepth(-3);
+      const veil = this.add.graphics();
+      veil.fillStyle(0x1a120c, 0.22);
+      veil.fillRect(0, 0, WORLD_W, H);
+      veil.setDepth(-2);
+      return;
+    }
     const floor = this.add.graphics();
     floor.fillGradientStyle(0x4f2e1c, 0x4f2e1c, 0x1e3441, 0x1e3441, 1);
     floor.fillRect(0, 0, WORLD_W, H);
-    for (let x = 0; x < WORLD_W; x += 90) {
-      floor.lineStyle(4, 0x6c4228, 0.48);
-      floor.lineBetween(x, 0, x + 60, H);
-    }
     const map = this.add.graphics();
     map.fillStyle(0xe3c47f, 0.98);
     map.lineStyle(8, 0x754626, 1);
     map.fillRoundedRect(68, 126, 880, 474, 30);
     map.strokeRoundedRect(68, 126, 880, 474, 30);
-    map.lineStyle(3, 0x9b7041, 0.35);
-    for (let i = 0; i < 8; i += 1) map.lineBetween(95, 165 + i * 50, 918, 150 + i * 55);
   }
 
   private createLootDestinations(game: PublicGameState): void {
@@ -574,9 +915,9 @@ export class ArcadeGameplayScene extends Phaser.Scene {
       const x = x0;
       const y = y0 + 30;
       const glow = this.add.ellipse(x, y, 300, 166, 0xffd75b, 0);
-      const island = this.add.image(x, y - 22, "hf-islands");
-      this.cropGridImage(island, 2, 2, index);
-      island.setDisplaySize(170, 122).setTint(0xf3d795).setInteractive({ useHandCursor: true });
+      const island = this.add.image(x, y - 22, VOYAGE.islands.key);
+      this.cropGridImage(island, VOYAGE.islands.cols, VOYAGE.islands.rows, index);
+      island.setDisplaySize(170, 122).setInteractive({ useHandCursor: true });
       const answer = this.add.text(x, y + 43, option, {
         fontFamily: "Nunito",
         fontStyle: "900",
@@ -688,12 +1029,16 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     sky.fillRect(0, 0, W, 330);
     sky.fillStyle(0x167c9c, 1);
     sky.fillRect(0, 330, W, 390);
-    const island = this.add.image(610, 410, "hf-islands");
-    this.cropGridImage(island, 2, 2, 0);
-    island.setDisplaySize(520, 370).setTint(0xffe0a1);
+    if (this.textures.exists(VOYAGE.maroon.key)) {
+      this.add.image(640, 400, VOYAGE.maroon.key).setDisplaySize(560, 420);
+    } else {
+      const island = this.add.image(610, 410, VOYAGE.islands.key);
+      this.cropGridImage(island, VOYAGE.islands.cols, VOYAGE.islands.rows, 0);
+      island.setDisplaySize(520, 370);
+    }
     const me = game.players.find((player) => player.id === this.snapshot.playerId);
     if (me) {
-      const ship = this.createShip(me, 400, 515, 0.85);
+      const ship = this.createShip(me, 360, 530, 0.85);
       ship.setAngle(-14);
       this.add.text(640, 80, "MAROONED", {
         fontFamily: "Lilita One",
@@ -711,13 +1056,13 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     }
     this.createTimer();
     const chest = this.snapshot.priv?.chests.find((entry) => entry.source === "marooned");
-    const chestArt = this.add.image(760, 485, "hf-chests");
-    this.cropGridImage(chestArt, 4, 5, 0);
+    const chestArt = this.add.image(860, 485, VOYAGE.chest.key);
+    this.cropGridImage(chestArt, VOYAGE.chest.cols, VOYAGE.chest.rows, 4);
     chestArt.setDisplaySize(150, 138);
-    const glow = this.add.circle(760, 485, 90, 0xffe25f, 0.22);
+    const glow = this.add.circle(860, 485, 90, 0xffe25f, 0.22);
     glow.setDepth(-0.5);
     this.tweens.add({ targets: [chestArt, glow], y: "-=10", scale: 1.08, duration: 800, yoyo: true, repeat: -1 });
-    const open = this.makeButton(760, 610, 250, 54, chest ? "OPEN ISLAND CHEST" : "CHEST ALREADY CLAIMED", chest ? 0x9e4a25 : 0x526a70);
+    const open = this.makeButton(860, 610, 250, 54, chest ? "OPEN ISLAND CHEST" : "CHEST ALREADY CLAIMED", chest ? 0x9e4a25 : 0x526a70);
     if (chest) {
       open.setInteractive({ useHandCursor: true }).on("pointerdown", () => gameEventBridge.send({ type: "chest", uid: chest.uid }));
     }
@@ -735,119 +1080,77 @@ export class ArcadeGameplayScene extends Phaser.Scene {
     this.createLeaderboard(game);
     this.createQuestionBanner(game);
     this.createRevealIslands(game);
+
+    const revealKey = game.revealEvents.map((event) => event.id).join("|");
+    if (revealKey === this.lastRevealKey) return;
+    this.lastRevealKey = revealKey;
     this.time.delayedCall(250, () => this.playRevealSequence(game));
   }
 
   private createRevealIslands(game: PublicGameState): void {
-    const options = game.question?.options.slice(0, 4) ?? [];
-    this.islands = options.map((option, index) => {
-      const [x, y] = ISLAND_POSITIONS[index] ?? ISLAND_POSITIONS[0]!;
-      const glow = this.add.ellipse(x, y + 18, 330, 180, 0xffdc63, 0);
-      const island = this.add.image(x, y, "hf-islands");
-      this.cropGridImage(island, 2, 2, index);
-      island.setDisplaySize(205, 148).setTint(game.arcade?.isEventRound ? 0xf0d497 : 0xffefc2);
-      const answer = this.add.text(x, y + 82, option, {
-        fontFamily: "Nunito",
-        fontStyle: "900",
-        fontSize: "17px",
-        color: game.arcade?.isEventRound ? "#35251d" : CREAM,
-        backgroundColor: game.arcade?.isEventRound ? "#ead08e" : "#142b43",
-        padding: { x: 12, y: 7 },
-        align: "center",
-        wordWrap: { width: 280 },
-      }).setOrigin(0.5);
-      const root = this.add.container(0, 0, [glow, island, answer]);
-      return { root, glow, answer };
-    });
+    // Same biome islands as the question — never swap to wooden card stubs / despawn art.
+    this.createQuestionIslands(game, false);
+    if (game.arcadeReveal) {
+      const correct = game.arcadeReveal.correctIndex;
+      this.islands.forEach((island, index) => {
+        if (index === correct) {
+          island.glow.setFillStyle(0xffde61, 0.18).setStrokeStyle(4, GOLD, 0.55);
+        }
+      });
+    }
   }
 
   private playRevealSequence(game: PublicGameState): void {
     const reveal = game.arcadeReveal;
     if (!reveal) return;
-    const revealKey = game.revealEvents.map((event) => event.id).join("|") + `:${reveal.correctIndex}`;
-    if (revealKey === this.lastRevealKey) return;
-    this.lastRevealKey = revealKey;
-
-    const startPositions = game.players.map((player, index) => ({
-      player,
-      x: 370 + (index % 4) * 110,
-      y: 585 + Math.floor(index / 4) * 45,
-      color: PLAYER_COLORS[index % PLAYER_COLORS.length] ?? 0x38bdf8,
-    }));
-    const answerByPlayer = new Map(reveal.answers.map((answer) => [answer.playerId, answer]));
-
-    // Keep ship silhouettes moored at the fleet while the cinematic takes over.
-    startPositions.forEach(({ player, x, y }) => {
-      const ship = this.createShip(player, x, y, 0.52);
-      this.ships.set(player.id, ship);
-    });
-
-    this.showEventCard("LANDFALL", "The fleet storms their chosen islands...");
 
     if (game.arcade?.isEventRound) {
-      // Loot Drop: staged voyage parties per island that received a wager.
-      for (let islandIndex = 0; islandIndex < 4; islandIndex += 1) {
-        const party = startPositions.flatMap(({ player, x, y, color }) => {
-          const answer = answerByPlayer.get(player.id);
-          const amount = answer?.lootAllocation?.[islandIndex] ?? 0;
-          if (amount <= 0) return [];
-          const ships = Math.min(3, Math.max(1, Math.ceil(amount / 40)));
-          return Array.from({ length: ships }, (_, shipIndex) => ({
-            x: x + shipIndex * 10,
-            y: y + shipIndex * 6,
-            color,
-            correct: reveal.correctIndex === islandIndex,
-          }));
-        });
-        if (party.length === 0) continue;
-        const [ix, iy] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
-        this.time.delayedCall(islandIndex * 420, () => {
-          playIslandPlunderCeremony(this, {
-            islandIndex,
-            islandX: ix,
-            islandY: iy,
-            shipStarts: party,
-          });
-        });
-      }
-    } else {
-      // Regular question: one cinematic per chosen island, correct island gets the full plunder beat.
-      for (let islandIndex = 0; islandIndex < 4; islandIndex += 1) {
-        const party = startPositions
-          .map(({ player, x, y, color }) => {
-            const answer = answerByPlayer.get(player.id);
-            if (answer?.choiceIndex !== islandIndex) return undefined;
-            return {
-              x,
-              y,
-              color,
-              correct: reveal.correctIndex === islandIndex,
-            };
-          })
-          .filter((entry): entry is { x: number; y: number; color: number; correct: boolean } => Boolean(entry));
-        if (party.length === 0) continue;
-        const [ix, iy] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
-        this.time.delayedCall(islandIndex * 280, () => {
-          playIslandPlunderCeremony(this, {
-            islandIndex,
-            islandX: ix,
-            islandY: iy,
-            shipStarts: party,
-          });
-        });
-      }
+      this.playLootDropReveal(game, reveal);
+      return;
     }
 
-    this.time.delayedCall(1600, () => {
-      this.islands.forEach((island, index) => {
-        const correct = index === reveal.correctIndex;
-        island.glow.setFillStyle(correct ? 0xffde61 : 0xd94d3f, correct ? 0.34 : 0.12);
-        island.glow.setStrokeStyle(correct ? 8 : 4, correct ? GOLD : 0xe45b4e, correct ? 1 : 0.7);
-        if (!correct) this.drawCross(ISLAND_POSITIONS[index]?.[0] ?? 0, (ISLAND_POSITIONS[index]?.[1] ?? 0) - 35);
+    const answers = [...reveal.answers]
+      .filter((a) => a.choiceIndex !== undefined)
+      .sort((a, b) => a.lockedAt - b.lockedAt);
+    const n = Math.max(1, answers.length);
+    const span = Math.min(280, 48 + n * 72);
+    const startX = FLEET_HOME.x - span / 2;
+    const harbourY = FLEET_HOME.y;
+
+    answers.forEach((answer, raceIndex) => {
+      const player = game.players.find((p) => p.id === answer.playerId);
+      if (!player || answer.choiceIndex === undefined) return;
+      const homeX = startX + (n === 1 ? span / 2 : (raceIndex / Math.max(1, n - 1)) * span);
+      const ship = this.createShip(player, homeX, harbourY, player.rank === 1 ? 1.08 : 0.95, player.rank === 1);
+      ship.setDepth(45);
+      this.ships.set(player.id, ship);
+      const correct = answer.choiceIndex === reveal.correctIndex;
+      // Short hop from mid-map staging — first locker still arrives first.
+      const sailMs = 1800 + raceIndex * 420;
+      const plunderMs = correct ? Math.max(1600, 3000 - raceIndex * 280) : 900;
+      this.runIslandVoyage({
+        ship,
+        homeX,
+        homeY: harbourY,
+        islandIndex: answer.choiceIndex,
+        delay: 180 + raceIndex * 100,
+        sailMs,
+        plunderMs,
+        correct,
+        biome: game.question?.biomes?.[answer.choiceIndex],
       });
     });
 
-    let delay = 3200;
+    this.time.delayedCall(3800, () => {
+      this.islands.forEach((island, index) => {
+        const ok = index === reveal.correctIndex;
+        if (!ok) this.drawCross(ISLAND_POSITIONS[index]?.[0] ?? 0, (ISLAND_POSITIONS[index]?.[1] ?? 0) - 28);
+        else island.glow.setFillStyle(0xffde61, 0.22).setStrokeStyle(5, GOLD, 0.7);
+      });
+    });
+
+    // Slow sail (~3–5s) + ~5.2s cinematic; keep later cards after that beat.
+    let delay = 11_000;
     game.revealEvents.forEach((event) => {
       if (event.title.includes("POSEIDON")) {
         this.time.delayedCall(delay, () => this.playPoseidon(event.playerIds?.[0]));
@@ -865,6 +1168,389 @@ export class ArcadeGameplayScene extends Phaser.Scene {
         this.time.delayedCall(delay, () => this.showEventCard(event.title, event.description));
         delay += 1250;
       }
+    });
+  }
+
+  private playLootDropReveal(
+    game: PublicGameState,
+    reveal: NonNullable<PublicGameState["arcadeReveal"]>,
+  ): void {
+    game.players.forEach((player, index) => {
+      const answer = reveal.answers.find((a) => a.playerId === player.id);
+      const x = 370 + (index % 4) * 110;
+      const y = 585 + Math.floor(index / 4) * 45;
+      if (!answer?.lootAllocation) return;
+      answer.lootAllocation.forEach((amount, islandIndex) => {
+        if (amount <= 0) return;
+        const shipCount = Math.min(3, Math.ceil(amount / 50));
+        for (let shipIndex = 0; shipIndex < shipCount; shipIndex += 1) {
+          const mini = this.createShip(player, x + shipIndex * 12, y + shipIndex * 8, 0.34);
+          this.runIslandVoyage({
+            ship: mini,
+            homeX: x,
+            homeY: y,
+            islandIndex,
+            delay: index * 70 + shipIndex * 80,
+            sailMs: 2600 + shipIndex * 400,
+            plunderMs: reveal.correctIndex === islandIndex ? 1600 : 500,
+            correct: reveal.correctIndex === islandIndex,
+            biome: game.question?.biomes?.[islandIndex],
+          });
+        }
+      });
+    });
+  }
+
+  private runIslandVoyage(opts: {
+    ship: Phaser.GameObjects.Container;
+    homeX: number;
+    homeY: number;
+    islandIndex: number;
+    delay: number;
+    sailMs: number;
+    plunderMs: number;
+    correct: boolean;
+    biome?: string;
+  }): void {
+    const [islandX, islandY] = ISLAND_POSITIONS[opts.islandIndex] ?? ISLAND_POSITIONS[0]!;
+    const destX = islandX + Phaser.Math.Between(-36, 36);
+    const destY = islandY + 78;
+    const hull = opts.ship.getData("hullSprite") as Phaser.GameObjects.Sprite | undefined;
+    if (hull && "anims" in hull && hull.anims) {
+      this.ensureSheetFrames(VOYAGE.shipSailSmooth.key, VOYAGE.shipSailSmooth.cols, VOYAGE.shipSailSmooth.rows);
+      this.ensureAnim("voyage-ship-sail-run", VOYAGE.shipSailSmooth.key, 24, 28, -1);
+      hull.play("voyage-ship-sail-run");
+    }
+    const bank = Phaser.Math.Clamp(((destX - opts.homeX) / 420) * 14, -14, 14);
+    this.tweens.killTweensOf(opts.ship);
+    let lastWake = -1;
+    this.tweens.add({
+      targets: opts.ship,
+      x: destX,
+      y: destY,
+      angle: bank,
+      duration: opts.sailMs,
+      delay: opts.delay,
+      ease: "Sine.easeInOut",
+      onUpdate: (tween) => {
+        if (tween.progress - lastWake < 0.05) return;
+        lastWake = tween.progress;
+        this.spawnSailWake(opts.ship.x, opts.ship.y + 16);
+      },
+      onComplete: () => {
+        this.tweens.add({ targets: opts.ship, angle: 0, duration: 280, ease: "Sine.easeOut" });
+        if (opts.correct) {
+          this.playCorrectPlunder(opts.ship, opts.islandIndex, opts.plunderMs, opts.biome, opts.homeX, opts.homeY);
+        } else {
+          this.playWrongIslandBounce(opts.ship, opts.islandIndex, opts.homeX, opts.homeY);
+        }
+      },
+    });
+  }
+
+  private playCorrectPlunder(
+    ship: Phaser.GameObjects.Container,
+    islandIndex: number,
+    plunderMs: number,
+    biome: string | undefined,
+    homeX: number,
+    homeY: number,
+  ): void {
+    const [islandX, islandY] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
+    // Every arriving correct ship gets the full biome cinematic (queued, not skipped).
+    this.enqueuePlunderCinematic(biome, (cinematicMs) => {
+      const waitMs = cinematicMs > 0 ? cinematicMs : plunderMs;
+      this.showFloating(W / 2, 64, "PLUNDER!", "#ffe18a");
+      this.time.delayedCall(Math.floor(waitMs * 0.55), () => {
+        this.coinStream(islandX, islandY + 20, ship.x, ship.y - 10);
+      });
+      this.time.delayedCall(waitMs, () => {
+        this.showFloating(ship.x, ship.y - 50, "AWAY!", "#fff0bd");
+        this.tweens.add({
+          targets: ship,
+          x: homeX + Phaser.Math.Between(-40, 40),
+          y: homeY - 20,
+          duration: 1100,
+          ease: "Sine.easeInOut",
+          onUpdate: () => this.spawnSailWake(ship.x, ship.y + 14),
+        });
+      });
+    });
+  }
+
+  private enqueuePlunderCinematic(
+    biome: string | undefined,
+    onDone: (durationMs: number) => void,
+  ): void {
+    this.plunderCinematicQueue.push(() => {
+      this.plunderCinematicBusy = true;
+      const durationMs = this.playBiomePlunderCinematic(biome, W / 2, H / 2);
+      const wait = durationMs > 0 ? durationMs : 2800;
+      if (durationMs <= 0) this.playSpritePlunderFallback(biome);
+      onDone(wait);
+      this.time.delayedCall(wait + 40, () => {
+        this.plunderCinematicBusy = false;
+        this.pumpPlunderCinematicQueue();
+      });
+    });
+    this.pumpPlunderCinematicQueue();
+  }
+
+  private pumpPlunderCinematicQueue(): void {
+    if (this.plunderCinematicBusy) return;
+    const next = this.plunderCinematicQueue.shift();
+    if (next) next();
+  }
+
+  private playSpritePlunderFallback(biome: string | undefined): void {
+    const islandIndex = biome ? (BIOME_FRAME[biome] ?? 0) : 0;
+    const [islandX, islandY] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
+    if (!this.textures.exists(VOYAGE.plunderBiomes.key)) return;
+    this.ensureSheetFrames(VOYAGE.plunderBiomes.key, VOYAGE.plunderBiomes.cols, VOYAGE.plunderBiomes.rows);
+    const vignette = this.add
+      .image(islandX, islandY - 10, VOYAGE.plunderBiomes.key, `f${islandIndex % 8}`)
+      .setDisplaySize(210, 210)
+      .setDepth(42)
+      .setAlpha(0);
+    this.tweens.add({
+      targets: vignette,
+      alpha: 0.95,
+      scale: { from: 0.85, to: 1 },
+      duration: 280,
+      yoyo: true,
+      hold: 1800,
+      onComplete: () => vignette.destroy(),
+    });
+  }
+
+  /**
+   * Plunder cinematic — 4K source shrunk with object-fit: contain so the whole
+   * shot is readable (never zoomed/cropped into a corner of the frame).
+   */
+  private playBiomePlunderCinematic(biome: string | undefined, _islandX: number, _islandY: number): number {
+    if (!biome || !(biome in PLUNDER_VIDEO)) return 0;
+    const asset = PLUNDER_VIDEO[biome as keyof typeof PLUNDER_VIDEO];
+    const durationMs = 5200;
+
+    // Solid cinema matte behind the fitted video.
+    const veil = this.add.rectangle(W / 2, H / 2, W, H, 0x061018, 1).setDepth(90);
+    const failToSprite = () => {
+      if (veil.active) veil.destroy();
+      this.playSpritePlunderFallback(biome);
+    };
+    const startPlayback = () => {
+      if (!this.sys.isActive()) {
+        failToSprite();
+        return;
+      }
+      if (!this.cache.video.exists(asset.key)) {
+        failToSprite();
+        return;
+      }
+      const video = this.add.video(W / 2, H / 2, asset.key).setDepth(91);
+      video.setAlpha(0);
+      const applyContainFit = () => {
+        if (video.active) this.fitVideoContain(video);
+      };
+      applyContainFit();
+      const html = video.video;
+      if (html) {
+        if (html.readyState >= 1) applyContainFit();
+        else html.addEventListener("loadedmetadata", applyContainFit, { once: true });
+        html.addEventListener("loadeddata", applyContainFit, { once: true });
+      }
+      this.tweens.add({ targets: video, alpha: 1, duration: 220 });
+      try {
+        video.play(false);
+      } catch {
+        video.destroy();
+        failToSprite();
+        return;
+      }
+      // Re-fit after play starts — some browsers report 0×0 until decode.
+      this.time.delayedCall(80, applyContainFit);
+      this.time.delayedCall(durationMs - 280, () => {
+        if (!video.active && !veil.active) return;
+        this.tweens.add({
+          targets: [video, veil].filter((obj) => obj.active),
+          alpha: 0,
+          duration: 280,
+          onComplete: () => {
+            if (video.active) video.destroy();
+            if (veil.active) veil.destroy();
+          },
+        });
+      });
+    };
+
+    if (this.cache.video.exists(asset.key)) {
+      startPlayback();
+    } else {
+      const onDone = () => {
+        this.load.off(Phaser.Loader.Events.COMPLETE, onDone);
+        startPlayback();
+      };
+      this.load.video(asset.key, asset.url, true);
+      this.load.once(Phaser.Loader.Events.COMPLETE, onDone);
+      this.load.start();
+    }
+    return durationMs;
+  }
+
+  /** Shrink 4K (or any) video to fit entirely inside the 1280×720 game world. */
+  private fitVideoContain(video: Phaser.GameObjects.Video): void {
+    const html = video.video;
+    const srcW = html?.videoWidth && html.videoWidth > 0 ? html.videoWidth : 3840;
+    const srcH = html?.videoHeight && html.videoHeight > 0 ? html.videoHeight : 2160;
+    // Small inset so the full shot reads; never crop with cover-scaling.
+    const pad = 0.96;
+    const scale = Math.min((W * pad) / srcW, (H * pad) / srcH);
+    video.setDisplaySize(Math.round(srcW * scale), Math.round(srcH * scale));
+    video.setPosition(W / 2, H / 2);
+  }
+
+  private playWrongIslandBounce(
+    ship: Phaser.GameObjects.Container,
+    islandIndex: number,
+    homeX: number,
+    homeY: number,
+  ): void {
+    const [islandX, islandY] = ISLAND_POSITIONS[islandIndex] ?? ISLAND_POSITIONS[0]!;
+    this.showFloating(islandX, islandY - 40, "NO LOOT!", "#ffb3a0");
+    this.cameras.main.shake(60, 0.002);
+    const reactKey = this.textures.exists(VOYAGE.wrongReact.key) ? VOYAGE.wrongReact : VOYAGE.pirates;
+    if (this.textures.exists(reactKey.key)) {
+      this.ensureSheetFrames(reactKey.key, reactKey.cols, reactKey.rows);
+      const peek = this.add
+        .image(ship.x - 8, ship.y - 20, reactKey.key, "f0")
+        .setDisplaySize(52, 60)
+        .setDepth(46);
+      const frames = ["f0", "f1", "f2", "f3"];
+      frames.forEach((frame, i) => {
+        this.time.delayedCall(i * 120, () => {
+          if (peek.active && peek.texture.has(frame)) peek.setFrame(frame);
+        });
+      });
+      this.tweens.add({
+        targets: peek,
+        x: islandX,
+        y: islandY + 20,
+        duration: 340,
+        yoyo: true,
+        hold: 220,
+        onComplete: () => peek.destroy(),
+      });
+    }
+    this.time.delayedCall(780, () => {
+      this.tweens.add({
+        targets: ship,
+        x: homeX,
+        y: homeY,
+        duration: 1000,
+        ease: "Cubic.easeInOut",
+        onUpdate: () => this.spawnSailWake(ship.x, ship.y + 14),
+        onComplete: () => this.showFloating(ship.x, ship.y - 48, "EMPTY HANDED", "#ffb3a0"),
+      });
+    });
+  }
+
+  private spawnPlunderPirate(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    plunderMs: number,
+    delay: number,
+  ): void {
+    const hasSheet = this.textures.exists(VOYAGE.pirates.key);
+    if (hasSheet) this.ensureSheetFrames(VOYAGE.pirates.key, VOYAGE.pirates.cols, VOYAGE.pirates.rows);
+    const pirate = hasSheet
+      ? this.add.image(fromX, fromY, VOYAGE.pirates.key, "f1").setDisplaySize(52, 60).setDepth(48)
+      : this.add.circle(fromX, fromY, 10, 0xc45c38, 1).setStrokeStyle(3, INK).setDepth(48);
+
+    const walkFrames = ["f1", "f2", "f3", "f1"];
+    let walkStep = 0;
+    const walkTimer = this.time.addEvent({
+      delay: 90,
+      loop: true,
+      callback: () => {
+        if (!hasSheet || !("setFrame" in pirate)) return;
+        walkStep = (walkStep + 1) % walkFrames.length;
+        (pirate as Phaser.GameObjects.Image).setFrame(walkFrames[walkStep]!);
+      },
+    });
+
+    this.tweens.add({
+      targets: pirate,
+      x: toX,
+      y: toY,
+      duration: 420,
+      delay,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        if (hasSheet && "setFrame" in pirate) {
+          (pirate as Phaser.GameObjects.Image).setFrame("f4");
+          this.time.delayedCall(160, () => (pirate as Phaser.GameObjects.Image).setFrame("f5"));
+          this.time.delayedCall(360, () => (pirate as Phaser.GameObjects.Image).setFrame("f6"));
+        }
+        // Smash FX — biome stays put.
+        const burst = this.add.circle(toX, toY, 8, 0xffe18a, 0.9).setDepth(49);
+        this.tweens.add({
+          targets: burst,
+          scale: 3.2,
+          alpha: 0,
+          duration: 420,
+          onComplete: () => burst.destroy(),
+        });
+      },
+    });
+
+    this.time.delayedCall(delay + plunderMs * 0.75, () => {
+      walkTimer.remove(false);
+      if (hasSheet && "setFrame" in pirate) (pirate as Phaser.GameObjects.Image).setFrame("f6");
+      this.tweens.add({
+        targets: pirate,
+        x: fromX,
+        y: fromY,
+        duration: 380,
+        ease: "Sine.easeIn",
+        onComplete: () => {
+          if (hasSheet && "setFrame" in pirate) (pirate as Phaser.GameObjects.Image).setFrame("f7");
+          this.tweens.add({
+            targets: pirate,
+            alpha: 0,
+            duration: 180,
+            onComplete: () => pirate.destroy(),
+          });
+        },
+      });
+    });
+  }
+
+  private sailShip(ship: Phaser.GameObjects.Container, islandIndex: number, delay: number, correct: boolean): void {
+    this.runIslandVoyage({
+      ship,
+      homeX: ship.x,
+      homeY: ship.y,
+      islandIndex,
+      delay,
+      sailMs: 3000,
+      plunderMs: correct ? 1800 : 700,
+      correct,
+    });
+  }
+
+  private spawnSailWake(x: number, y: number): void {
+    const foam = this.add.ellipse(x - 18, y, 22, 10, 0xe8f7ff, 0.55).setDepth(4);
+    this.tweens.add({
+      targets: foam,
+      x: foam.x - 28,
+      scaleX: 1.6,
+      scaleY: 0.55,
+      alpha: 0,
+      duration: 420,
+      ease: "Sine.easeOut",
+      onComplete: () => foam.destroy(),
     });
   }
 
@@ -890,18 +1576,32 @@ export class ArcadeGameplayScene extends Phaser.Scene {
 
   private playPoseidon(playerId?: string): void {
     this.showEventCard("POSEIDON'S RESCUE", "The sea god refuses to let the trailing fleet sink.");
-    const wave = this.add.rectangle(500, 520, 1200, 150, 0x57d6ef, 0.72).setAngle(-5);
+    const wave = this.add.rectangle(500, 520, 1200, 150, 0x57d6ef, 0.55).setAngle(-5);
     wave.setStrokeStyle(10, 0xc9f8ff, 0.9);
     this.tweens.add({ targets: wave, y: 260, scaleY: 1.8, alpha: 0, duration: 1800, ease: "Sine.easeOut", onComplete: () => wave.destroy() });
-    const god = this.add.container(500, 610);
-    const body = this.add.ellipse(0, 0, 150, 230, 0x66cfe7, 0.95).setStrokeStyle(8, 0x173a5c);
-    const head = this.add.circle(0, -125, 52, 0xe7c18f, 1).setStrokeStyle(7, 0x173a5c);
-    const trident = this.add.graphics();
-    trident.lineStyle(10, GOLD, 1);
-    trident.lineBetween(80, -220, 80, 95);
-    trident.lineBetween(50, -200, 110, -200);
-    god.add([body, head, trident]);
-    this.tweens.add({ targets: god, y: 375, duration: 650, ease: "Back.easeOut", yoyo: true, hold: 900, onComplete: () => god.destroy() });
+    if (this.textures.exists(VOYAGE.poseidonRise.key)) {
+      this.ensureAnim("voyage-poseidon-rise", VOYAGE.poseidonRise.key, 8, 8, 0);
+      const rise = this.add.sprite(500, 360, VOYAGE.poseidonRise.key, "f0").setDisplaySize(280, 320).setDepth(280);
+      rise.play("voyage-poseidon-rise");
+      this.tweens.add({
+        targets: rise,
+        y: 300,
+        duration: 700,
+        ease: "Back.easeOut",
+        hold: 900,
+        yoyo: true,
+        onComplete: () => rise.destroy(),
+      });
+    } else if (this.textures.exists(VOYAGE.poseidon.key)) {
+      const god = this.add.image(500, 620, VOYAGE.poseidon.key).setDisplaySize(260, 300).setDepth(280);
+      this.tweens.add({ targets: god, y: 340, duration: 650, ease: "Back.easeOut", yoyo: true, hold: 900, onComplete: () => god.destroy() });
+    } else {
+      const god = this.add.container(500, 610);
+      const body = this.add.ellipse(0, 0, 150, 230, 0x66cfe7, 0.95).setStrokeStyle(8, 0x173a5c);
+      const head = this.add.circle(0, -125, 52, 0xe7c18f, 1).setStrokeStyle(7, 0x173a5c);
+      god.add([body, head]);
+      this.tweens.add({ targets: god, y: 375, duration: 650, ease: "Back.easeOut", yoyo: true, hold: 900, onComplete: () => god.destroy() });
+    }
     const rescued = playerId ? this.ships.get(playerId) : undefined;
     if (rescued) {
       const correctIndex = this.snapshot.game?.arcadeReveal?.correctIndex ?? 0;
@@ -931,18 +1631,45 @@ export class ArcadeGameplayScene extends Phaser.Scene {
 
   private playSharks(): void {
     this.showEventCard("SHARK ATTACK", "The returning treasure fleet draws hungry company.");
-    for (let i = 0; i < 7; i += 1) {
-      const fin = this.add.triangle(-80 - i * 75, 440 + (i % 3) * 46, 0, 40, 35, 0, 70, 40, 0x35556b, 1);
-      fin.setStrokeStyle(4, 0x17283a);
+    if (this.textures.exists(VOYAGE.sharkAttack.key)) {
+      this.ensureAnim("voyage-shark-attack", VOYAGE.sharkAttack.key, 8, 10, -1);
+      for (let i = 0; i < 3; i += 1) {
+        const pack = this.add.sprite(-120 - i * 160, 430 + (i % 2) * 40, VOYAGE.sharkAttack.key, "f0")
+          .setDisplaySize(220, 160)
+          .setDepth(270);
+        pack.play("voyage-shark-attack");
+        this.tweens.add({
+          targets: pack,
+          x: 1200,
+          duration: 1700 + i * 120,
+          delay: i * 90,
+          ease: "Sine.easeInOut",
+          onComplete: () => pack.destroy(),
+        });
+      }
+    } else if (this.textures.exists(VOYAGE.shark.key)) {
+      const pack = this.add.image(-160, 450, VOYAGE.shark.key).setDisplaySize(280, 200).setDepth(270);
       this.tweens.add({
-        targets: fin,
-        x: 1120 + i * 20,
-        y: fin.y + Math.sin(i) * 70,
-        duration: 1550 + i * 90,
-        delay: i * 80,
+        targets: pack,
+        x: 1200,
+        duration: 1800,
         ease: "Sine.easeInOut",
-        onComplete: () => fin.destroy(),
+        onComplete: () => pack.destroy(),
       });
+    } else {
+      for (let i = 0; i < 7; i += 1) {
+        const fin = this.add.triangle(-80 - i * 75, 440 + (i % 3) * 46, 0, 40, 35, 0, 70, 40, 0x35556b, 1);
+        fin.setStrokeStyle(4, 0x17283a);
+        this.tweens.add({
+          targets: fin,
+          x: 1120 + i * 20,
+          y: fin.y + Math.sin(i) * 70,
+          duration: 1550 + i * 90,
+          delay: i * 80,
+          ease: "Sine.easeInOut",
+          onComplete: () => fin.destroy(),
+        });
+      }
     }
     this.time.delayedCall(900, () => {
       this.cameras.main.shake(340, 0.008);
@@ -1015,18 +1742,17 @@ export class ArcadeGameplayScene extends Phaser.Scene {
         if (fired.powerUpId === "cannonball" || fired.powerUpId === "cannonballBarrage") {
           this.fireCannon(source.x, source.y, target.x, target.y);
         } else if (fired.powerUpId === "hook") {
-          const rope = this.add.line(0, 0, source.x, source.y, target.x, target.y, 0xd4c299, 1).setOrigin(0);
-          rope.setLineWidth(8);
-          this.tweens.add({ targets: rope, alpha: 0, duration: 850, onComplete: () => rope.destroy() });
+          this.flyFxProp(FX_INDEX.hook, source.x, source.y - 20, target.x, target.y);
         } else if (fired.powerUpId === "parrot") {
-          const parrot = this.add.circle(source.x, source.y - 45, 14, 0x40c75a, 1).setStrokeStyle(4, INK);
-          this.tweens.add({ targets: parrot, x: target.x, y: target.y - 70, duration: 700, yoyo: true, hold: 350, onComplete: () => parrot.destroy() });
+          this.flyFxProp(FX_INDEX.parrot, source.x, source.y - 40, target.x, target.y - 70);
         } else if (fired.powerUpId === "barnacle" || fired.powerUpId === "barnacleInfestation") {
-          const net = this.add.grid(source.x, source.y - 25, 70, 70, 12, 12, 0x7fa98a, 0.32, 0xd6e2bc, 0.9);
-          this.tweens.add({ targets: net, x: target.x, y: target.y, angle: 240, scale: 1.35, duration: 650, onComplete: () => net.destroy() });
+          this.flyFxProp(FX_INDEX.net, source.x, source.y - 20, target.x, target.y);
         } else if (fired.powerUpId === "whiteFlag") {
-          const flag = this.add.rectangle(target.x, target.y - 80, 48, 32, 0xffffff, 1).setStrokeStyle(4, INK);
-          this.tweens.add({ targets: flag, y: "-=24", duration: 450 });
+          this.flyFxProp(FX_INDEX.whiteFlag, target.x, target.y - 40, target.x, target.y - 80);
+        } else if (fired.powerUpId === "eyepatch") {
+          this.flyFxProp(FX_INDEX.eyepatch, target.x, target.y - 20, target.x, target.y - 70);
+        } else if (fired.powerUpId === "rumRush") {
+          this.flyFxProp(FX_INDEX.rum, target.x, target.y, target.x, target.y - 40);
         } else {
           const aura = this.add.circle(target.x, target.y, 48, this.itemColor(fired.powerUpId), 0.2).setStrokeStyle(5, this.itemColor(fired.powerUpId), 0.9);
           this.tweens.add({ targets: aura, scale: 2.2, alpha: 0, duration: 900, onComplete: () => aura.destroy() });
@@ -1059,69 +1785,86 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   // Drawing helpers
   // ---------------------------------------------------------------------------
 
-  private createShip(player: PublicPlayer, x: number, y: number, scale: number): Phaser.GameObjects.Container {
+  private createShip(
+    player: PublicPlayer,
+    x: number,
+    y: number,
+    scale: number,
+    leaderLook = false,
+  ): Phaser.GameObjects.Container {
     const color = PLAYER_COLORS[(player.rank - 1) % PLAYER_COLORS.length] ?? PLAYER_COLORS[0]!;
-    const captain = this.snapshot.game?.arcade?.leaderId === player.id;
+    const captain = leaderLook || this.snapshot.game?.arcade?.leaderId === player.id;
+    const mine = player.id === this.snapshot.playerId;
     const root = this.add.container(x, y).setScale(scale);
-    const hull = this.add.graphics();
-    hull.fillStyle(0x754127, 1);
-    hull.lineStyle(7, INK, 1);
-    hull.beginPath();
-    hull.moveTo(-94, 18);
-    hull.lineTo(96, 18);
-    hull.lineTo(70, 68);
-    hull.lineTo(-64, 68);
-    hull.closePath();
-    hull.fillPath();
-    hull.strokePath();
-    hull.fillStyle(color, 1);
-    hull.fillRect(-83, 25, 160, 12);
-    hull.lineStyle(6, INK, 1);
-    hull.lineBetween(0, 18, 0, -98);
-    hull.fillStyle(captain ? GOLD : 0xf5e8c8, 1);
-    hull.beginPath();
-    hull.moveTo(4, -91);
-    hull.lineTo(82, -67);
-    hull.lineTo(70, -14);
-    hull.lineTo(4, 3);
-    hull.closePath();
-    hull.fillPath();
-    hull.strokePath();
-    const nameplate = this.add.rectangle(0, 47, 112, 25, 0x2d1c16, 0.94).setStrokeStyle(3, captain ? GOLD : 0xd4a45b);
-    const name = this.add.text(0, 47, player.nickname, {
-      fontFamily: "Nunito",
-      fontStyle: "900",
-      fontSize: "15px",
-      color: "#fff0c4",
-    }).setOrigin(0.5);
-    root.add([hull, nameplate, name]);
-    if (captain) this.drawCrownForContainer(root, 0, -116);
-    if (player.streak >= 2) {
-      const flame = this.add.circle(-72, -42, 12 + Math.min(12, player.streak * 2), 0xff7b3f, 0.9).setStrokeStyle(3, 0xffd45f);
-      root.add(flame);
-      this.tweens.add({ targets: flame, scaleY: 1.35, alpha: 0.65, duration: 240, yoyo: true, repeat: -1 });
+    root.setData("homeX", x);
+    root.setData("homeY", y);
+
+    if (this.textures.exists(VOYAGE.scouts.key)) {
+      this.ensureSheetFrames(VOYAGE.scouts.key, VOYAGE.scouts.cols, VOYAGE.scouts.rows);
+      const shipIndex = captain ? 6 + (player.rank % 2) : (player.rank - 1) % 6;
+      const hullArt = this.add
+        .image(0, -4, VOYAGE.scouts.key, `f${shipIndex}`)
+        .setDisplaySize(captain ? 172 : 140, captain ? 128 : 104);
+      if (captain) hullArt.setTint(0xffe39a);
+      else if (mine) hullArt.setTint(0xfff8e8);
+      root.add(hullArt);
+      root.setData("hullSprite", hullArt);
+    } else if (this.textures.exists(VOYAGE.ships.key)) {
+      this.ensureSheetFrames(VOYAGE.ships.key, VOYAGE.ships.cols, VOYAGE.ships.rows);
+      const shipIndex = captain ? 8 : (player.rank - 1) % 8;
+      const hullArt = this.add
+        .image(0, -6, VOYAGE.ships.key, `f${shipIndex}`)
+        .setDisplaySize(160, 120);
+      if (captain) hullArt.setTint(0xffe39a);
+      root.add(hullArt);
+      root.setData("hullSprite", hullArt);
+    } else {
+      const hull = this.add.graphics();
+      hull.fillStyle(0x754127, 1);
+      hull.lineStyle(7, INK, 1);
+      hull.beginPath();
+      hull.moveTo(-94, 18);
+      hull.lineTo(96, 18);
+      hull.lineTo(70, 68);
+      hull.lineTo(-64, 68);
+      hull.closePath();
+      hull.fillPath();
+      hull.strokePath();
+      hull.fillStyle(color, 1);
+      hull.fillRect(-83, 25, 160, 12);
+      hull.lineStyle(6, INK, 1);
+      hull.lineBetween(0, 18, 0, -98);
+      hull.fillStyle(captain ? GOLD : 0xf5e8c8, 1);
+      hull.beginPath();
+      hull.moveTo(4, -91);
+      hull.lineTo(82, -67);
+      hull.lineTo(70, -14);
+      hull.lineTo(4, 3);
+      hull.closePath();
+      hull.fillPath();
+      hull.strokePath();
+      root.add(hull);
     }
-    player.powerUpIds.slice(0, 3).forEach((itemId, index) => {
-      const badge = this.add.circle(58 + index * 25, -78, 12, 0x162b42, 0.95).setStrokeStyle(2, GOLD);
-      const label = this.add.text(58 + index * 25, -78, this.shortItemName(itemId).slice(0, 1), {
+    // Monogram only on the hull plaque — no crown, no selector ring.
+    const mark = (player.monogram || player.nickname.slice(0, 3)).toUpperCase().slice(0, 3);
+    const mono = this.add
+      .text(0, 10, mark, {
         fontFamily: "Lilita One",
-        fontSize: "12px",
-        color: "#ffe484",
-      }).setOrigin(0.5);
-      root.add([badge, label]);
+        fontSize: captain ? "16px" : "14px",
+        color: mine ? "#fff8d6" : "#3a2410",
+        stroke: mine ? "#1a120c" : "#f3e2b0",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5);
+    root.add(mono);
+    this.tweens.add({
+      targets: root,
+      angle: { from: -1.8, to: 1.8 },
+      duration: 2300 + player.rank * 110,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
     });
-    player.activePowerUpEffects.forEach((itemId, index) => {
-      const marker = this.add.text(-84 + index * 34, -75, this.shortItemName(itemId).slice(0, 3), {
-        fontFamily: "Nunito",
-        fontStyle: "900",
-        fontSize: "10px",
-        color: "#fff8dc",
-        backgroundColor: "#a13a2f",
-        padding: { x: 4, y: 2 },
-      });
-      root.add(marker);
-    });
-    this.tweens.add({ targets: root, y: y - 6, duration: 1500 + player.rank * 90, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     return root;
   }
 
@@ -1140,9 +1883,14 @@ export class ArcadeGameplayScene extends Phaser.Scene {
       wordWrap: { width: width - 18 },
     }).setOrigin(0.5);
     root.add([shadow, face, gloss, text]);
+    root.setSize(width, height);
+    root.setInteractive(
+      new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
+      Phaser.Geom.Rectangle.Contains,
+    );
     root.on("pointerdown", () => root.setScale(0.95));
     root.on("pointerup", () => root.setScale(1));
-    root.setSize(width, height);
+    root.on("pointerout", () => root.setScale(1));
     return root;
   }
 
@@ -1159,6 +1907,7 @@ export class ArcadeGameplayScene extends Phaser.Scene {
   }
 
   private coinStream(fromX: number, fromY: number, toX: number, toY: number): void {
+    this.playSheetBurst(VOYAGE.coins.key, "voyage-coins", 8, 14, fromX, fromY, 120, 120);
     for (let i = 0; i < 9; i += 1) {
       const coin = this.add.image(fromX, fromY, "coin").setDisplaySize(24, 24);
       this.tweens.add({
@@ -1275,6 +2024,134 @@ export class ArcadeGameplayScene extends Phaser.Scene {
       if (word.length <= 2) return word;
       return `${word[0]}${"•".repeat(Math.max(1, word.length - 2))}${word[word.length - 1]}`;
     }).join(" ");
+  }
+
+  private sliceVoyageSheets(): void {
+    const sheets: Array<{ key: string; cols: number; rows: number }> = [
+      VOYAGE.islands,
+      VOYAGE.biomes,
+      VOYAGE.ships,
+      VOYAGE.scouts,
+      VOYAGE.potDrain,
+      VOYAGE.pirates,
+      VOYAGE.plunderBiomes,
+      VOYAGE.lootParticles,
+      VOYAGE.smashFx,
+      VOYAGE.wrongReact,
+      VOYAGE.avatars,
+      VOYAGE.items,
+      VOYAGE.fx,
+      VOYAGE.chest,
+      VOYAGE.shipIdle,
+      VOYAGE.shipSail,
+      VOYAGE.shipSailSmooth,
+      VOYAGE.shipCheer,
+      VOYAGE.shipWrong,
+      VOYAGE.waves,
+      VOYAGE.coins,
+      VOYAGE.poseidonRise,
+      VOYAGE.sharkAttack,
+      VOYAGE.treasureDrain,
+      VOYAGE.flag,
+      VOYAGE.lockButton,
+    ];
+    for (const sheet of sheets) {
+      this.ensureSheetFrames(sheet.key, sheet.cols, sheet.rows);
+    }
+  }
+
+  private ensureSheetFrames(key: string, cols: number, rows: number): void {
+    if (!this.textures.exists(key)) return;
+    const tex = this.textures.get(key);
+    const source = tex.getSourceImage() as HTMLImageElement;
+    const width = source.naturalWidth || source.width;
+    const height = source.naturalHeight || source.height;
+    if (!width || !height) return;
+    const frameWidth = Math.floor(width / cols);
+    const frameHeight = Math.floor(height / rows);
+    const stamp = `${cols}x${rows}:${width}x${height}`;
+    if (tex.has("f0") && this.sheetSliceStamp.get(key) === stamp) return;
+    for (let i = 0; i < cols * rows; i += 1) {
+      if (tex.has(`f${i}`)) tex.remove(`f${i}`);
+    }
+    for (let i = 0; i < cols * rows; i += 1) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      tex.add(`f${i}`, 0, col * frameWidth, row * frameHeight, frameWidth, frameHeight);
+    }
+    this.sheetSliceStamp.set(key, stamp);
+  }
+
+  private ensureAnim(animKey: string, textureKey: string, frameCount: number, frameRate: number, repeat: number): void {
+    if (!this.textures.exists(textureKey) || this.anims.exists(animKey)) return;
+    this.anims.create({
+      key: animKey,
+      frames: Array.from({ length: frameCount }, (_, index) => ({ key: textureKey, frame: `f${index}` })),
+      frameRate,
+      repeat,
+    });
+  }
+
+  private spawnAmbientWaves(): void {
+    if (!this.textures.exists(VOYAGE.waves.key)) return;
+    this.ensureAnim("voyage-wave-crest", VOYAGE.waves.key, 4, 5, -1);
+    for (let i = 0; i < 5; i += 1) {
+      const wave = this.add.sprite(140 + i * 180, 500 + (i % 2) * 36, VOYAGE.waves.key, "f0")
+        .setDisplaySize(150, 72)
+        .setAlpha(0.5)
+        .setDepth(-0.4);
+      wave.play("voyage-wave-crest");
+      this.tweens.add({
+        targets: wave,
+        x: wave.x + (i % 2 ? 40 : -40),
+        duration: 3200 + i * 200,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    }
+  }
+
+  private spawnAmbientFlag(x: number, y: number): void {
+    if (!this.textures.exists(VOYAGE.flag.key)) return;
+    this.ensureAnim("voyage-flag", VOYAGE.flag.key, 8, 8, -1);
+    const flag = this.add.sprite(x, y, VOYAGE.flag.key, "f0").setDisplaySize(70, 90).setDepth(5);
+    flag.play("voyage-flag");
+  }
+
+  private playSheetBurst(
+    textureKey: string,
+    animKey: string,
+    frames: number,
+    frameRate: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): void {
+    if (!this.textures.exists(textureKey)) return;
+    this.ensureAnim(animKey, textureKey, frames, frameRate, 0);
+    const sprite = this.add.sprite(x, y, textureKey, "f0").setDisplaySize(width, height).setDepth(260);
+    sprite.play(animKey);
+    sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => sprite.destroy());
+  }
+
+  private flyFxProp(frameIndex: number, fromX: number, fromY: number, toX: number, toY: number): void {
+    if (!this.textures.exists(VOYAGE.fx.key)) return;
+    const prop = this.add.image(fromX, fromY, VOYAGE.fx.key);
+    this.cropGridImage(prop, VOYAGE.fx.cols, VOYAGE.fx.rows, frameIndex);
+    prop.setDisplaySize(64, 64).setDepth(250);
+    this.tweens.add({
+      targets: prop,
+      x: toX,
+      y: toY,
+      angle: 220,
+      duration: 700,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.tweens.add({ targets: prop, alpha: 0, scale: 1.4, duration: 220, onComplete: () => prop.destroy() });
+      },
+    });
   }
 
   private generateFallbackTextures(): void {

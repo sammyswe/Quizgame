@@ -10,9 +10,10 @@ export const ARCADE = {
   /** A special event follows every N regular questions. */
   EVENT_EVERY: 10,
 
-  // --- Decaying question pot (answer fast = earn more) ---
+  // --- Decaying question pot (time pressure; unanswered at 0 = no score) ---
   POT_MAX: 100,
-  POT_MIN: 30,
+  /** LOCKED: pot drains to zero; timeout with no lock earns nothing. */
+  POT_MIN: 0,
 
   // --- Streaks ---
   STREAK_BONUS_PER: 10, // +10 per streak level from streak 2 upward

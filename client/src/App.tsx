@@ -24,75 +24,87 @@ export default function App() {
 
   const inGame =
     game && game.phase !== "lobby" && game.phase !== "setup" && game.phase !== "winner";
-  // Hold one Phaser canvas for the whole block so Q2+ never remounts to a blank blue screen.
-  const holdPhaser =
+  /** Phaser owns question + reveal + the board between them — never remount mid-block. */
+  const phaserLive =
     game?.phase === "question" || game?.phase === "reveal" || game?.phase === "leaderboard";
-  const showPhaserCanvas = game?.phase === "question" || game?.phase === "reveal";
+  const isRoundIntro = game?.phase === "round_intro";
+  const ownsShellBg =
+    !roomCode ||
+    !game ||
+    game.phase === "lobby" ||
+    game.phase === "setup" ||
+    isRoundIntro;
 
-  let screen: React.ReactNode;
-  let screenKey: string;
+  let overlay: React.ReactNode = null;
+  let overlayKey = "none";
   if (!roomCode || !game) {
-    screen = <LandingScreen />;
-    screenKey = "landing";
-  } else if (holdPhaser) {
-    screen = (
-      <Suspense fallback={<div className="fixed inset-0 bg-[#153b5b]" />}>
-        <div className="relative min-h-full">
-          <div className={showPhaserCanvas ? "contents" : "invisible pointer-events-none fixed inset-0"}>
-            <GameplayShell />
-          </div>
-          {game.phase === "leaderboard" && (
-            <div className="relative z-20 min-h-full">
-              <LeaderboardScreen />
-            </div>
-          )}
-        </div>
-      </Suspense>
-    );
-    screenKey = "voyage-runtime";
+    overlay = <LandingScreen />;
+    overlayKey = "landing";
   } else {
     switch (game.phase) {
       case "lobby":
       case "setup":
-        screen = <LobbyScreen />;
-        screenKey = "lobby";
+        overlay = <LobbyScreen />;
+        overlayKey = "lobby";
         break;
       case "round_intro":
-        screen = <RoundIntroScreen />;
-        screenKey = `intro-${game.arcade?.roundNumber ?? 0}`;
+        overlay = <RoundIntroScreen />;
+        overlayKey = `intro-${game.arcade?.roundNumber ?? 0}`;
+        break;
+      case "question":
+      case "reveal":
+        overlay = null;
+        overlayKey = "phaser-clear";
+        break;
+      case "leaderboard":
+        overlay = <LeaderboardScreen />;
+        overlayKey = `board-${game.arcade?.roundNumber ?? 0}`;
         break;
       case "winner":
-        screen = <WinnerScreen />;
-        screenKey = "winner";
+        overlay = <WinnerScreen />;
+        overlayKey = "winner";
         break;
       default:
-        screen = <LandingScreen />;
-        screenKey = "landing";
+        overlay = <LandingScreen />;
+        overlayKey = "landing";
     }
   }
 
   return (
-    <div className="relative min-h-full">
-      {!showPhaserCanvas && <Background />}
-      <div className="relative z-10 min-h-full">
-        {inGame && !showPhaserCanvas && <Hud />}
+    <div className="relative min-h-dvh">
+      {!phaserLive && !ownsShellBg && <Background />}
+
+      {/* Stable Phaser host — tree shape never changes while phaserLive. */}
+      {phaserLive && (
+        <div className="fixed inset-0 z-0">
+          <Suspense fallback={<div className="fixed inset-0 bg-[#153b5b]" />}>
+            <GameplayShell />
+          </Suspense>
+        </div>
+      )}
+
+      <div className={`relative z-10 min-h-dvh ${phaserLive && !overlay ? "pointer-events-none" : ""}`}>
+        {inGame && !phaserLive && !isRoundIntro && <Hud />}
         <AnimatePresence mode="wait">
-          <motion.div
-            key={screenKey}
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -24, scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 260, damping: 24 }}
-            className="min-h-full"
-          >
-            {screen}
-          </motion.div>
+          {overlay ? (
+            <motion.div
+              key={overlayKey}
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -24, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 260, damping: 24 }}
+              className={`min-h-dvh ${game?.phase === "leaderboard" ? "bg-[#0b2438]/92 backdrop-blur-sm" : ""}`}
+            >
+              {overlay}
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
-      {game && !showPhaserCanvas && <ItemDrawer />}
+
+      {game && !phaserLive && !isRoundIntro && <ItemDrawer />}
       <ChestModal />
       <Toasts />
-      <MuteButton />
+      {!phaserLive && <MuteButton />}
       <DebugPanel />
     </div>
   );

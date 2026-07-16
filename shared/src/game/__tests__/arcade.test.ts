@@ -32,6 +32,7 @@ function resolve(
     correctIndex: 0,
     questionStartedAt: START,
     questionDurationMs: DUR,
+    islandLoot: ["coins", "rubies", "emeralds", "pearls"],
     players,
     swordFights: [],
     poseidonUsed: new Set(),
@@ -41,7 +42,7 @@ function resolve(
 }
 
 describe("decaying pot", () => {
-  it("pays POT_MAX for an instant answer and POT_MIN at the buzzer", () => {
+  it("drains from POT_MAX to POT_MIN (0) at the buzzer", () => {
     expect(potAt(START, START, DUR)).toBe(ARCADE.POT_MAX);
     expect(potAt(START + DUR, START, DUR)).toBe(ARCADE.POT_MIN);
   });
@@ -51,11 +52,18 @@ describe("decaying pot", () => {
     expect(mid).toBe(Math.round((ARCADE.POT_MAX + ARCADE.POT_MIN) / 2));
   });
 
-  it("faster answers earn more gold", () => {
+  it("records lower potAtLock for slower locks (score uses island loot)", () => {
     const fast = player({ id: "fast", choiceIndex: 0, lockedAt: START + 1000 });
     const slow = player({ id: "slow", choiceIndex: 0, lockedAt: START + 18_000 });
     const res = resolve([fast, slow, player({ id: "third", choiceIndex: 1 })]);
-    expect(res.scoreDelta.fast!).toBeGreaterThan(res.scoreDelta.slow!);
+    expect(res.results.fast!.potAtLock).toBeGreaterThan(res.results.slow!.potAtLock);
+    expect(res.scoreDelta.fast).toBe(res.scoreDelta.slow);
+  });
+
+  it("awards mystery loot points on a correct answer", () => {
+    const p = player({ id: "crew", choiceIndex: 0, lockedAt: START });
+    const res = resolve([p], { islandLoot: ["idol", "coins", "coins", "coins"] });
+    expect(res.scoreDelta.crew).toBe(50);
   });
 });
 
@@ -116,7 +124,7 @@ describe("mutiny", () => {
     expect(res.scoreDelta.m1 ?? 0).toBe(0);
     expect(res.scoreDelta.m2 ?? 0).toBe(0);
     expect(res.scoreDelta.lead ?? 0).toBe(0);
-    expect(res.scoreDelta.crew).toBe(ARCADE.POT_MAX);
+    expect(res.scoreDelta.crew).toBe(1); // coins loot on correct island
   });
 
   it("a lone mutineer is marooned, win or lose", () => {
@@ -237,7 +245,7 @@ describe("random sea events", () => {
     expect(dolphin).toBeDefined();
     // everyone lost a slice
     for (const p of players) {
-      expect(res.scoreDelta[p.id]!).toBeLessThan(ARCADE.POT_MAX + ARCADE.STREAK_BONUS_CAP);
+      expect(res.scoreDelta[p.id]!).toBeLessThan(50 + ARCADE.STREAK_BONUS_CAP);
     }
   });
 

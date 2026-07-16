@@ -1,0 +1,24 @@
+{
+  "pack": "shell-ui",
+  "approvedAt": "2026-07-14",
+  "source": "design/concept/approved/shell/",
+  "processor": "scripts/process_shell_assets.py",
+  "model": "nano_banana_pro",
+  "notes": "Readable copy is HTML overlay. Short sheet loops are temporary; prefer video packs for smooth motion next.",
+  "assets": [
+    { "id": "bg-title-hero", "runtime": "bg-title-hero.webp", "use": "Landing full-bleed" },
+    { "id": "bg-lobby-harbour", "runtime": "bg-lobby-harbour.webp", "use": "Lobby full-bleed" },
+    { "id": "mark-treasure-trap", "runtime": "mark-treasure-trap.webp", "use": "Title logo mark" },
+    { "id": "sheet-title-cta", "runtime": "sheet-title-cta.webp", "grid": "3x2", "use": "Start/Join plaques" },
+    { "id": "sheet-title-decor", "runtime": "sheet-title-decor.webp", "grid": "3x3", "use": "Title props" },
+    { "id": "sheet-title-fleet", "runtime": "sheet-title-fleet.webp", "grid": "4x2", "use": "Hero fleet silhouettes" },
+    { "id": "sheet-lobby-panels", "runtime": "sheet-lobby-panels.webp", "grid": "2x3", "use": "Lobby wood frames" },
+    { "id": "sheet-set-sail-cta", "runtime": "sheet-set-sail-cta.webp", "grid": "2x3", "use": "SET SAIL / waiting" },
+    { "id": "sheet-crew-slots", "runtime": "sheet-crew-slots.webp", "grid": "2x3", "use": "Crew cards" },
+    { "id": "sheet-lobby-icons", "runtime": "sheet-lobby-icons.webp", "grid": "4x2", "use": "Lobby icons" },
+    { "id": "sheet-avatar-rings", "runtime": "sheet-avatar-rings.webp", "grid": "2x2", "use": "Avatar selection rings" },
+    { "id": "anim-title-mascot", "runtime": "anim-title-mascot.webp", "grid": "4x2", "use": "Title mascot loop (temp)" },
+    { "id": "anim-title-chest", "runtime": "anim-title-chest.webp", "grid": "3x2", "use": "Title chest loop (temp)" },
+    { "id": "deco-sail-banner", "runtime": "deco-sail-banner.webp", "use": "Lobby section banners" }
+  ]
+}

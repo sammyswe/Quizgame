@@ -43,17 +43,11 @@ updated: 2026-07-14
 
 ## Next implementation slice
 
-1. **Blank Q2 fix shipped:** Phaser shell stays mounted through question/reveal/leaderboard
-   (`voyage-runtime` key). Scene ignores empty question payloads and rehydrates from
-   `GameEventBridge.current` on boot.
-2. **Plunder ceremony shipped (procedural + HF hook):**
-   `client/src/game/plunder/IslandPlunderCeremony.ts` plays arrive→plunder→return per island
-   theme (ruins/cave/port/temple). Optional HF overlays: texture keys
-   `plunder-<theme>-0..2` or `plunder-<theme>-video` under
-   `client/src/assets/higgsfield/plunder/`. Prompts:
-   `design/concept/PLUNDER_ANIMATION_PROMPTS.md`. Cloud Higgsfield token still expired —
-   generate those overlays from a local agent.
-3. Sprite sheets still queued in `design/SPRITE_SHEET_CHECKLIST.md`.
+1. **Voyage art is wired into live Phaser + lobby** (`client/src/assets/higgsfield/voyage/`).
+   Still sheets + motion packs integrated; owner may request redo packs next.
+2. Polish remaining gaps: audio banks, per-player ship colour matching idle anims,
+   chest private ceremony UI, reduced-motion paths for new bursts.
+3. Owner playtest: list animations that still feel weak / missing.
 4. Do **not** migrate off Phaser unless 3D/native becomes a product requirement.
 
 ## Do not regress
