@@ -11,3 +11,4 @@ playwright-report/
 test-results/
 .vite/
 package-lock.json
+.scratch/
