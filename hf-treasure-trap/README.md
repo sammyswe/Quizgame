@@ -14,17 +14,21 @@
 
 1. **Play vs Bot** or invite 2–4 captains
 2. Lobby ready → cast off
-3. **10** voyage questions — each on a unique sea scene; sail-off / enter between questions
-4. Bigger 16-direction ships with hull nameplates
-5. **LOCKED Loot Drop**: below-deck gold split (no ships) → loot-voyage fleet sail → Poseidon / sharks
-6. Winner → rematch
+3. **10** unique baked-island seas (`assets/voyage-v2/`) with authored water lanes
+4. Hero ships ~9% screen width, 16 facings, hull names (12 chars), commit travel ~1.1s
+5. After each question: sail **off the top** (~2s) → leaderboard 3s → next destination
+6. **LOCKED Loot Drop**: below-deck gold split (no ships) → loot-voyage fleet sail → Poseidon / sharks
+7. Winner → rematch
 
-## Direction (owner 2026-07-20)
+## Direction (owner 2026-07-20) — LOCKED
+
+See `design/VOYAGE_VISUAL_DIRECTION.md` + `design/COIN_MASTER_POLISH.md`.
 
 - Path B only — Phaser is not the forward architecture
-- Brawl Stars readability · Jackbox accessibility · Coin Master reward peaks
-- 2D runtime from 3D-look pre-rendered sprites
-- Target quality **8/10** before friend shares
+- References: **(1) Coin Master**, (2) Brawl Stars, (3) Clash Royale
+- Primary goal: **smoothness and polish** (warm tropical archipelago for all 10 questions)
+- Baked islands + predefined lanes — never muddy cutout composites on the voyage
+- Target: top-grossing glossy mobile; asset budget 500+ gens (`VOYAGE_ASSET_PACK_PLAN.md`)
 
 ## Redeploy
 

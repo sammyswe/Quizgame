@@ -93,11 +93,12 @@ const VENTURES = [
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 16000;
 const LOOT_MS = 40000;
-/** Answer + chest window; then ships home + scoreboard. */
-const REVEAL_HOLD_MS = 7000;
-const SCOREBOARD_MS = 2800;
-/** Sail-off / enter new scene beat between questions (client-driven, server hold). */
-const SCENE_TRAVEL_MS = 2400;
+/** Answer + chest window; then ships exit + scoreboard. */
+const REVEAL_HOLD_MS = 6500;
+/** Leaderboard hold after ships sail off the top (~3s). */
+const SCOREBOARD_MS = 3000;
+/** Ships sail off top shrinking into distance before leaderboard advances. */
+const SCENE_TRAVEL_MS = 2000;
 const VENTURE_REVEAL_MS = 5200;
 /** Poseidon: full-screen video + gold-saved summary. */
 const WILDCARD_MS = 9000;
@@ -370,21 +371,22 @@ function allReady(state) {
 
 function advanceFromReveal(state) {
   if (state.phase === "q_reveal") {
-    state.phase = "scoreboard";
-    state.phaseStartedAt = now();
-    state.deadlineAt = state.phaseStartedAt + SCOREBOARD_MS;
-  } else if (state.phase === "scoreboard") {
+    // 1) Ships sail off the TOP (~2s), then leaderboard
     const next = state.questionIndex + 1;
-    if (next >= QUESTIONS.length) startLootIntro(state);
-    else {
-      // Voyage to a new sea before the next question
-      state.phase = "scene_travel";
-      state.nextQuestionIndex = next;
-      state.phaseStartedAt = now();
-      state.deadlineAt = state.phaseStartedAt + SCENE_TRAVEL_MS;
-      state.reveal = null;
-    }
+    state.phase = "scene_travel";
+    state.nextQuestionIndex = next >= QUESTIONS.length ? null : next;
+    state.phaseStartedAt = now();
+    state.deadlineAt = state.phaseStartedAt + SCENE_TRAVEL_MS;
   } else if (state.phase === "scene_travel") {
+    if (state.nextQuestionIndex == null) {
+      startLootIntro(state);
+    } else {
+      state.phase = "scoreboard";
+      state.phaseStartedAt = now();
+      state.deadlineAt = state.phaseStartedAt + SCOREBOARD_MS;
+      state.reveal = state.reveal; // keep deltas for board
+    }
+  } else if (state.phase === "scoreboard") {
     startQuestion(state, state.nextQuestionIndex != null ? state.nextQuestionIndex : state.questionIndex + 1);
   } else if (state.phase === "loot_intro") {
     startLootAlloc(state);
@@ -662,7 +664,8 @@ export function viewFor(state, playerId) {
   let sceneIndex = state.questionIndex % QUESTIONS.length;
   let sceneKind = "voyage";
   if (state.phase === "scene_travel") {
-    sceneIndex = (state.nextQuestionIndex != null ? state.nextQuestionIndex : state.questionIndex + 1) % QUESTIONS.length;
+    // Keep current destination while ships sail off the TOP; next sea loads after scoreboard.
+    sceneIndex = state.questionIndex % QUESTIONS.length;
     sceneKind = "travel";
   } else if (state.phase === "loot_intro" || state.phase === "loot") {
     sceneKind = "below_deck";
