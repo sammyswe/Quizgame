@@ -93,8 +93,12 @@ const VENTURES = [
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 16000;
 const LOOT_MS = 40000;
-/** Answer + chest + return-to-middle window; then ships exit + scoreboard. */
-const REVEAL_HOLD_MS = 9000;
+/**
+ * Reveal hold: dock settle + ~2s island cutscene + return-to-middle,
+ * then scene_travel sail-away → full-screen scoreboard.
+ */
+const REVEAL_HOLD_MS = 5500;
+const ISLAND_CUTSCENE_MS = 2000;
 /** Leaderboard hold after ships sail off the top (~3s). */
 const SCOREBOARD_MS = 3000;
 /** Ships sail off top shrinking into distance before leaderboard advances. */
@@ -705,6 +709,7 @@ export function viewFor(state, playerId) {
     qMs: Q_MS,
     lootMs: LOOT_MS,
     scoreboardMs: SCOREBOARD_MS,
+    islandCutsceneMs: ISLAND_CUTSCENE_MS,
     step: STEP,
   };
 }

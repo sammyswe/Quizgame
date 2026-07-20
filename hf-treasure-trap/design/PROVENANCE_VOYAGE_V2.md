@@ -50,3 +50,14 @@ Manifest: `design/voyage-v2-islands-jobs.json`
 
 - `chest-open-empty.png` — dust/cobwebs/moths open chest (green-keyed). Job `10a45974-39de-40f5-8fe5-603cea89c45b`.
 - `ship-clean-0..3` — regenerated 16-dir sheets with neon green key; edge-flood cutout preserves green sails. Gold sheet regenerated (`909a7ae1-e627-495b-8123-e621ab13ee78`) after brown-bg reject.
+
+## Reveal cutscenes + biome SFX (2026-07-20 LOCKED)
+
+See `REVEAL_CUTSCENE.md`. Approach: full-scene Seedance clips from baked seas + live ships on island-box edges. Chest archived for quiz reveal.
+
+| Pack | Script | Manifest |
+| --- | --- | --- |
+| 40× reveal `SXX-L.mp4` | `scripts/gen-reveal-cutscenes.mjs` | `design/reveal-cutscene-jobs.json` |
+| 9× biome win SFX | `scripts/gen-biome-sfx.mjs` | `design/biome-sfx-jobs.json` |
+
+Model: `seedance1_5` (4s @ 9:16, played ~2× for ~2s beat), `mirelo_text_to_audio` for SFX.

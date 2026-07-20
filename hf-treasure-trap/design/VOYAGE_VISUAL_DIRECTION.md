@@ -73,9 +73,11 @@ Quality bar: **top-grossing glossy mobile**.
 
 ## UI
 
-- Question + answers in **bottom sheet**; ~**70% sea visible**.
-- Tap answer cards → ships sail automatically.
-- Correct island: glow, fireworks, treasure burst, cheering.
+- Question + answers in **bottom sheet**; ~**60% sea / 40% sheet**, no scroll.
+- Tap answer cards → ships sail automatically to **island box edges** (never onto land).
+- Correct answer: synced **~2s full-scene cutscene** (win + empty islands baked together),
+  live ships frozen on dock edges, then middle → sail away → full-screen leaderboard.
+  See `REVEAL_CUTSCENE.md`. Chest jackpot archived for this path.
 
 ## Top five polish killers (reject builds that ship these)
 

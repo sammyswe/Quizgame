@@ -1,0 +1,65 @@
+{
+  "palm": {
+    "id": "eab5070b-66cb-42af-b251-64313de12792",
+    "out": "assets/voyage-v2/sfx/win-palm.mp3",
+    "prompt": "Short happy tropical game sound effect, 1.5 seconds: bright steel-drum sparkle, soft bird chirp, warm cartoon celebration sting, no vocals, mobile game UI quality",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:15.775Z"
+  },
+  "volcano": {
+    "id": "f9e26188-6c52-4a68-8dcb-8b172aa4449b",
+    "out": "assets/voyage-v2/sfx/win-volcano.mp3",
+    "prompt": "Short happy volcano island game sound, 1.5 seconds: warm friendly rumble bloom then sparkling ember chimes, joyful cartoon celebration, no danger, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:16.241Z"
+  },
+  "temple": {
+    "id": "9e023362-5b32-4376-acd1-ded787b78034",
+    "out": "assets/voyage-v2/sfx/win-temple.mp3",
+    "prompt": "Short happy ancient temple game sound, 1.5 seconds: bright golden chimes ascending with a soft cheerful gong sparkle, cartoon adventure win sting, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:16.652Z"
+  },
+  "lighthouse": {
+    "id": "f8588e72-d5b6-4552-a660-64be1f43b79d",
+    "out": "assets/voyage-v2/sfx/win-lighthouse.mp3",
+    "prompt": "Short happy lighthouse game sound, 1.5 seconds: bright nautical bell then warm horn sparkle, cheerful maritime win sting, cartoon, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:17.479Z"
+  },
+  "skull": {
+    "id": "d61ecb0f-8c76-401b-adbd-bc53e01310f2",
+    "out": "assets/voyage-v2/sfx/win-skull.mp3",
+    "prompt": "Short happy cheeky skull-rock game sound, 1.5 seconds: playful bone rattle then pirate whistle sparkle, funny cute celebration, ages 9+, no scary, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:18.145Z"
+  },
+  "shipwreck": {
+    "id": "ff9c86cd-5cbf-4ef2-9c35-438bbcdbd0fa",
+    "out": "assets/voyage-v2/sfx/win-shipwreck.mp3",
+    "prompt": "Short happy shipwreck treasure game sound, 1.5 seconds: cheerful wood creak then coin jingle cascade, cartoon win sting, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:18.566Z"
+  },
+  "mangrove": {
+    "id": "1723e7ad-28f4-4510-bdae-2e90b28f8ec6",
+    "out": "assets/voyage-v2/sfx/win-mangrove.mp3",
+    "prompt": "Short happy mangrove island game sound, 1.5 seconds: cute frog plip chorus then bright water splash sparkle, joyful cartoon, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:19.075Z"
+  },
+  "crystal": {
+    "id": "17f0a854-3f16-44fe-b593-450f88a8e859",
+    "out": "assets/voyage-v2/sfx/win-crystal.mp3",
+    "prompt": "Short happy crystal island game sound, 1.5 seconds: crystalline glass chimes ascending rapidly with rainbow sparkle, magical win sting, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:55:19.796Z"
+  },
+  "iceberg": {
+    "id": "246fb382-b2c8-4a9c-afee-a3818c5cc3e3",
+    "out": "assets/voyage-v2/sfx/win-iceberg.mp3",
+    "prompt": "Short happy iceberg island game sound, 1.5 seconds: bright ice ting cascade then cool crystal sparkle, still warm cartoon joy, no vocals",
+    "model": "mirelo_text_to_audio",
+    "at": "2026-07-20T15:56:36.671Z"
+  }
+}

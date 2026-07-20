@@ -6,7 +6,7 @@ Owner rank #1 reference for feel (still Brawl Stars / Clash Royale for silhouett
 | --- | --- |
 | Instant juice on tap | ≤100ms squash + wake + sail snap + SFX + haptic on answer commit |
 | Clear currency / reward colour | Amber-gold for correct, treasure sparkle; never grey mud |
-| Anticipation then pop | Dock bump → flag → cheer / chest burst staged, not simultaneous mush |
+| Anticipation then pop | Dock bump → synced ~2s island cutscene (ships frozen on box edges) → middle → sail-away; chest archived on quiz reveal |
 | Readable over busy art | Bottom sheet for questions; sea stays ~70% visible; hull names not floating tags |
 | Bouncy reward particles | Confetti / coin / fireworks on correct island only |
 | Avoid endless non-skippable chains | Exit sail 2s + leaderboard 3s fixed; celebrations punchy |

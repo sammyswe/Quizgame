@@ -45,8 +45,10 @@
     display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
     background: linear-gradient(180deg, rgba(4,20,28,.72) 0%, rgba(4,20,28,0) 100%);
   }
-  .world-space { flex: 1; min-height: 0; pointer-events: none; position: relative; }
+  .world-space { flex: 1 1 60%; min-height: 0; pointer-events: none; position: relative; }
   .world-space.loot-active { pointer-events: auto; }
+  /* Hidden decode source — frames are painted onto #sea under live ships */
+  #revealClip { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   /* Tap-to-loot panel on the quiz sea */
   #worldFx {
     position: absolute; left: 50%; top: 42%;
@@ -124,15 +126,15 @@
   @keyframes tapPulse { 50% { transform: scale(1.06); filter: brightness(1.15); } }
   @keyframes fxIn { from { transform: translate(-50%, -50%) scale(.72); } to { transform: translate(-50%, -50%) scale(1); } }
   .quiz-sheet {
-    flex: 0 0 auto;
-    /* Keep sheet short so baked islands are NEVER covered by Q&A */
-    max-height: 28vh;
+    flex: 0 0 40%;
+    max-height: 40vh;
+    min-height: 0;
     background: linear-gradient(180deg, #164556 0%, var(--sheet-2) 100%);
     border-top: 3px solid var(--edge);
     box-shadow: 0 -14px 32px rgba(0,0,0,.5);
     padding: 8px 10px max(10px, env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 6px;
-    overflow: auto;
+    overflow: hidden; /* no scroll — 60/40 locked composition */
   }
   /* Full-screen leaderboard between rounds */
   body.phase-scoreboard #sea { filter: brightness(0.35) saturate(0.7); }
@@ -383,6 +385,7 @@
 <body>
 <div id="stage">
   <canvas id="sea"></canvas>
+  <video id="revealClip" playsinline muted preload="auto"></video>
   <div class="casino-flash" id="casino"></div>
   <div id="spectacle" aria-live="polite">
     <video class="cs-video" id="csVideo" playsinline muted></video>
@@ -473,6 +476,7 @@
       plaques: s.plaques,
       paths: s.paths,
       islandCenters: s.islandCenters,
+      islandBoxes: s.islandBoxes || null,
       biomes: s.biomes || [],
       channel: [0.30, 0.70],
       // 10 biome heroes — rotate which four appear on answer cards each scene
@@ -586,8 +590,27 @@
   let cutscene = null;
   /** On-sea tap-to-loot: { island, seat, progress, waitingForSail, active } */
   let islandLoot = null;
-  /** After chest: fleet is sailing back to mid-channel before sail-away. */
+  /** After reveal cutscene: fleet sails back to mid-channel before sail-away. */
   let fleetReturnPending = false;
+  /**
+   * Synced correct-island celebration (LOCKED — REVEAL_CUTSCENE.md).
+   * { sceneId, correctIndex, t0, animMs, stage: "wait"|"play"|"done", videoOk }
+   * Chest path archived — quiz reveal no longer opens worldFx.
+   */
+  let islandCelebrate = null;
+  const revealClipEl = document.getElementById("revealClip");
+  const BIOME_SFX = {
+    palm: "./assets/voyage-v2/sfx/win-palm.mp3",
+    volcano: "./assets/voyage-v2/sfx/win-volcano.mp3",
+    temple: "./assets/voyage-v2/sfx/win-temple.mp3",
+    lighthouse: "./assets/voyage-v2/sfx/win-lighthouse.mp3",
+    skull: "./assets/voyage-v2/sfx/win-skull.mp3",
+    shipwreck: "./assets/voyage-v2/sfx/win-shipwreck.mp3",
+    mangrove: "./assets/voyage-v2/sfx/win-mangrove.mp3",
+    crystal: "./assets/voyage-v2/sfx/win-crystal.mp3",
+    iceberg: "./assets/voyage-v2/sfx/win-iceberg.mp3",
+  };
+  const biomeAudioCache = {};
   /** Loot Drop wager fleet: ships sized by gold, sail only to picked island */
   let lootFleet = [];
   let fxParticles = [];
@@ -746,6 +769,43 @@
   }
   function sfxSlot() {
     beep(880 + Math.random() * 220, 0.04, "square", 0.035);
+  }
+  /** Procedural happy stings — unique contour per biome if MP3 missing. */
+  function sfxBiomeWinSynth(biome) {
+    const charts = {
+      palm: [523, 659, 784, 988],
+      volcano: [196, 392, 523, 784, 1046],
+      temple: [440, 554, 659, 880, 1108],
+      lighthouse: [330, 440, 554, 740],
+      skull: [294, 370, 440, 587, 740],
+      shipwreck: [349, 440, 523, 698, 880],
+      mangrove: [262, 330, 392, 523, 659],
+      crystal: [880, 1108, 1318, 1760],
+      iceberg: [740, 880, 988, 1174, 1480],
+    };
+    const notes = charts[biome] || charts.palm;
+    notes.forEach((f, i) => setTimeout(() => beep(f, 0.16 + (i % 2) * 0.04, i % 2 ? "triangle" : "square", 0.055), i * 85));
+  }
+  /** Happy biome-unique win sting for the correct island. */
+  function sfxBiomeWin(biome) {
+    const src = BIOME_SFX[biome] || BIOME_SFX.palm;
+    try {
+      let a = biomeAudioCache[biome];
+      if (!a) {
+        a = new Audio(src);
+        a.preload = "auto";
+        biomeAudioCache[biome] = a;
+      }
+      a.currentTime = 0;
+      a.volume = 0.85;
+      const p = a.play();
+      if (p && p.catch) p.catch(() => sfxBiomeWinSynth(biome));
+    } catch (_) {
+      sfxBiomeWinSynth(biome);
+    }
+  }
+  function revealClipPath(sceneId, letter) {
+    return `./assets/voyage-v2/reveal/${sceneId}-${letter}.mp4`;
   }
   function tickSlotReels() {
     if (!slotReelsEl) return;
@@ -1058,12 +1118,107 @@
     }, 2000);
   }
 
+  function startIslandCelebrate(correctIndex) {
+    const sc = currentScene();
+    const letter = LETTERS[correctIndex] || "A";
+    const biomes = sc.biomes || ["palm", "skull", "shipwreck", "lighthouse"];
+    const biome = biomes[correctIndex] || "palm";
+    const animMs = (lastState && lastState.view && lastState.view.islandCutsceneMs) || 2000;
+    islandCelebrate = {
+      sceneId: sc.id || `S${String(activeSceneIdx).padStart(2, "0")}`,
+      correctIndex,
+      letter,
+      biome,
+      t0: performance.now(),
+      animMs,
+      stage: "wait", // wait for local ship dock settle
+      videoOk: false,
+      _sfx: false,
+    };
+    // Prefetch clip — seamless plate swap when ready
+    if (revealClipEl) {
+      const src = revealClipPath(islandCelebrate.sceneId, letter);
+      revealClipEl.onloadeddata = () => {
+        if (!islandCelebrate) return;
+        islandCelebrate.videoOk = true;
+      };
+      revealClipEl.onerror = () => {
+        if (islandCelebrate) islandCelebrate.videoOk = false;
+      };
+      if (revealClipEl.src !== new URL(src, location.href).href) {
+        revealClipEl.src = src;
+        revealClipEl.load();
+      } else if (revealClipEl.readyState >= 2) {
+        islandCelebrate.videoOk = true;
+      }
+    }
+  }
+  function beginIslandCelebratePlay() {
+    if (!islandCelebrate || islandCelebrate.stage !== "wait") return;
+    islandCelebrate.stage = "play";
+    islandCelebrate.playT0 = performance.now();
+    // Freeze ships on dock edges — keep chosenIsland so they stay parked
+    if (revealClipEl && islandCelebrate.videoOk) {
+      try {
+        revealClipEl.currentTime = 0;
+        // Source clips are ~4s; play at 2× so the beat lands ~2s
+        revealClipEl.playbackRate = 2;
+        const p = revealClipEl.play();
+        if (p && p.catch) p.catch(() => { if (islandCelebrate) islandCelebrate.videoOk = false; });
+      } catch (_) {
+        islandCelebrate.videoOk = false;
+      }
+    }
+    if (!islandCelebrate._sfx) {
+      islandCelebrate._sfx = true;
+      sfxBiomeWin(islandCelebrate.biome);
+      haptic([18, 40, 24, 50]);
+    }
+  }
+  function endIslandCelebrate() {
+    if (!islandCelebrate) return;
+    islandCelebrate.stage = "done";
+    if (revealClipEl) {
+      try { revealClipEl.pause(); } catch (_) {}
+    }
+    islandCelebrate = null;
+    // Cutscene → ships sail back to middle → (server) sail away → leaderboard
+    for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+    sendFleetHome();
+    fleetReturnPending = true;
+  }
+  function tickIslandCelebrate(now) {
+    if (!islandCelebrate) return;
+    if (islandCelebrate.stage === "wait") {
+      // Wait until most ships are near docks, or timeout (~1.1s sail)
+      const players = (lastState && lastState.view && lastState.view.players) || [];
+      let ready = players.length === 0;
+      if (players.length) {
+        ready = players.every((_, seat) => {
+          const s = sailState[seat];
+          return !s || s.t >= 0.88 || (now - islandCelebrate.t0 > 1200);
+        });
+      } else if (now - islandCelebrate.t0 > 400) ready = true;
+      if (ready || now - islandCelebrate.t0 > 1400) beginIslandCelebratePlay();
+      return;
+    }
+    if (islandCelebrate.stage === "play") {
+      const u = (now - (islandCelebrate.playT0 || islandCelebrate.t0)) / islandCelebrate.animMs;
+      if (u >= 1) endIslandCelebrate();
+    }
+  }
+
   function startCutscene(kind, animMs, meta) {
     if (kind === "poseidon") {
       playPoseidonVideo(meta);
       return;
     }
+    if (kind === "islandCelebrate") {
+      startIslandCelebrate(meta && meta.correctIndex != null ? meta.correctIndex : 0);
+      return;
+    }
     if (kind === "plunder") {
+      // Archived for quiz reveal — still used by Loot Drop island payoffs
       const isl = meta && meta.island != null ? meta.island : 0;
       const seat = meta && meta.seat != null ? meta.seat : 0;
       if (meta && meta.empty) startEmptyChest(isl, seat);
@@ -1198,17 +1353,15 @@
       if (msg.view && prev !== msg.view.phase) {
         if (msg.view.phase === "q_reveal") {
           hitStopUntil = performance.now() + 60;
-          const mine = msg.view.reveal && msg.view.reveal.results && msg.view.reveal.results[msg.you];
-          const mySeat = (msg.view.players || []).findIndex((p) => p.id === msg.you);
-          if (mine && mine.correct) {
-            startCutscene("plunder", 4200, { island: msg.view.reveal.correctIndex, seat: Math.max(0, mySeat) });
-          } else if (mine && !mine.correct && mine.index != null) {
-            startCutscene("plunder", 4200, { island: mine.index, seat: Math.max(0, mySeat), empty: true });
+          // Everyone watches the SAME correct-island cutscene (ships may sit at wrong edges)
+          const correct = msg.view.reveal && msg.view.reveal.correctIndex;
+          if (correct != null) {
+            startCutscene("islandCelebrate", 2000, { correctIndex: correct });
           }
         }
         if (msg.view.phase === "scoreboard") {
-          // Never kill an active chest — return-to-middle is owned by endIslandLoot
-          if (!islandLoot && !fleetReturnPending) {
+          // Return-to-middle is owned by endIslandCelebrate (or chest archive path)
+          if (!islandCelebrate && !islandLoot && !fleetReturnPending) {
             for (let i = 0; i < 4; i++) chosenIsland[i] = null;
             sendFleetHome();
             fleetReturnPending = true;
@@ -1360,10 +1513,17 @@
     const hi = W * (s.channel ? s.channel[1] : 0.70);
     return Math.max(lo, Math.min(hi, x));
   }
-  /** Max Y fraction for islands/plaques so the Q&A sheet never covers them. */
-  const ISLAND_SAFE_Y = 0.56;
+  /** Max Y fraction for islands/plaques so the 40% Q&A sheet never covers them. */
+  const ISLAND_SAFE_Y = 0.58;
   function safeY(normY) {
     return Math.min(normY == null ? ISLAND_SAFE_Y : normY, ISLAND_SAFE_Y);
+  }
+  function islandBox(i) {
+    const s = currentScene();
+    const L = LETTERS[i];
+    if (s.islandBoxes && s.islandBoxes[L]) return s.islandBoxes[L];
+    const c = islandPos(i, 1, 1);
+    return { x: Math.max(0.02, c.x - 0.16), y: Math.max(0.04, c.y - 0.14), w: 0.32, h: 0.28 };
   }
   /** Island centres from authored lane JSON (normalized → pixels). */
   function islandPos(i, W, H) {
@@ -1382,19 +1542,20 @@
   }
   function islandSize(W) { return Math.min(W * 0.36, W * SHIP_SCREEN_FRAC * 4); }
   function islandRadius(W) { return islandSize(W) * 0.38; }
-  /** Authored dock berths — ships never park on baked land. */
+  /** Dock berths sit on the island BOX edge — ships never enter the land stage. */
   function dockPos(i, W, H, seatOffset) {
     const s = currentScene();
     const L = LETTERS[i];
     const spread = ((seatOffset || 0) - 1.5) * Math.min(11, W * 0.014);
+    const box = islandBox(i);
     if (s.docks && s.docks[L]) {
       return { x: s.docks[L].x * W + spread, y: safeY(s.docks[L].y) * H + spread * 0.25 };
     }
-    const p = islandPos(i, W, H);
     const towardCenter = (i % 2 === 0) ? 1 : -1;
+    const edgeX = towardCenter > 0 ? (box.x + box.w) * W : box.x * W;
     return {
-      x: clampChannelX(p.x + towardCenter * Math.min(22, W * 0.04) + spread, W),
-      y: Math.max(playTop(H) + 12, Math.min(playBottom(H) - 12, p.y + spread * 0.4)),
+      x: clampChannelX(edgeX + towardCenter * 4 + spread, W),
+      y: Math.max(playTop(H) + 12, Math.min(playBottom(H) - 12, (box.y + box.h * 0.62) * H + spread * 0.4)),
     };
   }
   function fleetPos(seat, n, W, H) {
@@ -1796,7 +1957,18 @@
     if (travelFx && travelFx.stage === "out" && sceneBgs[travelFx.fromIdx]) {
       drawBg = sceneBgs[travelFx.fromIdx];
     }
-    if (drawBg) {
+    const celebPlaying = islandCelebrate && islandCelebrate.stage === "play";
+    const useRevealVid = celebPlaying && islandCelebrate.videoOk && revealClipEl
+      && revealClipEl.readyState >= 2 && !revealClipEl.paused;
+    if (useRevealVid) {
+      // Seamless plate: full-scene cutscene under live ships (LOCKED approach)
+      const vw = revealClipEl.videoWidth || 720;
+      const vh = revealClipEl.videoHeight || 1280;
+      const scale = Math.max(W / vw, H / vh);
+      const dw = vw * scale;
+      const dh = vh * scale;
+      sctx.drawImage(revealClipEl, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    } else if (drawBg) {
       // Full-bleed cover — baked 9:16 seas already include ~10% sky / 90% water
       const scale = Math.max(W / drawBg.width, H / drawBg.height);
       const dw = drawBg.width * scale;
@@ -1815,6 +1987,40 @@
       const g = sctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
       sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
+    }
+    // Procedural fallback celebrate when clip missing — still reads as the world reacting
+    if (celebPlaying && !useRevealVid && kind === "voyage") {
+      const u = Math.min(1, (now - (islandCelebrate.playT0 || islandCelebrate.t0)) / islandCelebrate.animMs);
+      for (let i = 0; i < 4; i++) {
+        const b = islandBox(i);
+        const bx = b.x * W, by = b.y * H, bw = b.w * W, bh = b.h * H;
+        if (i === islandCelebrate.correctIndex) {
+          const pulse = 0.22 + 0.18 * Math.sin(now / 90);
+          const g = sctx.createRadialGradient(bx + bw * 0.5, by + bh * 0.45, 8, bx + bw * 0.5, by + bh * 0.45, bw * 0.7);
+          g.addColorStop(0, `rgba(255,213,106,${0.55 * pulse})`);
+          g.addColorStop(0.55, `rgba(255,180,60,${0.2 * pulse})`);
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          sctx.fillStyle = g;
+          sctx.fillRect(bx - 20, by - 20, bw + 40, bh + 40);
+          // Confetti sparks
+          for (let k = 0; k < 6; k++) {
+            const ang = u * Math.PI * 4 + k;
+            sctx.fillStyle = k % 2 ? "#ffd56a" : "#fff6e4";
+            sctx.beginPath();
+            sctx.arc(bx + bw * 0.5 + Math.cos(ang) * bw * 0.35 * u, by + bh * 0.4 + Math.sin(ang * 1.3) * bh * 0.25, 3, 0, Math.PI * 2);
+            sctx.fill();
+          }
+        } else {
+          sctx.fillStyle = `rgba(20,28,36,${0.28 + 0.12 * u})`;
+          sctx.fillRect(bx, by, bw, bh);
+          sctx.fillStyle = `rgba(180,170,140,${0.12 + 0.1 * Math.sin(now / 200 + i)})`;
+          for (let d = 0; d < 4; d++) {
+            sctx.beginPath();
+            sctx.arc(bx + bw * (0.3 + d * 0.15), by + bh * 0.55 + (d % 2) * 6, 2.5, 0, Math.PI * 2);
+            sctx.fill();
+          }
+        }
+      }
     }
     // Soft scene crossfade when entering a new destination after scoreboard
     if (travelFx) {
@@ -2018,7 +2224,7 @@
           isl = -2;
         } else if (target === -1) to = fogHoldPos(W, H);
         else if (target != null) to = dockPos(target, W, H, seat);
-        // After chest: keep returning / holding in the middle until sail-away
+        // After cutscene: keep returning / holding in the middle until sail-away
         if (!traveling && !onBoard && fleetReturnPending && target == null) {
           key = "home";
           to = from;
@@ -2026,6 +2232,9 @@
         }
         let fromHome = from;
         const s = sailState[seat];
+        // During synced cutscene: freeze on box-edge docks (no glitch into land)
+        const freezeDock = islandCelebrate && (islandCelebrate.stage === "wait" || islandCelebrate.stage === "play")
+          && target != null && target >= 0;
         // Clear return flag once everyone is roughly home
         if (fleetReturnPending && !traveling && s && s.key === "home" && s.t >= 0.95) {
           const allHome = players.every((_, si) => {
@@ -2034,7 +2243,13 @@
           });
           if (allHome) fleetReturnPending = false;
         }
-        const pos = ensureSail(seat, fromHome, to, key, dt, isl, W, H);
+        const pos = freezeDock
+          ? (() => {
+              // Snap / hold at dock; do not advance sail into the island box
+              if (s) { s.t = 1; s.key = key; }
+              return { x: to.x, y: to.y, heading: (s && s.heading) != null ? s.heading : 0 };
+            })()
+          : ensureSail(seat, fromHome, to, key, dt, isl, W, H);
         if (onBoard && (!s || s.t >= 1)) return; // fully off-screen during leaderboard
         const x = pos.x;
         const idleBob = (!traveling && !(s && s.t > 0.02 && s.t < 0.98)) ? Math.sin(t * 2.4 + seat) * 2.4 : Math.sin(t * 3.2 + seat) * 1.2;
@@ -2181,6 +2396,7 @@
   function frame(now) {
     requestAnimationFrame(frame);
     tickCutscene(now);
+    tickIslandCelebrate(now);
     tickIslandLoot(now);
     drawSea(now);
     lastFrameAt = now;
@@ -2213,8 +2429,13 @@
         else if (iAnswered && p.answered) chosenIsland[seat] = -1;
         else chosenIsland[seat] = null;
       } else if (v.phase === "q_reveal" && v.reveal && v.reveal.results) {
-        const r = v.reveal.results[p.id];
-        chosenIsland[seat] = r && r.index != null ? r.index : null;
+        // After cutscene, fleetReturnPending owns the middle-return — don't re-dock from reveal
+        if (fleetReturnPending) {
+          chosenIsland[seat] = null;
+        } else {
+          const r = v.reveal.results[p.id];
+          chosenIsland[seat] = r && r.index != null ? r.index : null;
+        }
       } else if (v.phase === "loot" || v.phase === "loot_intro" || v.phase === "loot_reveal" || v.phase === "loot_wildcard" || v.phase === "scene_travel") {
         chosenIsland[seat] = null;
       } else if (v.phase === "scoreboard") {
@@ -2307,8 +2528,9 @@
     const my = rev && rev.results ? rev.results[s.you] : null;
     subtitleEl.textContent = "Reveal!";
     mainEl.innerHTML = `<div class="banner pop">
-      <div class="tag">Answer reveal</div>
-      <h2 class="display">${my && my.correct ? `Spot on! +${my.delta}` : "Missed the mark"}</h2>
+      <div class="tag">Island reveal</div>
+      <h2 class="display">${my && my.correct ? `Spot on! +${my.delta}` : "Wrong cove — watch the seas"}</h2>
+      <p class="muted">Fleet holds the docks while the islands settle…</p>
     </div>
     <div class="choices" id="choices"></div>`;
     const root = document.getElementById("choices");
@@ -2505,7 +2727,8 @@
       <button class="big pulse" id="resetBtn" style="margin-top:8px">PLAY AGAIN</button>
     </div>`;
     document.getElementById("resetBtn").onclick = () => {
-      botBusyKey = ""; clearBotTimers(); endCutscene(); endIslandLoot();
+      botBusyKey = ""; clearBotTimers(); endCutscene(); endIslandLoot(); islandCelebrate = null;
+      if (revealClipEl) { try { revealClipEl.pause(); } catch (_) {} }
       send({ type: "reset" });
       if (wantBot) later(300, connectBot);
     };

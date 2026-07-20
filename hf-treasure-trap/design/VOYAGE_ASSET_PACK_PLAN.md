@@ -91,7 +91,15 @@ Budget reserved for remakes when review fails polish killers.
 ## Runtime composition
 
 - Backdrop layers drawn bottom→top  
-- Ships follow **authored lane polylines** only  
+- Ships follow **authored lane polylines** only; stop at **island box edges**  
 - Plaque letters are runtime text/sprites at JSON anchors  
 - Fog rival, celebrate/sad ship swaps are sprite state changes  
-- Correct island celebration = VFX + optional overlay, never baked secret data  
+- Correct-island celebration = **40 full-scene ~2s cutscenes** (`reveal/SXX-L.mp4`) with live ships overlaid — see `REVEAL_CUTSCENE.md`  
+- Biome win SFX under `assets/voyage-v2/sfx/win-*.mp3`  
+
+### G — Reveal cutscenes + SFX (LOCKED 2026-07-20) ~50 jobs
+
+| # | Asset | Spec |
+| --- | --- | --- |
+| G1–G40 | `reveal/S00-A`…`S09-D` | Seedance 1.5 from baked `bg-SXX`, win+empty islands baked together, 9:16, no ships |
+| G41–G49 | `sfx/win-{biome}` | Mirelo happy ~2s stings per biome |
