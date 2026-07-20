@@ -52,19 +52,45 @@
     transform: translate(-50%, -50%);
     width: min(82vw, 360px); aspect-ratio: 1;
     z-index: 6; display: none; pointer-events: none;
-    border: 4px solid var(--edge);
-    border-radius: 18px; overflow: hidden;
-    background: #041018;
-    box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #ff3db8, 0 0 0 6px #3dfff0, 0 0 48px rgba(255,0,180,.45);
+    border: 5px solid #ffd56a;
+    border-radius: 20px; overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(255,61,184,.35), transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(61,255,240,.25), transparent 45%),
+      linear-gradient(160deg, #1a0840, #041018 60%, #0a2a20);
+    box-shadow:
+      0 12px 28px rgba(0,0,0,.55),
+      0 0 0 3px #ff3db8,
+      0 0 0 7px #3dfff0,
+      0 0 56px rgba(255,0,180,.55),
+      inset 0 0 40px rgba(255,213,106,.12);
     cursor: pointer;
+    animation: none;
   }
   #worldFx.on { display: block; pointer-events: auto; animation: fxIn .35s cubic-bezier(.2,1.3,.4,1) both; }
+  #worldFx.spinning { animation: neonPulse .35s ease-in-out infinite; }
+  @keyframes neonPulse {
+    50% { box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #3dfff0, 0 0 0 7px #ff3db8, 0 0 64px rgba(61,255,240,.65); }
+  }
   #worldFx .fx-chest {
     position: absolute; left: 50%; top: 46%; width: 58%; height: auto;
     transform: translate(-50%, -50%);
     pointer-events: none; filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
     z-index: 1;
   }
+  #worldFx .slot-reels {
+    position: absolute; left: 10%; right: 10%; top: 8%; height: 18%;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+    z-index: 2; pointer-events: none;
+  }
+  #worldFx .slot-reels span {
+    display: grid; place-items: center;
+    border: 2px solid #ffd56a; border-radius: 10px;
+    background: linear-gradient(180deg, #2a1040, #0a1820);
+    font-family: var(--display); font-size: 1.15rem; color: #ffd56a;
+    box-shadow: inset 0 0 12px rgba(255,61,184,.35);
+  }
+  #worldFx.empty .slot-reels { display: none; }
   #worldFx .fx-burst {
     position: absolute; inset: 0; width: 100%; height: 100%;
     pointer-events: none; z-index: 2;
@@ -74,7 +100,7 @@
   #worldFx .fx-label {
     position: absolute; left: 8px; top: 8px; padding: 3px 8px; border-radius: 999px;
     background: #3a2a10; color: var(--gold); font-size: .62rem; font-weight: 900;
-    letter-spacing: .06em; text-transform: uppercase; z-index: 2;
+    letter-spacing: .06em; text-transform: uppercase; z-index: 3;
   }
   #worldFx .tap-hint {
     position: absolute; inset: 0; display: grid; place-items: center;
@@ -269,11 +295,28 @@
     text-shadow: 0 3px 0 #1a0e04;
   }
   #spectacle .cs-summary .gold-line {
-    font-family: var(--display); font-size: clamp(1.6rem, 7vw, 2.4rem);
+    font-family: var(--display); font-size: clamp(2.4rem, 12vw, 4rem);
     color: #fff6e4; margin: 6px 0;
+    text-shadow: 0 0 24px #ff3db8, 0 4px 0 #1a0e04;
+    animation: goldPulse 0.7s ease-in-out infinite;
   }
   #spectacle .cs-summary .gold-line b { color: var(--gold); }
+  @keyframes goldPulse { 50% { transform: scale(1.06); filter: brightness(1.2); } }
+  #spectacle .cs-summary .spent-line {
+    font-family: var(--display); font-size: clamp(1rem, 4.5vw, 1.35rem);
+    color: #3dfff0; margin: 0;
+    text-shadow: 0 0 12px rgba(61,255,240,.55);
+  }
   #spectacle .cs-summary p { margin: 0; opacity: .9; font-size: .95rem; max-width: 28rem; }
+  #spectacle .cs-summary .score-fly {
+    position: absolute; font-family: var(--display); font-size: 1.4rem;
+    color: #ffd56a; pointer-events: none; z-index: 2;
+    text-shadow: 0 0 10px #ff3db8; animation: scoreFly 1.1s ease-out forwards;
+  }
+  @keyframes scoreFly {
+    0% { transform: translate(-50%, 0) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -120px) scale(.7); opacity: 0; }
+  }
   .pop { animation: pop .3s cubic-bezier(.2,1.4,.4,1); }
   @keyframes pop { from { transform: scale(.94); } to { transform: scale(1); } }
   .scoreboard {
@@ -332,6 +375,9 @@
     <div class="world-space" id="worldSpace">
       <div id="worldFx">
         <div class="fx-label" id="fxLabel">Tap to spin</div>
+        <div class="slot-reels" id="slotReels" aria-hidden="true">
+          <span>7</span><span>★</span><span>$</span>
+        </div>
         <img id="fxChest" class="fx-chest" src="./assets/chest-closed.png" alt="">
         <canvas id="fxBurst" class="fx-burst"></canvas>
         <div class="tap-hint" id="tapHint">TAP!</div>
@@ -419,6 +465,9 @@
   const fxLabelEl = document.getElementById("fxLabel");
   const tapHintEl = document.getElementById("tapHint");
   const lootFillEl = document.getElementById("lootFill");
+  const slotReelsEl = document.getElementById("slotReels");
+  const SLOT_GLYPHS = ["7", "★", "$", "⚓", "◆", "金"];
+  let prevRankOrder = [];
   const chestImg = document.getElementById("chestImg");
   const chestSec = document.getElementById("chestSec");
   const chestWrap = document.getElementById("chestWrap");
@@ -596,10 +645,19 @@
     [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.18, "square", 0.06), i * 70));
   }
   function sfxSad() {
-    [392, 349, 294, 220].forEach((f, i) => setTimeout(() => beep(f, 0.22, "triangle", 0.05), i * 140));
+    // Comical sad trombone-ish descent
+    [392, 349, 311, 262, 220, 196].forEach((f, i) => setTimeout(() => beep(f, 0.28, "triangle", 0.055), i * 160));
+    setTimeout(() => beep(110, 0.45, "sawtooth", 0.03), 980);
   }
   function sfxSlot() {
     beep(880 + Math.random() * 220, 0.04, "square", 0.035);
+  }
+  function tickSlotReels() {
+    if (!slotReelsEl) return;
+    const spans = slotReelsEl.querySelectorAll("span");
+    spans.forEach((sp) => {
+      sp.textContent = SLOT_GLYPHS[Math.floor(Math.random() * SLOT_GLYPHS.length)];
+    });
   }
 
   function queueIslandLoot(islandIdx, seat) {
@@ -630,14 +688,16 @@
     islandLoot.spinVel = 3.5;
     islandLoot.stage = "spin";
     islandLoot.playT0 = performance.now();
-    fxLabelEl.textContent = "Island " + LETTERS[islandIdx] + " · tap to spin!";
+    fxLabelEl.textContent = "SPIN!";
     tapHintEl.classList.remove("hide");
     tapHintEl.textContent = "TAP!";
     lootFillEl.style.width = "0%";
-    worldFxEl.classList.remove("exploding");
-    worldFxEl.classList.add("on");
+    worldFxEl.classList.remove("exploding", "empty");
+    worldFxEl.classList.add("on", "spinning");
     casinoEl.classList.add("on");
     fxChestEl.src = "./assets/chest-closed.png";
+    fxChestEl.style.filter = "";
+    tickSlotReels();
     resizeFxBurst();
     sfxWhoosh();
   }
@@ -646,12 +706,14 @@
     const W = fxBurstEl.width, H = fxBurstEl.height;
     fxBurstCtx.clearRect(0, 0, W, H);
     islandLoot.coins = islandLoot.coins.filter((c) => {
-      c.vy += 0.35; c.x += c.vx; c.y += c.vy; c.life -= 16;
+      c.vy += c.dust ? 0.08 : 0.35; c.x += c.vx; c.y += c.vy; c.life -= 16;
       if (c.life <= 0) return false;
       fxBurstCtx.save();
       fxBurstCtx.translate(c.x, c.y);
       fxBurstCtx.rotate(c.rot);
-      fxBurstCtx.fillStyle = c.gold ? "#ffd56a" : "#fff6e4";
+      if (c.dust) fxBurstCtx.fillStyle = "rgba(180,180,170,.7)";
+      else if (c.neon) fxBurstCtx.fillStyle = Math.random() > 0.5 ? "#ff3db8" : "#3dfff0";
+      else fxBurstCtx.fillStyle = c.gold ? "#ffd56a" : "#fff6e4";
       fxBurstCtx.beginPath();
       fxBurstCtx.ellipse(0, 0, c.r, c.r * 0.7, 0, 0, Math.PI * 2);
       fxBurstCtx.fill();
@@ -664,38 +726,45 @@
     if (!islandLoot) return;
     islandLoot.stage = "explode";
     islandLoot.spinVel = 0;
+    worldFxEl.classList.remove("spinning");
     worldFxEl.classList.add("exploding");
     fxChestEl.src = "./assets/chest-open-gold.png";
-    haptic([20, 40, 30, 50, 40]);
+    if (slotReelsEl) {
+      const spans = slotReelsEl.querySelectorAll("span");
+      spans.forEach((sp) => { sp.textContent = "7"; sp.style.color = "#ff3db8"; });
+    }
+    haptic([20, 40, 30, 50, 40, 60]);
     sfxJackpot();
     casinoEl.classList.add("on");
     const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
     islandLoot.coins = [];
-    for (let i = 0; i < 72; i++) {
+    for (let i = 0; i < 96; i++) {
       islandLoot.coins.push({
         x: W * 0.5, y: H * 0.48,
-        vx: (Math.random() - 0.5) * 18,
-        vy: -8 - Math.random() * 12,
-        r: 5 + Math.random() * 9,
+        vx: (Math.random() - 0.5) * 22,
+        vy: -10 - Math.random() * 14,
+        r: 5 + Math.random() * 11,
         rot: Math.random() * Math.PI,
-        vr: (Math.random() - 0.5) * 0.5,
-        life: 800 + Math.random() * 700,
-        gold: Math.random() > 0.2,
+        vr: (Math.random() - 0.5) * 0.6,
+        life: 900 + Math.random() * 800,
+        gold: Math.random() > 0.15,
+        neon: Math.random() > 0.55,
       });
     }
-    spawnBurst(innerWidth / 2, seaH(innerHeight) * 0.4, 30);
+    spawnBurst(innerWidth / 2, seaH(innerHeight) * 0.4, 40);
     launchLootFlies(islandLoot.island);
-    setTimeout(() => { casinoEl.classList.remove("on"); endIslandLoot(); }, 1100);
+    setTimeout(() => { casinoEl.classList.remove("on"); endIslandLoot(); }, 1300);
   }
   function onTapLoot(ev) {
-    if (!islandLoot || !islandLoot.active || islandLoot.stage === "explode") return;
+    if (!islandLoot || !islandLoot.active || islandLoot.stage === "explode" || islandLoot.empty) return;
     ev.preventDefault();
     ensureAudio();
-    islandLoot.spinVel = Math.min(28, islandLoot.spinVel + 4.5 + Math.random() * 2);
-    islandLoot.progress = Math.min(1, islandLoot.progress + 0.07 + Math.random() * 0.04);
+    islandLoot.spinVel = Math.min(32, islandLoot.spinVel + 5 + Math.random() * 2.5);
+    islandLoot.progress = Math.min(1, islandLoot.progress + 0.08 + Math.random() * 0.05);
     lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
     haptic(islandLoot.progress > 0.8 ? [16, 24, 20] : 12);
     sfxSlot();
+    tickSlotReels();
     if (islandLoot.progress < 0.35) fxChestEl.src = "./assets/chest-closed.png";
     else if (islandLoot.progress < 0.7) fxChestEl.src = "./assets/chest-spin.png";
     else fxChestEl.src = "./assets/chest-crack.png";
@@ -704,11 +773,14 @@
   }
   worldFxEl.addEventListener("pointerdown", onTapLoot);
   function endIslandLoot() {
-    worldFxEl.classList.remove("on");
-    worldFxEl.classList.remove("exploding");
+    worldFxEl.classList.remove("on", "exploding", "spinning", "empty");
     tapHintEl.classList.remove("hide");
     lootFillEl.style.width = "0%";
     casinoEl.classList.remove("on");
+    fxChestEl.style.filter = "";
+    if (slotReelsEl) {
+      slotReelsEl.querySelectorAll("span").forEach((sp) => { sp.style.color = ""; });
+    }
     if (fxBurstCtx && fxBurstEl) fxBurstCtx.clearRect(0, 0, fxBurstEl.width, fxBurstEl.height);
     const wasActive = !!islandLoot;
     islandLoot = null;
@@ -729,15 +801,18 @@
       }
       return;
     }
-    if (islandLoot.active && islandLoot.stage !== "explode") {
+    if (islandLoot.active && islandLoot.stage !== "explode" && !islandLoot.empty) {
       islandLoot.spinVel *= 0.985;
       islandLoot.spin += islandLoot.spinVel;
       // subtle auto progress so it never softlocks, but taps dominate
-      islandLoot.progress = Math.min(0.92, islandLoot.progress + 0.0015);
+      islandLoot.progress = Math.min(0.92, islandLoot.progress + 0.0018);
       lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
       const wobble = Math.sin(islandLoot.spin * 0.08) * Math.min(22, islandLoot.spinVel * 1.2);
-      fxChestEl.style.transform = `translate(-50%, -50%) rotate(${wobble}deg) scale(${1 + Math.min(0.12, islandLoot.spinVel * 0.004)})`;
-      if (islandLoot.spinVel > 8 && Math.random() < 0.08) sfxSlot();
+      fxChestEl.style.transform = `translate(-50%, -50%) rotate(${wobble}deg) scale(${1 + Math.min(0.14, islandLoot.spinVel * 0.004)})`;
+      if (islandLoot.spinVel > 6 && Math.random() < 0.12) {
+        sfxSlot();
+        tickSlotReels();
+      }
     }
     drawChestBurst(now);
   }
@@ -762,18 +837,38 @@
     islandLoot.active = true;
     islandLoot.stage = "empty";
     islandLoot.progress = 1;
-    fxLabelEl.textContent = "Empty…";
+    fxLabelEl.textContent = "EMPTY";
     tapHintEl.classList.add("hide");
     lootFillEl.style.width = "100%";
-    worldFxEl.classList.add("on");
+    worldFxEl.classList.remove("spinning");
+    worldFxEl.classList.add("on", "empty");
     fxChestEl.src = "./assets/chest-open-gold.png";
-    fxChestEl.style.filter = "grayscale(0.7) brightness(0.75)";
+    fxChestEl.style.filter = "grayscale(1) brightness(0.55) saturate(0)";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(0.92) rotate(-6deg)";
+    // Dust / moths instead of gold
+    const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
+    islandLoot.coins = [];
+    for (let i = 0; i < 28; i++) {
+      islandLoot.coins.push({
+        x: W * 0.5 + (Math.random() - 0.5) * 40,
+        y: H * 0.45,
+        vx: (Math.random() - 0.5) * 4,
+        vy: -1 - Math.random() * 3,
+        r: 3 + Math.random() * 5,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.2,
+        life: 700 + Math.random() * 500,
+        gold: false,
+        dust: true,
+      });
+    }
     sfxSad();
-    haptic([30, 60, 40]);
+    haptic([40, 80, 50, 100]);
     setTimeout(() => {
       fxChestEl.style.filter = "";
+      fxChestEl.style.transform = "";
       endIslandLoot();
-    }, 1800);
+    }, 2200);
   }
 
   function startCutscene(kind, animMs, meta) {
@@ -804,8 +899,8 @@
       const spent = meta.spent != null ? meta.spent : amt;
       csTagEl.textContent = "RESCUE";
       csTitleEl.textContent = "BACK!";
-      csGoldEl.innerHTML = `<b>+${amt}</b>`;
-      csBodyEl.innerHTML = `staked ${spent}`;
+      csGoldEl.innerHTML = `<b>+0</b>`;
+      csBodyEl.innerHTML = `<span class="spent-line">spent ${spent}</span>`;
       // coin rain
       let rain = document.getElementById("csRain");
       if (!rain) {
@@ -815,18 +910,44 @@
         csSummaryEl.insertBefore(rain, csSummaryEl.firstChild);
       }
       rain.innerHTML = "";
-      for (let i = 0; i < 28; i++) {
+      for (let i = 0; i < 40; i++) {
         const d = document.createElement("i");
         d.textContent = "●";
         d.style.left = (Math.random() * 100) + "%";
-        d.style.animationDuration = (1.2 + Math.random() * 1.4) + "s";
-        d.style.animationDelay = (Math.random() * 0.5) + "s";
+        d.style.animationDuration = (1.0 + Math.random() * 1.6) + "s";
+        d.style.animationDelay = (Math.random() * 0.6) + "s";
+        d.style.fontSize = (0.9 + Math.random() * 1.1) + "rem";
         d.style.color = i % 3 === 0 ? "#ff3db8" : (i % 3 === 1 ? "#3dfff0" : "#ffd56a");
         rain.appendChild(d);
       }
+      // Count-up + flying score pips (money returning)
+      const startT = performance.now();
+      const dur = 900;
+      const tick = (t) => {
+        const u = Math.min(1, (t - startT) / dur);
+        const eased = 1 - Math.pow(1 - u, 3);
+        const n = Math.round(amt * eased);
+        csGoldEl.innerHTML = `<b>+${n}</b>`;
+        if (u < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          const fly = document.createElement("div");
+          fly.className = "score-fly";
+          fly.textContent = "+" + Math.max(1, Math.round(amt / 6));
+          fly.style.left = (35 + Math.random() * 30) + "%";
+          fly.style.top = "58%";
+          csSummaryEl.appendChild(fly);
+          setTimeout(() => fly.remove(), 1200);
+        }, 120 + i * 110);
+      }
+      cutscene.summaryMs = 3800;
       sfxJackpot();
-      haptic([20, 40, 25, 50, 30]);
-      spawnBurst(innerWidth / 2, innerHeight * 0.4, 24);
+      haptic([20, 40, 25, 50, 30, 40]);
+      spawnBurst(innerWidth / 2, innerHeight * 0.4, 32);
+      casinoEl.classList.add("on");
+      setTimeout(() => casinoEl.classList.remove("on"), 900);
     }
     csSummaryEl.classList.add("on");
     casinoEl.classList.remove("on");
@@ -896,6 +1017,13 @@
             startCutscene("plunder", 4200, { island: msg.view.reveal.correctIndex, seat: Math.max(0, mySeat) });
           } else if (mine && !mine.correct && mine.index != null) {
             startCutscene("plunder", 4200, { island: mine.index, seat: Math.max(0, mySeat), empty: true });
+          }
+        }
+        if (msg.view.phase === "scoreboard") {
+          if (islandLoot) endIslandLoot();
+          else {
+            for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+            sendFleetHome();
           }
         }
         if (msg.view.phase === "loot_reveal") {
@@ -978,27 +1106,29 @@
 
   /** Sea playfield = upper ~52% of screen (quiz sheet owns the lower half). */
   function seaH(H) { return H * 0.52; }
-  /** Spaced archipelago — clear sailing channels between islands. */
+  /** Corner archipelago — wide middle channel + clear water bands. */
   function islandPos(i, W, H) {
     const sh = seaH(H);
-    // Wide centre channel + gaps between rows for water-only sailing
     return [
-      { x: W * 0.14, y: sh * 0.28 },
-      { x: W * 0.86, y: sh * 0.28 },
-      { x: W * 0.14, y: sh * 0.72 },
-      { x: W * 0.86, y: sh * 0.72 },
+      { x: W * 0.11, y: sh * 0.24 },
+      { x: W * 0.89, y: sh * 0.24 },
+      { x: W * 0.11, y: sh * 0.76 },
+      { x: W * 0.89, y: sh * 0.76 },
     ][i];
   }
-  function islandSize(W) { return Math.min(108, W * 0.24); }
-  function islandRadius(W) { return islandSize(W) * 0.48; }
+  function islandSize(W) { return Math.min(88, W * 0.19); }
+  function islandRadius(W) { return islandSize(W) * 0.46; }
   /** Ship berth on the OUTER water — never between islands / over land. */
   function dockPos(i, W, H, seatOffset) {
     const p = islandPos(i, W, H);
     const outward = (i % 2 === 0) ? -1 : 1;
     const r = islandRadius(W);
-    const ox = outward * (r + Math.min(46, W * 0.1));
-    const oy = (seatOffset || 0) * 10;
-    return { x: p.x + ox, y: p.y + oy };
+    const ox = outward * (r + Math.min(54, W * 0.12));
+    const oy = ((seatOffset || 0) - 1.5) * 9;
+    // Keep berths on-screen and in water margins
+    const x = Math.max(W * 0.04, Math.min(W * 0.96, p.x + ox));
+    const y = Math.max(seaH(H) * 0.08, Math.min(seaH(H) * 0.95, p.y + oy));
+    return { x, y };
   }
   function fleetPos(seat, n, W, H) {
     const sh = seaH(H);
@@ -1036,32 +1166,35 @@
     return false;
   }
   /**
-   * STRICT water-only route: vertical travel ONLY on the centre channel,
-   * horizontal travel ONLY on clear latitude bands (never across island rows).
+   * STRICT water-only route — ships NEVER travel sideways across island latitudes.
+   * Leave/arrive via vertical hops on outer dock X, then only:
+   *   • horizontal on topBand / botBand
+   *   • vertical on the centre channel (x = W/2)
    */
   function middleChannelPath(from, to, W, H) {
     const sh = seaH(H);
     const CX = W * 0.5;
-    const topBand = sh * 0.16;   // above top islands
-    const midBand = sh * 0.50;   // between island rows
-    const botBand = sh * 0.90;   // below everything / fleet
+    const topBand = sh * 0.10;   // above top islands
+    const gapBand = sh * 0.50;
+    const botBand = sh * 0.94;   // below bottom islands / fleet
+    const clearBand = (y) => (y < gapBand ? topBand : botBand);
     const path = [{ x: from.x, y: from.y }];
     const push = (x, y) => {
       const last = path[path.length - 1];
-      if (Math.hypot(last.x - x, last.y - y) < 4) return;
+      if (Math.hypot(last.x - x, last.y - y) < 3) return;
       path.push({ x, y });
     };
-    // 1) Enter centre channel at current latitude
-    push(CX, from.y);
-    // 2) Decide approach band from target Y
-    const topRow = to.y < midBand;
-    const approachY = topRow ? topBand : botBand;
-    // Sail vertically in the MIDDLE only
-    push(CX, midBand);
-    push(CX, approachY);
-    // 3) Horizontal along clear band to dock longitude
-    push(to.x, approachY);
-    // 4) Final short vertical/horizontal into dock (outer water)
+    const fromBand = clearBand(from.y);
+    const toBand = clearBand(to.y);
+    // 1) Vertical at current X to a clear band (outer docks are water — safe)
+    push(from.x, fromBand);
+    // 2) Horizontal on that clear band into the middle channel
+    push(CX, fromBand);
+    // 3) Vertical ONLY in the middle channel to the destination band
+    push(CX, toBand);
+    // 4) Horizontal on destination clear band to dock longitude
+    push(to.x, toBand);
+    // 5) Short vertical into the outer dock
     push(to.x, to.y);
     return path;
   }
@@ -1251,8 +1384,8 @@
     }
 
     const far = [
-      { x: W * 0.18, y: sh * 0.07, sz: Math.min(34, W * 0.08), i: 2 },
-      { x: W * 0.82, y: sh * 0.06, sz: Math.min(30, W * 0.07), i: 0 },
+      { x: W * 0.16, y: sh * 0.045, sz: Math.min(28, W * 0.065), i: 2 },
+      { x: W * 0.84, y: sh * 0.04, sz: Math.min(26, W * 0.06), i: 0 },
     ];
     for (const f of far) {
       const im = islandImgs[f.i];
@@ -1621,6 +1754,34 @@
     });
   }
 
+  function renderScoreboard(s, v) {
+    syncShips(s, v);
+    pathPreview = null;
+    subtitleEl.textContent = "Standings";
+    const ranking = v.ranking || (v.players || []).map((p) => p.id);
+    const results = v.reveal && v.reveal.results ? v.reveal.results : {};
+    const rows = ranking.map((id, rank) => {
+      const p = (v.players || []).find((x) => x.id === id) || { nick: "?", score: 0 };
+      const seat = (v.players || []).findIndex((x) => x.id === id);
+      const delta = results[id] ? (results[id].delta || 0) : 0;
+      const prev = prevRankOrder.indexOf(id);
+      const overtake = prev >= 0 && prev > rank;
+      const isYou = id === s.you;
+      return `<div class="score-row${isYou ? " you" : ""}${overtake ? " overtake" : ""}">
+        <div class="rank">${rank + 1}</div>
+        <img src="${PORTRAIT[(seat >= 0 ? seat : rank) % 4]}" alt="">
+        <div><strong>${esc(p.nick)}</strong>${delta ? `<div class="delta${delta < 0 ? " neg" : ""}">${delta > 0 ? "+" : ""}${delta}</div>` : ""}</div>
+        <div class="pts">${p.score}</div>
+      </div>`;
+    }).join("");
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">Leaderboard</div>
+      <h2 class="display">Standings</h2>
+    </div>
+    <div class="scoreboard pop">${rows}</div>`;
+    prevRankOrder = ranking.slice();
+  }
+
   function renderLootIntro() {
     pathPreview = null;
     subtitleEl.textContent = "Loot Drop";
@@ -1733,9 +1894,10 @@
     }
     let body = `<h2 class="display">Seas settle</h2>`;
     if (rev.poseidon) {
-      const who = (v.players.find((p) => p.id === rev.poseidon.playerId) || {}).nick || "A pirate";
-      body = `<h2 class="display">Poseidon’s Rescue!</h2>
-        <p class="muted">${esc(who)} saved — +${rev.poseidon.amount} gold returned.</p>`;
+      const amt = rev.poseidon.amount;
+      const spent = rev.poseidon.spent != null ? rev.poseidon.spent : amt;
+      body = `<h2 class="display">+${amt}</h2>
+        <p class="muted">spent ${spent}</p>`;
     } else if (rev.shark) {
       body = `<h2 class="display">Funny sharks!</h2><p class="muted">Success first… then a cheeky bite.</p>`;
     }
@@ -1769,6 +1931,7 @@
     if (v.phase === "lobby") renderLobby(s, v);
     else if (v.phase === "question") renderQuestion(s, v);
     else if (v.phase === "q_reveal") renderQReveal(s, v);
+    else if (v.phase === "scoreboard") renderScoreboard(s, v);
     else if (v.phase === "loot_intro") renderLootIntro();
     else if (v.phase === "loot") renderLoot(s, v);
     else if (v.phase === "loot_reveal") renderLootReveal(s, v);
