@@ -102,11 +102,7 @@
   }
   #worldFx.exploding .fx-chest { animation: chestPop .45s cubic-bezier(.2,1.5,.4,1) both; }
   @keyframes chestPop { 0% { transform: translate(-50%,-50%) scale(1) rotate(0); } 40% { transform: translate(-50%,-50%) scale(1.25) rotate(-8deg); } 100% { transform: translate(-50%,-50%) scale(1.05) rotate(0); } }
-  #worldFx .fx-label {
-    position: absolute; left: 8px; top: 8px; padding: 3px 8px; border-radius: 999px;
-    background: #3a2a10; color: var(--gold); font-size: .62rem; font-weight: 900;
-    letter-spacing: .06em; text-transform: uppercase; z-index: 3;
-  }
+  #worldFx .fx-label { display: none !important; } /* no EMPTY / JACKPOT badges */
   #worldFx .tap-hint {
     position: absolute; inset: 0; display: grid; place-items: center;
     font-family: var(--display); font-size: clamp(1.4rem, 6vw, 2rem);
@@ -129,14 +125,41 @@
   @keyframes fxIn { from { transform: translate(-50%, -50%) scale(.72); } to { transform: translate(-50%, -50%) scale(1); } }
   .quiz-sheet {
     flex: 0 0 auto;
-    /* ~30% sheet → ~70% sea visible during gameplay (LOCKED direction) */
-    max-height: 30vh;
+    /* Keep sheet short so baked islands are NEVER covered by Q&A */
+    max-height: 28vh;
     background: linear-gradient(180deg, #164556 0%, var(--sheet-2) 100%);
     border-top: 3px solid var(--edge);
     box-shadow: 0 -14px 32px rgba(0,0,0,.5);
     padding: 8px 10px max(10px, env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 6px;
     overflow: auto;
+  }
+  /* Full-screen leaderboard between rounds */
+  body.phase-scoreboard #sea { filter: brightness(0.35) saturate(0.7); }
+  body.phase-scoreboard .top-chrome { opacity: 0.35; }
+  body.phase-scoreboard .world-space { display: none; }
+  body.phase-scoreboard .quiz-sheet {
+    position: absolute; inset: 0; z-index: 30;
+    max-height: none; height: 100%; width: 100%;
+    border-top: none;
+    padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255,213,106,.18), transparent 45%),
+      linear-gradient(180deg, #0c3040 0%, #0a1e28 55%, #071418 100%);
+    box-shadow: none;
+    justify-content: center;
+    overflow: auto;
+  }
+  body.phase-scoreboard .quiz-sheet .banner {
+    max-width: 520px; width: 100%; margin: 0 auto 10px;
+  }
+  body.phase-scoreboard .scoreboard {
+    max-width: 520px; width: 100%; margin: 0 auto;
+    gap: 10px;
+  }
+  body.phase-scoreboard .score-row {
+    padding: 12px 14px;
+    font-size: 1.05rem;
   }
   #main { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   .chest-timer { width: 46px; height: 46px; position: relative; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
@@ -761,7 +784,7 @@
     islandLoot.stage = "spin";
     islandLoot.playT0 = performance.now();
     islandLoot._exploded = false;
-    fxLabelEl.textContent = "SPIN!";
+    if (fxLabelEl) fxLabelEl.textContent = "";
     tapHintEl.classList.remove("hide");
     tapHintEl.textContent = "TAP!";
     lootFillEl.style.width = "0%";
@@ -770,6 +793,7 @@
     if (worldSpaceEl) worldSpaceEl.classList.add("loot-active");
     casinoEl.classList.add("on");
     setTimeout(() => casinoEl.classList.remove("on"), 500);
+    // Identical closed chest for full + empty — no filters that spoil the surprise
     fxChestEl.src = "./assets/chest-closed.png";
     fxChestEl.style.filter = "";
     fxChestEl.style.transform = "translate(-50%, -50%) scale(1)";
@@ -824,10 +848,11 @@
     islandLoot.progress = 1;
     lootFillEl.style.width = "100%";
     tapHintEl.classList.add("hide");
-    fxLabelEl.textContent = "JACKPOT!";
+    if (fxLabelEl) fxLabelEl.textContent = "";
     worldFxEl.classList.remove("spinning");
     worldFxEl.classList.add("exploding");
     fxChestEl.src = "./assets/chest-open-gold.png";
+    fxChestEl.style.filter = "";
     fxChestEl.style.transform = "translate(-50%, -50%) scale(1.18)";
     if (slotReelsEl) {
       const spans = slotReelsEl.querySelectorAll("span");
@@ -973,15 +998,16 @@
     islandLoot.stage = "spin";
     islandLoot.playT0 = performance.now();
     islandLoot._exploded = false;
-    fxLabelEl.textContent = "SPIN!";
+    if (fxLabelEl) fxLabelEl.textContent = "";
     tapHintEl.classList.remove("hide");
     tapHintEl.textContent = "TAP!";
     lootFillEl.style.width = "0%";
-    worldFxEl.classList.remove("exploding");
-    worldFxEl.classList.add("on", "spinning", "empty");
+    worldFxEl.classList.remove("exploding", "empty");
+    worldFxEl.classList.add("on", "spinning");
     if (worldSpaceEl) worldSpaceEl.classList.add("loot-active");
+    // Same closed chest as a full one — no grey filter / empty class until open
     fxChestEl.src = "./assets/chest-closed.png";
-    fxChestEl.style.filter = "grayscale(0.35) brightness(0.85)";
+    fxChestEl.style.filter = "";
     fxChestEl.style.transform = "translate(-50%, -50%) scale(1)";
     tickSlotReels();
     resizeFxBurst();
@@ -996,12 +1022,12 @@
     islandLoot.progress = 1;
     lootFillEl.style.width = "100%";
     tapHintEl.classList.add("hide");
-    fxLabelEl.textContent = "EMPTY";
+    if (fxLabelEl) fxLabelEl.textContent = "";
     worldFxEl.classList.remove("spinning");
     worldFxEl.classList.add("exploding", "empty");
-    fxChestEl.src = "./assets/chest-open-gold.png";
-    fxChestEl.style.filter = "grayscale(1) brightness(0.55) saturate(0)";
-    fxChestEl.style.transform = "translate(-50%, -50%) scale(0.94) rotate(-5deg)";
+    fxChestEl.src = "./assets/chest-open-empty.png";
+    fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1.05)";
     if (slotReelsEl) {
       const spans = slotReelsEl.querySelectorAll("span");
       spans.forEach((sp) => { sp.textContent = "·"; sp.style.color = "#8a8a8a"; });
@@ -1009,9 +1035,9 @@
     resizeFxBurst();
     const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
     islandLoot.coins = [];
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < 40; i++) {
       islandLoot.coins.push({
-        x: W * 0.5 + (Math.random() - 0.5) * 36,
+        x: W * 0.5 + (Math.random() - 0.5) * 40,
         y: H * 0.48,
         vx: (Math.random() - 0.5) * 5,
         vy: -1.2 - Math.random() * 4,
@@ -1334,15 +1360,20 @@
     const hi = W * (s.channel ? s.channel[1] : 0.70);
     return Math.max(lo, Math.min(hi, x));
   }
+  /** Max Y fraction for islands/plaques so the Q&A sheet never covers them. */
+  const ISLAND_SAFE_Y = 0.56;
+  function safeY(normY) {
+    return Math.min(normY == null ? ISLAND_SAFE_Y : normY, ISLAND_SAFE_Y);
+  }
   /** Island centres from authored lane JSON (normalized → pixels). */
   function islandPos(i, W, H) {
     const s = currentScene();
     const L = LETTERS[i];
     if (s.islandCenters && s.islandCenters[L]) {
-      return { x: s.islandCenters[L].x * W, y: s.islandCenters[L].y * H };
+      return { x: s.islandCenters[L].x * W, y: safeY(s.islandCenters[L].y) * H };
     }
     const lay = (s.layout && s.layout[i]) || { x: 0.22 + (i % 2) * 0.56, y: 0.28 + Math.floor(i / 2) * 0.26 };
-    return { x: lay.x * W, y: lay.y * H };
+    return { x: lay.x * W, y: safeY(lay.y) * H };
   }
   function islandSpriteIndex(i) {
     const s = currentScene();
@@ -1357,7 +1388,7 @@
     const L = LETTERS[i];
     const spread = ((seatOffset || 0) - 1.5) * Math.min(11, W * 0.014);
     if (s.docks && s.docks[L]) {
-      return { x: s.docks[L].x * W + spread, y: s.docks[L].y * H + spread * 0.25 };
+      return { x: s.docks[L].x * W + spread, y: safeY(s.docks[L].y) * H + spread * 0.25 };
     }
     const p = islandPos(i, W, H);
     const towardCenter = (i % 2 === 0) ? 1 : -1;
@@ -1602,27 +1633,34 @@
     i = ((i % 16) + 16) % 16;
     return DIR16[i];
   }
+  /** Per-seat facing hysteresis — stops 16-dir sheets from flickering every frame. */
+  const shipFace = [null, null, null, null];
   let shipIdle = [null, null, null, null];
   let shipCheer = [null, null, null, null];
   let shipSad = [null, null, null, null];
   let vfxGlow = [];
   let vfxFire = [];
+  function stableDir(seat, heading) {
+    const name = headingToDir(heading == null ? 0 : heading);
+    const prev = shipFace[seat];
+    if (!prev) { shipFace[seat] = name; return name; }
+    if (prev === name) return name;
+    // Only change facing when the heading clearly enters a new slice (hysteresis)
+    const prevIdx = DIR16.indexOf(prev);
+    const nextIdx = DIR16.indexOf(name);
+    let delta = Math.abs(nextIdx - prevIdx);
+    if (delta > 8) delta = 16 - delta;
+    if (delta >= 2) shipFace[seat] = name;
+    return shipFace[seat];
+  }
   function shipSprite(seat, heading, now, emotion) {
     const i = seat % 4;
-    if (emotion === "cheer" && shipCheer[i] && shipCheer[i].length) {
-      return shipCheer[i][Math.floor((now || 0) / 120) % shipCheer[i].length];
-    }
-    if (emotion === "sad" && shipSad[i] && shipSad[i].length) {
-      return shipSad[i][Math.floor((now || 0) / 160) % shipSad[i].length];
-    }
     const dirs = shipDirs[i];
     if (!dirs) return null;
-    const name = headingToDir(heading == null ? 0 : heading);
-    // Idle flap while parked (3–6 frames)
-    const sailing = sailState[i] && sailState[i].t > 0.02 && sailState[i].t < 0.98;
-    if (!sailing && shipIdle[i] && shipIdle[i].length && (name === "se" || name === "e" || name === "ese")) {
-      return shipIdle[i][Math.floor((now || 0) / 140) % shipIdle[i].length];
-    }
+    // Prefer travel facings only — idle/cheer/sad sheets were mismatched and caused glitch pops.
+    // Soft emotion tint is handled by a brief squash / outline elsewhere if needed.
+    void emotion; void now; void shipIdle; void shipCheer; void shipSad;
+    const name = stableDir(i, heading);
     if (dirs[name]) return dirs[name];
     const map = {
       ese: "se", sse: "se", ssw: "sw", wsw: "sw",
@@ -1852,7 +1890,7 @@
         const sc = currentScene();
         const p = islandPos(i, W, H);
         const pl = sc.plaques && sc.plaques[L]
-          ? { x: sc.plaques[L].x * W, y: sc.plaques[L].y * H }
+          ? { x: sc.plaques[L].x * W, y: safeY(sc.plaques[L].y) * H }
           : { x: p.x, y: p.y - 18 };
         const highlight = pathPreview === i || (islandLoot && islandLoot.island === i);
         const isCorrect = rev && rev.correctIndex === i && (v.phase === "q_reveal" || v.phase === "scene_travel");
@@ -2286,9 +2324,13 @@
     });
   }
 
+  function setPhaseClass(phase) {
+    document.body.classList.toggle("phase-scoreboard", phase === "scoreboard");
+  }
   function renderScoreboard(s, v) {
     syncShips(s, v);
     pathPreview = null;
+    setPhaseClass("scoreboard");
     subtitleEl.textContent = "Standings";
     const ranking = v.ranking || (v.players || []).map((p) => p.id);
     const results = v.reveal && v.reveal.results ? v.reveal.results : {};
@@ -2472,8 +2514,9 @@
   function render(s) {
     const v = s.view;
     renderRibbon(v, s.you);
-    if (s.status === "waiting" || !v) { renderWaiting(s); return; }
-    if (s.status === "over" || v.phase === "winner") { renderWinner(s, v); return; }
+    if (s.status === "waiting" || !v) { setPhaseClass(""); renderWaiting(s); return; }
+    if (s.status === "over" || v.phase === "winner") { setPhaseClass(""); renderWinner(s, v); return; }
+    if (v.phase !== "scoreboard") setPhaseClass(v.phase);
     if (v.phase === "lobby") renderLobby(s, v);
     else if (v.phase === "question") renderQuestion(s, v);
     else if (v.phase === "q_reveal") renderQReveal(s, v);
@@ -2545,6 +2588,7 @@
     await loadImg("./assets/chest-spin.png");
     await loadImg("./assets/chest-crack.png");
     await loadImg("./assets/chest-open-gold.png");
+    await loadImg("./assets/chest-open-empty.png");
     // Preload videos so arrival loot starts instantly
     LOOT_VID.forEach((src) => { const v = document.createElement("video"); v.preload = "auto"; v.muted = true; v.src = src; });
     { const v = document.createElement("video"); v.preload = "auto"; v.muted = true; v.src = POSEIDON_VID; }

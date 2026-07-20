@@ -45,3 +45,8 @@ Manifest: `design/voyage-v2-islands-jobs.json`
 - 10 biome hero islands + 2×2 state sheets (idle / highlight / correct / wrong)
 - 4 sky plates for optional layering
 - Skull-rock prompts kept wholesome (ages 9+) after one NSFW reject
+
+## Empty chest + clean ships (2026-07-20 polish)
+
+- `chest-open-empty.png` — dust/cobwebs/moths open chest (green-keyed). Job `10a45974-39de-40f5-8fe5-603cea89c45b`.
+- `ship-clean-0..3` — regenerated 16-dir sheets with neon green key; edge-flood cutout preserves green sails. Gold sheet regenerated (`909a7ae1-e627-495b-8123-e621ab13ee78`) after brown-bg reject.
