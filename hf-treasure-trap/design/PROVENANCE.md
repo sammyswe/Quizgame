@@ -31,12 +31,18 @@ Model: `nano_banana_pro` @ 2k. STYLE FORMULA from `STYLE_FORMULA.txt`.
 
 Raw downloads in `raw/`; cutouts in `assets/`.
 
-## Opaque cutscene pack 2026-07-20c
+## Video + environment pack 2026-07-20d
 
-| asset | notes |
-|---|---|
-| bg-sea.jpg | Ocean with distant horizon isles (replaced plain water) |
-| cs-poseidon-1/2/3.jpg | Full-screen opaque Poseidon rescue frames |
-| cs-plunder-1/2.jpg | Full-screen opaque plunder frames |
+| asset | job id | notes |
+|---|---|---|
+| bg-sea.jpg | b8e594d1-e40c-488a-936d-1b0271d617b5 | Rich archipelago backdrop (replaces plain lined water) |
+| clouds.png | 05e7b87c-e284-4fa6-bee1-a935250d8b13 | Parallax cloud bank (green-key cutout) |
+| reef-rocks.png | 645d0e0f-b68d-4ca5-bc8a-0e6d8f2461e3 | Mid-sea reef props |
+| seagulls.png | 83b4f511-8f56-4142-977b-398477698023 | Ambient gulls |
+| video/poseidon.mp4 | a05e4caf-b48a-41ea-a349-a7433d0a25fe | Seedance i2v from Poseidon still |
+| video/loot-a.mp4 | ca4d806a-8b36-43ff-97a2-94994f7e1921 | Palm cove loot |
+| video/loot-b.mp4 | 16382343-de29-4b0b-9a77-b5fc5a15c5b0 | Volcanic loot |
+| video/loot-c.mp4 | cbd1c4b1-fbf9-4ed7-badf-953ac14cec6b | Jungle ruin loot |
+| video/loot-d.mp4 | 6eea42be-071f-4b94-9643-53a5fd264d73 | Skull-rock loot |
 
-Client: Poseidon takes over the whole screen, then shows gold-saved summary. Ships use slower curved sail paths. Answer islands ~28% larger.
+Client: HUD chrome moved to bottom dock; island loot videos play on the quiz sea after sail arrival; Poseidon is full-screen video then gold summary.

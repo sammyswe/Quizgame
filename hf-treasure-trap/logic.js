@@ -48,12 +48,13 @@ const VENTURES = [
 ];
 
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
-const Q_MS = 18000;
+const Q_MS = 20000;
 const LOOT_MS = 40000;
-const REVEAL_HOLD_MS = 5200;
-const VENTURE_REVEAL_MS = 3200;
-/** Poseidon: full-screen opaque cutscene + gold-saved summary needs room. */
-const WILDCARD_MS = 7800;
+/** Hold long enough for sail arrival + island loot video on the quiz sea. */
+const REVEAL_HOLD_MS = 7800;
+const VENTURE_REVEAL_MS = 5200;
+/** Poseidon: full-screen video + gold-saved summary. */
+const WILDCARD_MS = 9000;
 const LOOT_INTRO_MS = 2600;
 const BASE_SCORE = 100;
 const SPEED_BONUS_MAX = 40;

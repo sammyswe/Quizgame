@@ -38,20 +38,56 @@
     pointer-events: none;
   }
   #hud > * { pointer-events: auto; }
-  .sea-chrome {
-    padding: max(6px, env(safe-area-inset-top)) 8px 4px;
-    display: flex; flex-direction: column; gap: 5px;
+  .world-space { flex: 1; min-height: 0; pointer-events: none; position: relative; }
+  /* Island loot video plays ON the quiz sea, not a separate takeover */
+  #worldFx {
+    position: absolute; left: 50%; top: 42%;
+    transform: translate(-50%, -50%) scale(.92);
+    width: min(78vw, 340px); aspect-ratio: 1;
+    z-index: 6; display: none; pointer-events: none;
+    border: 4px solid var(--edge);
+    border-radius: 18px; overflow: hidden;
+    background: #041018;
+    box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #5a3a12;
   }
-  .top {
+  #worldFx.on { display: block; animation: fxIn .35s cubic-bezier(.2,1.3,.4,1) both; }
+  #worldFx video { width: 100%; height: 100%; object-fit: cover; display: block; background: #041018; }
+  #worldFx .fx-label {
+    position: absolute; left: 8px; top: 8px; padding: 3px 8px; border-radius: 999px;
+    background: #3a2a10; color: var(--gold); font-size: .62rem; font-weight: 900;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  @keyframes fxIn { from { transform: translate(-50%, -50%) scale(.72); } to { transform: translate(-50%, -50%) scale(1); } }
+  /* Solid quiz sheet — chrome lives HERE at the bottom, not over the sea */
+  .quiz-sheet {
+    flex: 0 0 auto;
+    max-height: 46vh;
+    background: linear-gradient(180deg, #164556 0%, var(--sheet-2) 100%);
+    border-top: 3px solid var(--edge);
+    box-shadow: 0 -14px 32px rgba(0,0,0,.5);
+    padding: 10px 10px 0;
+    display: flex; flex-direction: column; gap: 8px;
+    overflow: auto;
+  }
+  #main { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  .dock-chrome {
+    flex: 0 0 auto;
+    margin: 2px -10px 0;
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, #0c2a36 0%, #081820 100%);
+    border-top: 2px solid #8a6828;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .dock-chrome .top {
     display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
   }
-  .brand h1 { margin: 0; font-size: 1rem; color: var(--gold); text-shadow: 0 2px 0 #1a0e04; }
-  .brand p { margin: 0; font-size: .65rem; opacity: .9; text-shadow: 0 1px 2px #000; }
-  .chest-timer { width: 48px; height: 48px; position: relative; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
+  .brand h1 { margin: 0; font-size: .95rem; color: var(--gold); text-shadow: 0 2px 0 #1a0e04; }
+  .brand p { margin: 0; font-size: .62rem; opacity: .9; }
+  .chest-timer { width: 46px; height: 46px; position: relative; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
   .chest-timer img { width: 100%; height: 100%; object-fit: contain; }
   .chest-timer .sec {
     position: absolute; inset: 0; display: grid; place-items: center;
-    font-family: var(--display); font-size: 1rem; color: #fff; text-shadow: 0 2px 4px #000;
+    font-family: var(--display); font-size: .95rem; color: #fff; text-shadow: 0 2px 4px #000;
   }
   .ribbon { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
   .ribbon::-webkit-scrollbar { display: none; }
@@ -62,23 +98,12 @@
   }
   .chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
   .chip.you { border-color: var(--gold); }
-  .world-space { flex: 1; min-height: 0; pointer-events: none; }
-  /* Solid quiz sheet — separate from the sea world */
-  .quiz-sheet {
-    flex: 0 0 auto;
-    max-height: 48vh;
-    background: linear-gradient(180deg, var(--sheet) 0%, var(--sheet-2) 100%);
-    border-top: 3px solid var(--edge);
-    box-shadow: 0 -10px 28px rgba(0,0,0,.45);
-    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 8px;
-    overflow: auto;
-  }
   .banner {
-    background: #0f3342;
+    background: linear-gradient(180deg, #18485a 0%, #0f3342 100%);
     border: 2px solid var(--edge);
-    border-radius: 12px;
-    padding: 8px 10px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
   }
   .banner .tag, .quiz-sheet > .tag {
     display: inline-block; margin-bottom: 3px; padding: 2px 7px; border-radius: 999px;
@@ -86,19 +111,20 @@
     font-size: .62rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase;
   }
   .banner h2 {
-    margin: 0; font-size: clamp(.95rem, 3.6vw, 1.1rem); line-height: 1.2;
+    margin: 0; font-size: clamp(.98rem, 3.8vw, 1.15rem); line-height: 1.25;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .banner .muted { margin: 3px 0 0; opacity: .85; font-size: .75rem; }
-  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .banner .muted { margin: 4px 0 0; opacity: .88; font-size: .76rem; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .choice {
-    border: 3px solid #2a6a7c; border-radius: 12px;
-    background: var(--choice);
-    color: var(--cream); padding: 8px; cursor: pointer; text-align: left;
-    display: grid; grid-template-columns: 40px 1fr auto; gap: 7px; align-items: center;
-    min-height: 54px; transition: transform .08s ease, background .12s ease;
+    border: 3px solid #2f7a8e; border-radius: 14px;
+    background: linear-gradient(180deg, #226274 0%, var(--choice) 100%);
+    color: var(--cream); padding: 9px; cursor: pointer; text-align: left;
+    display: grid; grid-template-columns: 44px 1fr auto; gap: 7px; align-items: center;
+    min-height: 58px; transition: transform .08s ease, background .12s ease, border-color .12s ease;
+    box-shadow: 0 4px 0 #0a2a34;
   }
-  .choice img { width: 40px; height: 40px; object-fit: contain; }
+  .choice img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
   .choice strong { display: block; color: var(--gold); font-size: .88rem; }
   .choice span { display: block; font-size: .74rem; line-height: 1.15; }
   .choice .amt { font-family: var(--display); font-size: 1rem; color: var(--gold); }
@@ -162,13 +188,14 @@
     opacity: 0; transition: opacity .3s ease;
   }
   .casino-flash.on { opacity: 1; }
-  /* Full-screen opaque spectacle — never a ghost overlay on the sea */
+  /* Full-screen opaque Poseidon VIDEO — never a ghost overlay on the sea */
   #spectacle {
     position: fixed; inset: 0; z-index: 50; display: none;
     background: #041018; flex-direction: column;
   }
   #spectacle.on { display: flex; }
-  #spectacle .cs-frame {
+  #spectacle .cs-frame,
+  #spectacle video.cs-video {
     flex: 1; min-height: 0; width: 100%; object-fit: cover;
     background: #041018; display: block;
   }
@@ -210,7 +237,7 @@
   <canvas id="sea"></canvas>
   <div class="casino-flash" id="casino"></div>
   <div id="spectacle" aria-live="polite">
-    <img class="cs-frame" id="csFrame" alt="">
+    <video class="cs-video" id="csVideo" playsinline muted></video>
     <div class="cs-summary" id="csSummary">
       <div class="tag" id="csTag">Wildcard</div>
       <h2 class="display" id="csTitle">Poseidon’s Rescue!</h2>
@@ -219,19 +246,26 @@
     </div>
   </div>
   <div id="hud">
-    <div class="sea-chrome">
-      <div class="top">
-        <div class="brand"><h1>TREASURE TRAP</h1><p id="subtitle">Voyage</p></div>
-        <div class="chest-timer" id="chestWrap">
-          <img id="chestImg" src="./assets/chest-full.png" alt="">
-          <div class="sec" id="chestSec">–</div>
-        </div>
+    <div class="world-space" id="worldSpace">
+      <div id="worldFx">
+        <div class="fx-label" id="fxLabel">Plunder</div>
+        <video id="fxVideo" playsinline muted></video>
       </div>
-      <div class="ribbon" id="ribbon"></div>
     </div>
-    <div class="world-space" id="worldSpace"></div>
-    <div class="quiz-sheet" id="main"></div>
-    <div id="err" style="position:absolute;left:8px;right:8px;bottom:48%;pointer-events:none"></div>
+    <div class="quiz-sheet">
+      <div id="main"></div>
+      <div class="dock-chrome">
+        <div class="top">
+          <div class="brand"><h1>TREASURE TRAP</h1><p id="subtitle">Voyage</p></div>
+          <div class="chest-timer" id="chestWrap">
+            <img id="chestImg" src="./assets/chest-full.png" alt="">
+            <div class="sec" id="chestSec">–</div>
+          </div>
+        </div>
+        <div class="ribbon" id="ribbon"></div>
+      </div>
+    </div>
+    <div id="err" style="position:absolute;left:8px;right:8px;bottom:52%;pointer-events:none"></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -251,16 +285,16 @@
   const ISLAND = ["./assets/island-a.png","./assets/island-b.png","./assets/island-c.png","./assets/island-d.png"];
   const SHIP = ["./assets/ship-0.png","./assets/ship-1.png","./assets/ship-2.png","./assets/ship-3.png"];
   const PORTRAIT = ["./assets/portrait-0.png","./assets/portrait-1.png","./assets/portrait-2.png","./assets/portrait-3.png"];
-  /** Opaque full-bleed cutscene JPGs — never translucent overlays on the sea. */
-  const CS_POSEIDON = [
-    "./assets/cs-poseidon-1.jpg",
-    "./assets/cs-poseidon-2.jpg",
-    "./assets/cs-poseidon-3.jpg",
+  /** Island-specific loot videos play on the quiz sea when a ship arrives. */
+  const LOOT_VID = [
+    "./assets/video/loot-a.mp4",
+    "./assets/video/loot-b.mp4",
+    "./assets/video/loot-c.mp4",
+    "./assets/video/loot-d.mp4",
   ];
-  const CS_PLUNDER = [
-    "./assets/cs-plunder-1.jpg",
-    "./assets/cs-plunder-2.jpg",
-  ];
+  const POSEIDON_VID = "./assets/video/poseidon.mp4";
+  const LOOT_STILL = ["./assets/cs-plunder-1.jpg", "./assets/cs-plunder-2.jpg"];
+  const POSEIDON_STILL = ["./assets/cs-poseidon-1.jpg", "./assets/cs-poseidon-2.jpg", "./assets/cs-poseidon-3.jpg"];
 
   const params = new URLSearchParams(location.search);
   let room = params.get("room");
@@ -295,12 +329,15 @@
   const nickInput = document.getElementById("nickInput");
   const casinoEl = document.getElementById("casino");
   const spectacleEl = document.getElementById("spectacle");
-  const csFrameEl = document.getElementById("csFrame");
+  const csVideoEl = document.getElementById("csVideo");
   const csSummaryEl = document.getElementById("csSummary");
   const csTagEl = document.getElementById("csTag");
   const csTitleEl = document.getElementById("csTitle");
   const csGoldEl = document.getElementById("csGold");
   const csBodyEl = document.getElementById("csBody");
+  const worldFxEl = document.getElementById("worldFx");
+  const fxVideoEl = document.getElementById("fxVideo");
+  const fxLabelEl = document.getElementById("fxLabel");
   const chestImg = document.getElementById("chestImg");
   const chestSec = document.getElementById("chestSec");
   const chestWrap = document.getElementById("chestWrap");
@@ -329,10 +366,18 @@
   let sailState = [null, null, null, null];
   let pathPreview = null;
   let hitStopUntil = 0;
-  /** Full-screen opaque spectacle: { kind, t0, animMs, summaryMs, frames, meta, stage } */
+  /** Full-screen Poseidon video spectacle */
   let cutscene = null;
+  /** On-sea island loot video: { island, t0, waitingForSail, seat } */
+  let islandLoot = null;
   let fxParticles = [];
+  let wakeDots = [];
+  let cam = { x: 0, y: 0, z: 1, tx: 0, ty: 0, tz: 1 };
   let lastFrameAt = performance.now();
+  let glitter = [];
+  for (let i = 0; i < 28; i++) {
+    glitter.push({ x: Math.random(), y: Math.random() * 0.55, s: 1 + Math.random() * 2, ph: Math.random() * Math.PI * 2 });
+  }
 
   const BOT_ANSWERS = [0, 0, 1];
   const BOT_NAMES = ["Barnacle Bot", "Polly", "Salty Chip", "Deckhand Dan"];
@@ -397,40 +442,104 @@
     }
   }
 
-  function startCutscene(kind, animMs, meta) {
-    const frames =
-      kind === "poseidon" ? CS_POSEIDON :
-      kind === "plunder" ? CS_PLUNDER :
-      null;
-    // Poseidon / plunder: opaque full-screen takeover. Crash/shark stay world-local (opaque draws).
-    if (frames && frames.length) {
-      cutscene = {
-        kind,
-        t0: performance.now(),
-        animMs: animMs || 3200,
-        summaryMs: kind === "poseidon" ? 3200 : 0,
-        frames,
-        meta: meta || {},
-        stage: "anim",
-        fi: 0,
-      };
-      csSummaryEl.classList.remove("on");
-      csFrameEl.style.display = "block";
-      csFrameEl.src = frames[0];
-      spectacleEl.classList.add("on");
-      if (kind === "poseidon") casinoEl.classList.add("on");
-      if (kind === "plunder" && meta && meta.island != null) {
-        setTimeout(() => launchLootFlies(meta.island), 400);
-      }
+  function stopVideo(el) {
+    if (!el) return;
+    try { el.pause(); el.removeAttribute("src"); el.load(); } catch (_) {}
+  }
+  function playPoseidonVideo(meta) {
+    cutscene = {
+      kind: "poseidon",
+      t0: performance.now(),
+      animMs: 4200,
+      summaryMs: 3200,
+      meta: meta || {},
+      stage: "anim",
+    };
+    csSummaryEl.classList.remove("on");
+    csVideoEl.style.display = "block";
+    stopVideo(csVideoEl);
+    csVideoEl.src = POSEIDON_VID;
+    csVideoEl.onended = () => { if (cutscene && cutscene.stage === "anim") showCutsceneSummary(); };
+    csVideoEl.onerror = () => {
+      // Still fallback: brief still then summary
+      csVideoEl.style.display = "none";
+      const img = document.createElement("img");
+      img.className = "cs-frame";
+      img.src = POSEIDON_STILL[1] || POSEIDON_STILL[0];
+      img.id = "csStillFallback";
+      spectacleEl.insertBefore(img, csSummaryEl);
+      setTimeout(() => showCutsceneSummary(), 1800);
+    };
+    const p = csVideoEl.play();
+    if (p && p.catch) p.catch(() => {});
+    spectacleEl.classList.add("on");
+    casinoEl.classList.add("on");
+  }
+  function queueIslandLoot(islandIdx, seat) {
+    islandLoot = {
+      island: islandIdx,
+      seat: seat == null ? 0 : seat,
+      t0: performance.now(),
+      waitingForSail: true,
+      playing: false,
+    };
+  }
+  function startIslandLootVideo(islandIdx) {
+    if (!islandLoot) islandLoot = { island: islandIdx, seat: 0, t0: performance.now(), waitingForSail: false, playing: true };
+    islandLoot.waitingForSail = false;
+    islandLoot.playing = true;
+    islandLoot.playT0 = performance.now();
+    fxLabelEl.textContent = "Island " + LETTERS[islandIdx] + " plunder";
+    stopVideo(fxVideoEl);
+    fxVideoEl.src = LOOT_VID[islandIdx] || LOOT_VID[0];
+    fxVideoEl.onended = () => endIslandLoot();
+    fxVideoEl.onerror = () => {
+      // solid still card on sea if video missing
+      fxVideoEl.poster = LOOT_STILL[0];
+      setTimeout(endIslandLoot, 2200);
+    };
+    worldFxEl.classList.add("on");
+    const p = fxVideoEl.play();
+    if (p && p.catch) p.catch(() => {});
+    launchLootFlies(islandIdx);
+  }
+  function endIslandLoot() {
+    worldFxEl.classList.remove("on");
+    stopVideo(fxVideoEl);
+    islandLoot = null;
+  }
+  function tickIslandLoot(now) {
+    if (!islandLoot) return;
+    if (islandLoot.waitingForSail) {
+      const s = sailState[islandLoot.seat];
+      const arrived = !s || s.t >= 0.97 || (now - islandLoot.t0 > 5500);
+      if (arrived) startIslandLootVideo(islandLoot.island);
       return;
     }
-    cutscene = { kind, t0: performance.now(), animMs: animMs || 2000, summaryMs: 0, frames: null, meta: meta || {}, stage: "world" };
+    if (islandLoot.playing && now - (islandLoot.playT0 || now) > 5200) endIslandLoot();
+  }
+  function startCutscene(kind, animMs, meta) {
+    if (kind === "poseidon") {
+      playPoseidonVideo(meta);
+      return;
+    }
+    if (kind === "plunder") {
+      // Loot plays ON the quiz sea when the ship has sailed in
+      const isl = meta && meta.island != null ? meta.island : 0;
+      const seat = meta && meta.seat != null ? meta.seat : 0;
+      queueIslandLoot(isl, seat);
+      return;
+    }
+    cutscene = { kind, t0: performance.now(), animMs: animMs || 2000, summaryMs: 0, meta: meta || {}, stage: "world" };
   }
   function showCutsceneSummary() {
     if (!cutscene) return;
     cutscene.stage = "summary";
     cutscene.summaryT0 = performance.now();
-    csFrameEl.style.display = "none";
+    csVideoEl.style.display = "none";
+    stopVideo(csVideoEl);
+    const still = document.getElementById("csStillFallback");
+    if (still) still.remove();
     const meta = cutscene.meta || {};
     if (cutscene.kind === "poseidon") {
       const who = meta.who || "A pirate";
@@ -439,34 +548,24 @@
       csTitleEl.textContent = "Gold saved!";
       csGoldEl.innerHTML = `<b>+${amt}</b> gold`;
       csBodyEl.textContent = `${who} was lifted from the wreck — loot returned to the fleet chest.`;
-    } else {
-      csTagEl.textContent = "Plunder";
-      csTitleEl.textContent = "Haul secured!";
-      csGoldEl.innerHTML = "";
-      csBodyEl.textContent = "Crews cheer as the loot sails home.";
     }
     csSummaryEl.classList.add("on");
+    casinoEl.classList.remove("on");
   }
   function endCutscene() {
     cutscene = null;
     spectacleEl.classList.remove("on");
     csSummaryEl.classList.remove("on");
-    csFrameEl.style.display = "block";
+    csVideoEl.style.display = "block";
+    stopVideo(csVideoEl);
+    const still = document.getElementById("csStillFallback");
+    if (still) still.remove();
     casinoEl.classList.remove("on");
   }
   function tickCutscene(now) {
-    if (!cutscene || !cutscene.frames) return;
+    if (!cutscene) return;
     if (cutscene.stage === "anim") {
-      const u = (now - cutscene.t0) / cutscene.animMs;
-      const fi = Math.min(cutscene.frames.length - 1, Math.floor(Math.max(0, u) * cutscene.frames.length));
-      if (fi !== cutscene.fi) {
-        cutscene.fi = fi;
-        csFrameEl.src = cutscene.frames[fi];
-      }
-      if (u >= 1) {
-        if (cutscene.summaryMs > 0) showCutsceneSummary();
-        else endCutscene();
-      }
+      if (now - cutscene.t0 >= (cutscene.animMs || 4200)) showCutsceneSummary();
       return;
     }
     if (cutscene.stage === "summary") {
@@ -513,8 +612,11 @@
         if (msg.view.phase === "q_reveal") {
           hitStopUntil = performance.now() + 60;
           const mine = msg.view.reveal && msg.view.reveal.results && msg.view.reveal.results[msg.you];
+          const mySeat = (msg.view.players || []).findIndex((p) => p.id === msg.you);
           if (mine && mine.correct) {
-            startCutscene("plunder", 2800, { island: msg.view.reveal.correctIndex });
+            startCutscene("plunder", 4200, { island: msg.view.reveal.correctIndex, seat: Math.max(0, mySeat) });
+          } else if (mine && !mine.correct && mine.index != null) {
+            startCutscene("crash", 1600, { island: mine.index });
           }
         }
         if (msg.view.phase === "loot_reveal") {
@@ -540,7 +642,7 @@
         const ven = msg.view.ventures[vi];
         const cell = msg.view.reveal && msg.view.reveal.outcomes && msg.view.reveal.outcomes[msg.you]
           && msg.view.reveal.outcomes[msg.you].byVenture[ven.id];
-        if (cell && cell.ok) startCutscene("plunder", 2800, { island: ven.island });
+        if (cell && cell.ok) startCutscene("plunder", 4200, { island: ven.island, seat: Math.max(0, (msg.view.players || []).findIndex((p) => p.id === msg.you)) });
         else if (cell && cell.put) startCutscene("crash", 1600, { island: ven.island });
       }
       render(msg);
@@ -572,7 +674,7 @@
   // --- canvas ---
   const sea = document.getElementById("sea");
   const sctx = sea.getContext("2d");
-  let bg = null, fogImg = null;
+  let bg = null, fogImg = null, cloudsImg = null, reefImg = null, gullImg = null;
   let shipImgs = [], islandImgs = [];
   let imgCoinBurst = null, imgChestOpen = null, imgSparkle = null, imgImpact = null;
   let imgSplash = null, imgWake = null, imgCrash = null, imgConfetti = null;
@@ -660,9 +762,14 @@
     } else {
       s.to.x = to.x; s.to.y = to.y;
     }
-    // ~3.6s full crossing at rate 0.28 / sec
-    s.t = Math.min(1, s.t + dt * 0.28);
+    // ~5.5s full crossing — slow, readable voyage through the archipelago
+    s.t = Math.min(1, s.t + dt * 0.18);
     return sailPoint(s.from, s.to, s.t, s.curve);
+  }
+  function sailHeading(from, to, t, curve) {
+    const a = sailPoint(from, to, Math.max(0, t - 0.02), curve);
+    const b = sailPoint(from, to, Math.min(1, t + 0.02), curve);
+    return Math.atan2(b.y - a.y, b.x - a.x);
   }
 
   function drawImg(im, x, y, sz) {
@@ -678,122 +785,179 @@
     sctx.translate(shake, 0);
 
     const v = lastState && lastState.view;
-    // Always open ocean — ships never sail over land in the backdrop
+    const t = (now - t0) / 1000;
+    const sh = seaH(H);
+    const dt = Math.min(0.05, (now - lastFrameAt) / 1000);
+
+    cam.x += (cam.tx - cam.x) * Math.min(1, dt * 2.2);
+    cam.y += (cam.ty - cam.y) * Math.min(1, dt * 2.2);
+    cam.z += (cam.tz - cam.z) * Math.min(1, dt * 1.8);
+
+    sctx.save();
+    sctx.translate(W / 2, sh * 0.48);
+    sctx.scale(cam.z, cam.z);
+    sctx.translate(-W / 2 - cam.x, -sh * 0.48 - cam.y);
+
     if (bg) {
-      const sh = seaH(H);
-      // Cover full screen with water; quiz sheet paints over the lower half in DOM
-      const scale = Math.max(W / bg.width, H / bg.height);
+      const scale = Math.max(W / bg.width, H / bg.height) * 1.08;
       const dw = bg.width * scale, dh = bg.height * scale;
-      const ox = Math.sin((now - t0) / 1000 * 0.12) * 5;
-      sctx.drawImage(bg, (W - dw) / 2 + ox, (H - dh) / 2, dw, dh);
-      void sh;
+      const ox = Math.sin(t * 0.08) * 10;
+      const oy = Math.cos(t * 0.06) * 6;
+      sctx.drawImage(bg, (W - dw) / 2 + ox, (H - dh) / 2 + oy - 20, dw, dh);
     } else {
       const g = sctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
+      g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
       sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
     }
 
-    const t = (now - t0) / 1000;
-    {
-      const sh = seaH(H);
-      // Distant horizon isles — atmosphere only, never covering answer islands / fleet
-      const far = [
-        { x: W * 0.12, y: sh * 0.14, sz: Math.min(42, W * 0.1), i: 2 },
-        { x: W * 0.55, y: sh * 0.10, sz: Math.min(36, W * 0.085), i: 0 },
-        { x: W * 0.88, y: sh * 0.16, sz: Math.min(40, W * 0.095), i: 1 },
-      ];
-      for (const f of far) {
-        const im = islandImgs[f.i];
-        const bob = Math.sin(t * 0.7 + f.i) * 1.2;
-        sctx.fillStyle = "rgba(5,25,35,.35)";
-        sctx.beginPath();
-        sctx.ellipse(f.x, f.y + f.sz * 0.3 + bob, f.sz * 0.4, f.sz * 0.1, 0, 0, Math.PI * 2);
-        sctx.fill();
-        if (im) sctx.drawImage(im, f.x - f.sz / 2, f.y - f.sz / 2 + bob, f.sz, f.sz);
-      }
-
-      // soft wave lines in sea band only (solid mid-tone — no translucent sprite overlays)
-      sctx.strokeStyle = "#2f7384";
-      sctx.lineWidth = 2;
-      for (let i = 0; i < 5; i++) {
-        const y = sh * 0.22 + i * sh * 0.12;
-        sctx.beginPath();
-        for (let x = 0; x <= W; x += 14) {
-          const yy = y + Math.sin(x * 0.014 + t * 1.5 + i) * 4;
-          if (x === 0) sctx.moveTo(x, yy); else sctx.lineTo(x, yy);
-        }
-        sctx.stroke();
-      }
-
-      // answer islands (slightly bigger)
-      for (let i = 0; i < 4; i++) {
-        const p = islandPos(i, W, H);
-        const bob = Math.sin(t * 1.05 + i) * 2.5;
-        const im = islandImgs[i];
-        const sz = Math.min(128, W * 0.30);
-        sctx.fillStyle = "rgba(5,25,35,.32)";
-        sctx.beginPath();
-        sctx.ellipse(p.x, p.y + sz * 0.28 + bob, sz * 0.38, sz * 0.10, 0, 0, Math.PI * 2);
-        sctx.fill();
-        if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
-        sctx.fillStyle = "#0a1e28";
-        sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 12, 0, Math.PI * 2); sctx.fill();
-        sctx.fillStyle = "#ffd56a";
-        sctx.font = "900 13px Trebuchet MS,sans-serif";
-        sctx.textAlign = "center"; sctx.textBaseline = "middle";
-        sctx.fillText(LETTERS[i], p.x - sz * 0.28, p.y - sz * 0.22 + bob);
-      }
-
-      if (pathPreview != null) {
-        const mySeat = (v && v.players || []).findIndex((p) => p.id === (lastState && lastState.you));
-        if (mySeat >= 0) {
-          const from = fleetPos(mySeat, Math.max(2, (v.players || []).length), W, H);
-          const to = dockPos(pathPreview, W, H, 0);
-          const curve = mySeat % 2 === 0 ? 1 : -1;
-          sctx.strokeStyle = "#ffd56a";
-          sctx.setLineDash([7, 7]); sctx.lineWidth = 3;
-          sctx.beginPath();
-          for (let k = 0; k <= 18; k++) {
-            const pt = sailPoint(from, to, k / 18, curve);
-            if (k === 0) sctx.moveTo(pt.x, pt.y); else sctx.lineTo(pt.x, pt.y);
-          }
-          sctx.stroke();
-          sctx.setLineDash([]);
-          const mid = sailPoint(from, to, 0.5, curve);
-          if (imgWake) drawImg(imgWake, mid.x, mid.y, 48);
-        }
-      }
-
-      const players = (v && v.players) || [];
-      const n = Math.max(players.length, 2);
-      const dt = Math.min(0.05, (now - lastFrameAt) / 1000);
-      players.forEach((pl, seat) => {
-        const target = chosenIsland[seat];
-        const from = fleetPos(seat, n, W, H);
-        let to = from;
-        if (target === -1) to = fogHoldPos(W, H);
-        else if (target != null) to = dockPos(target, W, H, seat);
-        const pos = ensureSail(seat, from, to, targetKey(target), dt);
-        const x = pos.x;
-        const y = pos.y + Math.sin(t * 2.1 + seat) * 3;
-        const im = shipImgs[seat % 4];
-        const sz = 70 + (pl.id === (lastState && lastState.you) ? 8 : 0);
-        sctx.fillStyle = "rgba(8,40,50,.28)";
-        sctx.beginPath(); sctx.ellipse(x, y + sz * 0.28, sz * 0.32, sz * 0.08, 0, 0, Math.PI * 2); sctx.fill();
-        if (target === -1 && fogImg && (sailState[seat] && sailState[seat].t > 0.45)) {
-          drawImg(fogImg, x, y - 6, 96);
-        }
-        if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
-        sctx.fillStyle = "#081820";
-        roundRect(sctx, x - 40, y + 28, 80, 16, 7); sctx.fill();
-        sctx.fillStyle = "#fff6e4";
-        sctx.font = "800 10px Trebuchet MS,sans-serif";
-        sctx.textAlign = "center";
-        sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 39);
-      });
+    for (const g of glitter) {
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2.2 + g.ph));
+      if (tw < 0.45) continue;
+      sctx.fillStyle = "#fff6c8";
+      sctx.beginPath();
+      sctx.arc(g.x * W, g.y * sh, g.s * tw, 0, Math.PI * 2);
+      sctx.fill();
     }
 
-    // particles — solid sprites, no alpha fade ghosts
+    if (cloudsImg) {
+      const cw = W * 1.35, ch = cw * (cloudsImg.height / cloudsImg.width);
+      const cx = ((t * 8) % (cw + W)) - cw * 0.2;
+      sctx.drawImage(cloudsImg, cx, sh * 0.02, cw, ch * 0.55);
+      sctx.drawImage(cloudsImg, cx - cw * 0.7, sh * 0.08, cw * 0.85, ch * 0.42);
+    }
+
+    const far = [
+      { x: W * 0.10, y: sh * 0.16, sz: Math.min(48, W * 0.11), i: 2 },
+      { x: W * 0.48, y: sh * 0.11, sz: Math.min(40, W * 0.09), i: 0 },
+      { x: W * 0.86, y: sh * 0.18, sz: Math.min(46, W * 0.10), i: 1 },
+    ];
+    for (const f of far) {
+      const im = islandImgs[f.i];
+      const bob = Math.sin(t * 0.65 + f.i) * 1.4;
+      sctx.fillStyle = "rgba(8,40,55,.30)";
+      sctx.beginPath();
+      sctx.ellipse(f.x, f.y + f.sz * 0.32 + bob, f.sz * 0.42, f.sz * 0.1, 0, 0, Math.PI * 2);
+      sctx.fill();
+      if (im) sctx.drawImage(im, f.x - f.sz / 2, f.y - f.sz / 2 + bob, f.sz, f.sz);
+    }
+
+    if (reefImg) {
+      const reefs = [
+        { x: W * 0.50, y: sh * 0.52, sz: Math.min(58, W * 0.14) },
+        { x: W * 0.08, y: sh * 0.58, sz: Math.min(44, W * 0.11) },
+        { x: W * 0.92, y: sh * 0.62, sz: Math.min(50, W * 0.12) },
+      ];
+      for (const r of reefs) {
+        const bob = Math.sin(t * 1.1 + r.x) * 2;
+        sctx.drawImage(reefImg, r.x - r.sz / 2, r.y - r.sz / 2 + bob, r.sz, r.sz);
+      }
+    }
+
+    if (gullImg) {
+      const gx = ((t * 28) % (W + 120)) - 60;
+      const gy = sh * 0.20 + Math.sin(t * 1.4) * 8;
+      sctx.drawImage(gullImg, gx, gy, 54, 54);
+      sctx.drawImage(gullImg, gx - 70, gy + 18, 40, 40);
+    }
+
+    for (let i = 0; i < 4; i++) {
+      const p = islandPos(i, W, H);
+      const bob = Math.sin(t * 1.05 + i) * 2.5;
+      const im = islandImgs[i];
+      const sz = Math.min(128, W * 0.30);
+      const highlight = pathPreview === i || (islandLoot && islandLoot.island === i);
+      if (highlight) {
+        sctx.fillStyle = "rgba(255,213,106,.22)";
+        sctx.beginPath();
+        sctx.ellipse(p.x, p.y + bob, sz * 0.48, sz * 0.36, 0, 0, Math.PI * 2);
+        sctx.fill();
+      }
+      sctx.fillStyle = "rgba(5,25,35,.32)";
+      sctx.beginPath();
+      sctx.ellipse(p.x, p.y + sz * 0.28 + bob, sz * 0.38, sz * 0.10, 0, 0, Math.PI * 2);
+      sctx.fill();
+      if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
+      sctx.fillStyle = "#0a1e28";
+      sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 12, 0, Math.PI * 2); sctx.fill();
+      sctx.fillStyle = "#ffd56a";
+      sctx.font = "900 13px Trebuchet MS,sans-serif";
+      sctx.textAlign = "center"; sctx.textBaseline = "middle";
+      sctx.fillText(LETTERS[i], p.x - sz * 0.28, p.y - sz * 0.22 + bob);
+    }
+
+    if (pathPreview != null) {
+      const mySeat = (v && v.players || []).findIndex((p) => p.id === (lastState && lastState.you));
+      if (mySeat >= 0) {
+        const from = fleetPos(mySeat, Math.max(2, (v.players || []).length), W, H);
+        const to = dockPos(pathPreview, W, H, 0);
+        const curve = mySeat % 2 === 0 ? 1 : -1;
+        sctx.strokeStyle = "#ffd56a";
+        sctx.setLineDash([7, 7]); sctx.lineWidth = 3;
+        sctx.beginPath();
+        for (let k = 0; k <= 22; k++) {
+          const pt = sailPoint(from, to, k / 22, curve);
+          if (k === 0) sctx.moveTo(pt.x, pt.y); else sctx.lineTo(pt.x, pt.y);
+        }
+        sctx.stroke();
+        sctx.setLineDash([]);
+      }
+    }
+
+    wakeDots = wakeDots.filter((w) => {
+      const age = now - w.t0;
+      if (age > w.life) return false;
+      const a = 1 - age / w.life;
+      sctx.fillStyle = "#cfeef6";
+      sctx.beginPath();
+      sctx.ellipse(w.x, w.y, 7 * a, 3.5 * a, w.rot || 0, 0, Math.PI * 2);
+      sctx.fill();
+      return true;
+    });
+
+    const players = (v && v.players) || [];
+    const n = Math.max(players.length, 2);
+    let focusX = W * 0.5, focusY = sh * 0.7, focusZ = 1;
+    players.forEach((pl, seat) => {
+      const target = chosenIsland[seat];
+      const from = fleetPos(seat, n, W, H);
+      let to = from;
+      if (target === -1) to = fogHoldPos(W, H);
+      else if (target != null) to = dockPos(target, W, H, seat);
+      const s = sailState[seat];
+      const pos = ensureSail(seat, from, to, targetKey(target), dt);
+      const x = pos.x;
+      const y = pos.y + Math.sin(t * 2.1 + seat) * 3;
+      const sailing = s && s.t > 0.02 && s.t < 0.98 && target != null;
+      if (sailing && Math.random() < 0.55) {
+        wakeDots.push({ x: x - 6, y: y + 18, t0: now, life: 700 + Math.random() * 400, rot: (s.curve || 1) * 0.3 });
+      }
+      const im = shipImgs[seat % 4];
+      const sz = 70 + (pl.id === (lastState && lastState.you) ? 10 : 0);
+      sctx.fillStyle = "rgba(8,40,50,.28)";
+      sctx.beginPath(); sctx.ellipse(x, y + sz * 0.28, sz * 0.32, sz * 0.08, 0, 0, Math.PI * 2); sctx.fill();
+      if (target === -1 && fogImg && (sailState[seat] && sailState[seat].t > 0.45)) drawImg(fogImg, x, y - 6, 96);
+      sctx.save();
+      sctx.translate(x, y);
+      if (sailing) {
+        const h = sailHeading(s.from, s.to, s.t, s.curve);
+        sctx.rotate(Math.max(-0.28, Math.min(0.28, (h - Math.PI / 2) * 0.35)));
+      }
+      if (im) sctx.drawImage(im, -sz / 2, -sz / 2, sz, sz);
+      sctx.restore();
+      sctx.fillStyle = "#081820";
+      roundRect(sctx, x - 40, y + 28, 80, 16, 7); sctx.fill();
+      sctx.fillStyle = "#fff6e4";
+      sctx.font = "800 10px Trebuchet MS,sans-serif";
+      sctx.textAlign = "center";
+      sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 39);
+      if (pl.id === (lastState && lastState.you) && sailing) { focusX = x; focusY = y; focusZ = 1.08; }
+    });
+    cam.tx = (focusX - W * 0.5) * 0.18;
+    cam.ty = (focusY - sh * 0.55) * 0.12;
+    cam.tz = focusZ;
+
+    sctx.restore();
+
     fxParticles = fxParticles.filter((p) => {
       const age = now - p.t0;
       if (age > p.life) return false;
@@ -805,7 +969,6 @@
       return true;
     });
 
-    // flying loot coins (island → ship)
     flyCoins = flyCoins.filter((c) => {
       const age = (now - c.t0) / c.dur;
       if (age >= 1 || age < 0) return age < 1;
@@ -816,7 +979,6 @@
       return true;
     });
 
-    // World-local cutscenes only (crash / shark). Poseidon & plunder use #spectacle.
     if (cutscene && cutscene.stage === "world") {
       const u = (now - cutscene.t0) / cutscene.animMs;
       if (u >= 1) endCutscene();
@@ -872,6 +1034,7 @@
   function frame(now) {
     requestAnimationFrame(frame);
     tickCutscene(now);
+    tickIslandLoot(now);
     drawSea(now);
     lastFrameAt = now;
     if (lastState && lastState.view) tickClock(lastState.view);
@@ -1107,7 +1270,7 @@
       <button class="big pulse" id="resetBtn" style="margin-top:8px">PLAY AGAIN</button>
     </div>`;
     document.getElementById("resetBtn").onclick = () => {
-      botBusyKey = ""; clearBotTimers(); endCutscene();
+      botBusyKey = ""; clearBotTimers(); endCutscene(); endIslandLoot();
       send({ type: "reset" });
       if (wantBot) later(300, connectBot);
     };
@@ -1130,10 +1293,16 @@
 
   async function boot() {
     bg = await loadImg("./assets/bg-sea.jpg");
+    cloudsImg = await loadImg("./assets/clouds.png");
+    reefImg = await loadImg("./assets/reef-rocks.png");
+    gullImg = await loadImg("./assets/seagulls.png");
     fogImg = await loadImg("./assets/fog.png");
     sharkImg = await loadImg("./assets/shark.png");
     shipImgs = await Promise.all(SHIP.map(loadImg));
     islandImgs = await Promise.all(ISLAND.map(loadImg));
+    // Preload videos so arrival loot starts instantly
+    LOOT_VID.forEach((src) => { const v = document.createElement("video"); v.preload = "auto"; v.muted = true; v.src = src; });
+    { const v = document.createElement("video"); v.preload = "auto"; v.muted = true; v.src = POSEIDON_VID; }
     imgCoinBurst = await loadImg("./assets/vfx-coin-burst.png");
     imgChestOpen = await loadImg("./assets/vfx-chest-open.png");
     imgSparkle = await loadImg("./assets/vfx-sparkle.png");
