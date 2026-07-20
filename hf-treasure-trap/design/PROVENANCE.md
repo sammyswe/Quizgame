@@ -31,11 +31,12 @@ Model: `nano_banana_pro` @ 2k. STYLE FORMULA from `STYLE_FORMULA.txt`.
 
 Raw downloads in `raw/`; cutouts in `assets/`.
 
-## Polish pack 2026-07-20b (dock / cutscenes / land islands)
+## Opaque cutscene pack 2026-07-20c
 
 | asset | notes |
 |---|---|
-| island-land-* | land-only biomes replacing water-disc islands |
-| poseidon-rise/lift/splash/wave/reach | Poseidon rescue cutscene frames |
-| vfx-* | plunder, crash, splash, wake, confetti |
-| plunder-crew, ship-cheer, flag-buoy | celebration / berth props |
+| bg-sea.jpg | Ocean with distant horizon isles (replaced plain water) |
+| cs-poseidon-1/2/3.jpg | Full-screen opaque Poseidon rescue frames |
+| cs-plunder-1/2.jpg | Full-screen opaque plunder frames |
+
+Client: Poseidon takes over the whole screen, then shows gold-saved summary. Ships use slower curved sail paths. Answer islands ~28% larger.

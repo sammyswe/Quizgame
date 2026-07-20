@@ -52,7 +52,8 @@ const Q_MS = 18000;
 const LOOT_MS = 40000;
 const REVEAL_HOLD_MS = 5200;
 const VENTURE_REVEAL_MS = 3200;
-const WILDCARD_MS = 5200;
+/** Poseidon: full-screen opaque cutscene + gold-saved summary needs room. */
+const WILDCARD_MS = 7800;
 const LOOT_INTRO_MS = 2600;
 const BASE_SCORE = 100;
 const SPEED_BONUS_MAX = 40;

@@ -162,14 +162,41 @@
     opacity: 0; transition: opacity .3s ease;
   }
   .casino-flash.on { opacity: 1; }
-  .cutscene-veil {
-    position: fixed; inset: 0; z-index: 12; pointer-events: none;
-    background: radial-gradient(circle at 50% 45%, rgba(0,20,40,.15), rgba(0,10,20,.55));
-    opacity: 0; transition: opacity .25s ease;
+  /* Full-screen opaque spectacle — never a ghost overlay on the sea */
+  #spectacle {
+    position: fixed; inset: 0; z-index: 50; display: none;
+    background: #041018; flex-direction: column;
   }
-  .cutscene-veil.on { opacity: 1; }
+  #spectacle.on { display: flex; }
+  #spectacle .cs-frame {
+    flex: 1; min-height: 0; width: 100%; object-fit: cover;
+    background: #041018; display: block;
+  }
+  #spectacle .cs-summary {
+    display: none; position: absolute; inset: 0;
+    background: linear-gradient(180deg, #0a2a38 0%, #041018 100%);
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px 18px max(24px, env(safe-area-inset-bottom));
+    text-align: center; gap: 10px;
+  }
+  #spectacle .cs-summary.on { display: flex; }
+  #spectacle .cs-summary .tag {
+    display: inline-block; padding: 4px 10px; border-radius: 999px;
+    background: #3a2a10; color: var(--gold);
+    font-size: .7rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+  }
+  #spectacle .cs-summary h2 {
+    margin: 0; font-size: clamp(1.4rem, 6vw, 2rem); color: var(--gold);
+    text-shadow: 0 3px 0 #1a0e04;
+  }
+  #spectacle .cs-summary .gold-line {
+    font-family: var(--display); font-size: clamp(1.6rem, 7vw, 2.4rem);
+    color: #fff6e4; margin: 6px 0;
+  }
+  #spectacle .cs-summary .gold-line b { color: var(--gold); }
+  #spectacle .cs-summary p { margin: 0; opacity: .9; font-size: .95rem; max-width: 28rem; }
   .pop { animation: pop .3s cubic-bezier(.2,1.4,.4,1); }
-  @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { from { transform: scale(.94); } to { transform: scale(1); } }
   .hand {
     position: absolute; right: 16%; bottom: 34%; width: 52px; height: 52px; border-radius: 50%;
     background: rgba(255,213,106,.22); border: 2px solid var(--gold);
@@ -182,7 +209,15 @@
 <div id="stage">
   <canvas id="sea"></canvas>
   <div class="casino-flash" id="casino"></div>
-  <div class="cutscene-veil" id="veil"></div>
+  <div id="spectacle" aria-live="polite">
+    <img class="cs-frame" id="csFrame" alt="">
+    <div class="cs-summary" id="csSummary">
+      <div class="tag" id="csTag">Wildcard</div>
+      <h2 class="display" id="csTitle">Poseidon’s Rescue!</h2>
+      <div class="gold-line" id="csGold"></div>
+      <p id="csBody"></p>
+    </div>
+  </div>
   <div id="hud">
     <div class="sea-chrome">
       <div class="top">
@@ -216,12 +251,15 @@
   const ISLAND = ["./assets/island-a.png","./assets/island-b.png","./assets/island-c.png","./assets/island-d.png"];
   const SHIP = ["./assets/ship-0.png","./assets/ship-1.png","./assets/ship-2.png","./assets/ship-3.png"];
   const PORTRAIT = ["./assets/portrait-0.png","./assets/portrait-1.png","./assets/portrait-2.png","./assets/portrait-3.png"];
-  const POSEIDON_FRAMES = [
-    "./assets/poseidon-rise.png",
-    "./assets/poseidon-wave.png",
-    "./assets/poseidon-lift.png",
-    "./assets/poseidon-reach.png",
-    "./assets/poseidon-splash.png",
+  /** Opaque full-bleed cutscene JPGs — never translucent overlays on the sea. */
+  const CS_POSEIDON = [
+    "./assets/cs-poseidon-1.jpg",
+    "./assets/cs-poseidon-2.jpg",
+    "./assets/cs-poseidon-3.jpg",
+  ];
+  const CS_PLUNDER = [
+    "./assets/cs-plunder-1.jpg",
+    "./assets/cs-plunder-2.jpg",
   ];
 
   const params = new URLSearchParams(location.search);
@@ -256,7 +294,13 @@
   const nickModal = document.getElementById("nickModal");
   const nickInput = document.getElementById("nickInput");
   const casinoEl = document.getElementById("casino");
-  const veilEl = document.getElementById("veil");
+  const spectacleEl = document.getElementById("spectacle");
+  const csFrameEl = document.getElementById("csFrame");
+  const csSummaryEl = document.getElementById("csSummary");
+  const csTagEl = document.getElementById("csTag");
+  const csTitleEl = document.getElementById("csTitle");
+  const csGoldEl = document.getElementById("csGold");
+  const csBodyEl = document.getElementById("csBody");
   const chestImg = document.getElementById("chestImg");
   const chestSec = document.getElementById("chestSec");
   const chestWrap = document.getElementById("chestWrap");
@@ -281,11 +325,14 @@
   let lastState = null, clockSkew = 0, timeoutSentFor = null, shakeUntil = 0;
   let botBusyKey = "", botTimers = [];
   let chosenIsland = [null, null, null, null];
-  let sailProgress = [0, 0, 0, 0];
+  /** Per-seat curved sail: { from, to, t, curve, key } */
+  let sailState = [null, null, null, null];
   let pathPreview = null;
   let hitStopUntil = 0;
-  let cutscene = null; // { kind, t0, dur, meta }
+  /** Full-screen opaque spectacle: { kind, t0, animMs, summaryMs, frames, meta, stage } */
+  let cutscene = null;
   let fxParticles = [];
+  let lastFrameAt = performance.now();
 
   const BOT_ANSWERS = [0, 0, 1];
   const BOT_NAMES = ["Barnacle Bot", "Polly", "Salty Chip", "Deckhand Dan"];
@@ -350,15 +397,81 @@
     }
   }
 
-  function startCutscene(kind, dur, meta) {
-    cutscene = { kind, t0: performance.now(), dur, meta: meta || {} };
-    veilEl.classList.add("on");
-    if (kind === "poseidon") casinoEl.classList.add("on");
+  function startCutscene(kind, animMs, meta) {
+    const frames =
+      kind === "poseidon" ? CS_POSEIDON :
+      kind === "plunder" ? CS_PLUNDER :
+      null;
+    // Poseidon / plunder: opaque full-screen takeover. Crash/shark stay world-local (opaque draws).
+    if (frames && frames.length) {
+      cutscene = {
+        kind,
+        t0: performance.now(),
+        animMs: animMs || 3200,
+        summaryMs: kind === "poseidon" ? 3200 : 0,
+        frames,
+        meta: meta || {},
+        stage: "anim",
+        fi: 0,
+      };
+      csSummaryEl.classList.remove("on");
+      csFrameEl.style.display = "block";
+      csFrameEl.src = frames[0];
+      spectacleEl.classList.add("on");
+      if (kind === "poseidon") casinoEl.classList.add("on");
+      if (kind === "plunder" && meta && meta.island != null) {
+        setTimeout(() => launchLootFlies(meta.island), 400);
+      }
+      return;
+    }
+    cutscene = { kind, t0: performance.now(), animMs: animMs || 2000, summaryMs: 0, frames: null, meta: meta || {}, stage: "world" };
+  }
+  function showCutsceneSummary() {
+    if (!cutscene) return;
+    cutscene.stage = "summary";
+    cutscene.summaryT0 = performance.now();
+    csFrameEl.style.display = "none";
+    const meta = cutscene.meta || {};
+    if (cutscene.kind === "poseidon") {
+      const who = meta.who || "A pirate";
+      const amt = meta.amount != null ? meta.amount : 0;
+      csTagEl.textContent = "Poseidon’s Rescue";
+      csTitleEl.textContent = "Gold saved!";
+      csGoldEl.innerHTML = `<b>+${amt}</b> gold`;
+      csBodyEl.textContent = `${who} was lifted from the wreck — loot returned to the fleet chest.`;
+    } else {
+      csTagEl.textContent = "Plunder";
+      csTitleEl.textContent = "Haul secured!";
+      csGoldEl.innerHTML = "";
+      csBodyEl.textContent = "Crews cheer as the loot sails home.";
+    }
+    csSummaryEl.classList.add("on");
   }
   function endCutscene() {
     cutscene = null;
-    veilEl.classList.remove("on");
+    spectacleEl.classList.remove("on");
+    csSummaryEl.classList.remove("on");
+    csFrameEl.style.display = "block";
     casinoEl.classList.remove("on");
+  }
+  function tickCutscene(now) {
+    if (!cutscene || !cutscene.frames) return;
+    if (cutscene.stage === "anim") {
+      const u = (now - cutscene.t0) / cutscene.animMs;
+      const fi = Math.min(cutscene.frames.length - 1, Math.floor(Math.max(0, u) * cutscene.frames.length));
+      if (fi !== cutscene.fi) {
+        cutscene.fi = fi;
+        csFrameEl.src = cutscene.frames[fi];
+      }
+      if (u >= 1) {
+        if (cutscene.summaryMs > 0) showCutsceneSummary();
+        else endCutscene();
+      }
+      return;
+    }
+    if (cutscene.stage === "summary") {
+      if (now - (cutscene.summaryT0 || now) >= cutscene.summaryMs) endCutscene();
+    }
   }
   function spawnBurst(x, y, n) {
     for (let i = 0; i < n; i++) {
@@ -409,7 +522,13 @@
         }
         if (msg.view.phase === "loot_wildcard") {
           if (msg.view.reveal && msg.view.reveal.poseidon) {
-            startCutscene("poseidon", 4800, msg.view.reveal.poseidon);
+            const pid = msg.view.reveal.poseidon.playerId;
+            const who = ((msg.view.players || []).find((p) => p.id === pid) || {}).nick || "A pirate";
+            startCutscene("poseidon", 3600, {
+              playerId: pid,
+              amount: msg.view.reveal.poseidon.amount,
+              who,
+            });
           } else if (msg.view.reveal && msg.view.reveal.shark) {
             startCutscene("shark", 2400, msg.view.reveal.shark);
           }
@@ -454,7 +573,7 @@
   const sea = document.getElementById("sea");
   const sctx = sea.getContext("2d");
   let bg = null, fogImg = null;
-  let shipImgs = [], islandImgs = [], poseidonFrames = [];
+  let shipImgs = [], islandImgs = [];
   let imgCoinBurst = null, imgChestOpen = null, imgSparkle = null, imgImpact = null;
   let imgSplash = null, imgWake = null, imgCrash = null, imgConfetti = null;
   let imgCheer = null, imgPlunderCrew = null, sharkImg = null;
@@ -488,8 +607,8 @@
   function dockPos(i, W, H, seatOffset) {
     const p = islandPos(i, W, H);
     const outward = (i % 2 === 0) ? 1 : -1;
-    const ox = outward * Math.min(62, W * 0.13);
-    const oy = Math.min(42, H * 0.04) + (seatOffset || 0) * 12;
+    const ox = outward * Math.min(72, W * 0.15);
+    const oy = Math.min(48, H * 0.045) + (seatOffset || 0) * 14;
     return { x: p.x + ox, y: p.y + oy };
   }
   function fleetPos(seat, n, W, H) {
@@ -502,11 +621,53 @@
     return { x: W * 0.5, y: seaH(H) * 0.78 };
   }
 
-  function drawImg(im, x, y, sz, alpha) {
+  function easeInOut(t) {
+    return t * t * (3 - 2 * t);
+  }
+  /** Quadratic Bezier sail — ships arc across open water instead of teleporting in a line. */
+  function sailPoint(from, to, t, curve) {
+    const e = easeInOut(Math.max(0, Math.min(1, t)));
+    const mx = (from.x + to.x) * 0.5;
+    const my = (from.y + to.y) * 0.5;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const bulge = Math.min(90, 28 + len * 0.22);
+    const cx = mx + (-dy / len) * bulge * curve;
+    const cy = my + (dx / len) * bulge * curve * 0.55;
+    const u = 1 - e;
+    return {
+      x: u * u * from.x + 2 * u * e * cx + e * e * to.x,
+      y: u * u * from.y + 2 * u * e * cy + e * e * to.y,
+    };
+  }
+  function targetKey(target) {
+    if (target == null) return "home";
+    if (target === -1) return "fog";
+    return "i" + target;
+  }
+  function ensureSail(seat, fromHome, to, key, dt) {
+    let s = sailState[seat];
+    if (!s || s.key !== key) {
+      const cur = s ? sailPoint(s.from, s.to, s.t, s.curve) : fromHome;
+      s = sailState[seat] = {
+        from: { x: cur.x, y: cur.y },
+        to: { x: to.x, y: to.y },
+        t: 0,
+        curve: (seat % 2 === 0 ? 1 : -1) * (1 + (seat % 3) * 0.15),
+        key,
+      };
+    } else {
+      s.to.x = to.x; s.to.y = to.y;
+    }
+    // ~3.6s full crossing at rate 0.28 / sec
+    s.t = Math.min(1, s.t + dt * 0.28);
+    return sailPoint(s.from, s.to, s.t, s.curve);
+  }
+
+  function drawImg(im, x, y, sz) {
     if (!im) return;
-    sctx.globalAlpha = alpha == null ? 1 : alpha;
     sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
-    sctx.globalAlpha = 1;
   }
 
   function drawSea(now) {
@@ -534,9 +695,26 @@
 
     const t = (now - t0) / 1000;
     {
-      // soft wave lines in sea band only
-      sctx.globalAlpha = 0.16;
       const sh = seaH(H);
+      // Distant horizon isles — atmosphere only, never covering answer islands / fleet
+      const far = [
+        { x: W * 0.12, y: sh * 0.14, sz: Math.min(42, W * 0.1), i: 2 },
+        { x: W * 0.55, y: sh * 0.10, sz: Math.min(36, W * 0.085), i: 0 },
+        { x: W * 0.88, y: sh * 0.16, sz: Math.min(40, W * 0.095), i: 1 },
+      ];
+      for (const f of far) {
+        const im = islandImgs[f.i];
+        const bob = Math.sin(t * 0.7 + f.i) * 1.2;
+        sctx.fillStyle = "rgba(5,25,35,.35)";
+        sctx.beginPath();
+        sctx.ellipse(f.x, f.y + f.sz * 0.3 + bob, f.sz * 0.4, f.sz * 0.1, 0, 0, Math.PI * 2);
+        sctx.fill();
+        if (im) sctx.drawImage(im, f.x - f.sz / 2, f.y - f.sz / 2 + bob, f.sz, f.sz);
+      }
+
+      // soft wave lines in sea band only (solid mid-tone — no translucent sprite overlays)
+      sctx.strokeStyle = "#2f7384";
+      sctx.lineWidth = 2;
       for (let i = 0; i < 5; i++) {
         const y = sh * 0.22 + i * sh * 0.12;
         sctx.beginPath();
@@ -544,25 +722,24 @@
           const yy = y + Math.sin(x * 0.014 + t * 1.5 + i) * 4;
           if (x === 0) sctx.moveTo(x, yy); else sctx.lineTo(x, yy);
         }
-        sctx.strokeStyle = "#d8f4ff"; sctx.lineWidth = 2; sctx.stroke();
+        sctx.stroke();
       }
-      sctx.globalAlpha = 1;
 
-      // islands with soft contact shadow on water
+      // answer islands (slightly bigger)
       for (let i = 0; i < 4; i++) {
         const p = islandPos(i, W, H);
         const bob = Math.sin(t * 1.05 + i) * 2.5;
         const im = islandImgs[i];
-        const sz = Math.min(100, W * 0.24);
-        sctx.fillStyle = "rgba(5,25,35,.28)";
+        const sz = Math.min(128, W * 0.30);
+        sctx.fillStyle = "rgba(5,25,35,.32)";
         sctx.beginPath();
         sctx.ellipse(p.x, p.y + sz * 0.28 + bob, sz * 0.38, sz * 0.10, 0, 0, Math.PI * 2);
         sctx.fill();
         if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
-        sctx.fillStyle = "rgba(10,30,40,.85)";
-        sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 11, 0, Math.PI * 2); sctx.fill();
+        sctx.fillStyle = "#0a1e28";
+        sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 12, 0, Math.PI * 2); sctx.fill();
         sctx.fillStyle = "#ffd56a";
-        sctx.font = "900 12px Trebuchet MS,sans-serif";
+        sctx.font = "900 13px Trebuchet MS,sans-serif";
         sctx.textAlign = "center"; sctx.textBaseline = "middle";
         sctx.fillText(LETTERS[i], p.x - sz * 0.28, p.y - sz * 0.22 + bob);
       }
@@ -572,70 +749,78 @@
         if (mySeat >= 0) {
           const from = fleetPos(mySeat, Math.max(2, (v.players || []).length), W, H);
           const to = dockPos(pathPreview, W, H, 0);
-          sctx.strokeStyle = "rgba(255,213,106,.55)";
+          const curve = mySeat % 2 === 0 ? 1 : -1;
+          sctx.strokeStyle = "#ffd56a";
           sctx.setLineDash([7, 7]); sctx.lineWidth = 3;
-          sctx.beginPath(); sctx.moveTo(from.x, from.y); sctx.lineTo(to.x, to.y); sctx.stroke();
+          sctx.beginPath();
+          for (let k = 0; k <= 18; k++) {
+            const pt = sailPoint(from, to, k / 18, curve);
+            if (k === 0) sctx.moveTo(pt.x, pt.y); else sctx.lineTo(pt.x, pt.y);
+          }
+          sctx.stroke();
           sctx.setLineDash([]);
-          if (imgWake) drawImg(imgWake, (from.x + to.x) / 2, (from.y + to.y) / 2, 48, 0.55);
+          const mid = sailPoint(from, to, 0.5, curve);
+          if (imgWake) drawImg(imgWake, mid.x, mid.y, 48);
         }
       }
 
       const players = (v && v.players) || [];
       const n = Math.max(players.length, 2);
-      const iAnswered = v && v.you && v.you.answered;
+      const dt = Math.min(0.05, (now - lastFrameAt) / 1000);
       players.forEach((pl, seat) => {
         const target = chosenIsland[seat];
         const from = fleetPos(seat, n, W, H);
         let to = from;
         if (target === -1) to = fogHoldPos(W, H);
         else if (target != null) to = dockPos(target, W, H, seat);
-        const p = sailProgress[seat];
-        const x = from.x + (to.x - from.x) * p;
-        const y = from.y + (to.y - from.y) * p + Math.sin(t * 2.1 + seat) * 3;
+        const pos = ensureSail(seat, from, to, targetKey(target), dt);
+        const x = pos.x;
+        const y = pos.y + Math.sin(t * 2.1 + seat) * 3;
         const im = shipImgs[seat % 4];
         const sz = 70 + (pl.id === (lastState && lastState.you) ? 8 : 0);
-        // soft water contact ellipse under hull
-        sctx.fillStyle = "rgba(8,40,50,.25)";
+        sctx.fillStyle = "rgba(8,40,50,.28)";
         sctx.beginPath(); sctx.ellipse(x, y + sz * 0.28, sz * 0.32, sz * 0.08, 0, 0, Math.PI * 2); sctx.fill();
-        if (target === -1 && fogImg && p > 0.45) drawImg(fogImg, x, y - 6, 96, 0.8);
+        if (target === -1 && fogImg && (sailState[seat] && sailState[seat].t > 0.45)) {
+          drawImg(fogImg, x, y - 6, 96);
+        }
         if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
-        sctx.fillStyle = "rgba(8,24,32,.78)";
+        sctx.fillStyle = "#081820";
         roundRect(sctx, x - 40, y + 28, 80, 16, 7); sctx.fill();
         sctx.fillStyle = "#fff6e4";
         sctx.font = "800 10px Trebuchet MS,sans-serif";
         sctx.textAlign = "center";
         sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 39);
       });
-      void iAnswered;
     }
 
-    // particles
+    // particles — solid sprites, no alpha fade ghosts
     fxParticles = fxParticles.filter((p) => {
       const age = now - p.t0;
       if (age > p.life) return false;
       p.x += p.vx; p.y += p.vy; p.vy += 0.06;
       const a = 1 - age / p.life;
+      if (a < 0.12) return true;
       const im = p.kind === "coin" ? (imgLootTrail || imgCoinBurst) : imgSparkle;
-      drawImg(im, p.x, p.y, 26 + 18 * a, a);
+      drawImg(im, p.x, p.y, 26 + 14 * a);
       return true;
     });
 
     // flying loot coins (island → ship)
     flyCoins = flyCoins.filter((c) => {
       const age = (now - c.t0) / c.dur;
-      if (age >= 1) return false;
+      if (age >= 1 || age < 0) return age < 1;
       const e = 1 - Math.pow(1 - age, 2.4);
       const x = c.x0 + (c.x1 - c.x0) * e;
       const y = c.y0 + (c.y1 - c.y0) * e - Math.sin(age * Math.PI) * 40;
-      drawImg(imgLootTrail || imgCoinBurst, x, y, 34, 0.95);
+      drawImg(imgLootTrail || imgCoinBurst, x, y, 34);
       return true;
     });
 
-    // cutscenes
-    if (cutscene) {
-      const u = (now - cutscene.t0) / cutscene.dur;
+    // World-local cutscenes only (crash / shark). Poseidon & plunder use #spectacle.
+    if (cutscene && cutscene.stage === "world") {
+      const u = (now - cutscene.t0) / cutscene.animMs;
       if (u >= 1) endCutscene();
-      else drawCutscene(now, u, W, H);
+      else drawWorldCutscene(now, u, W, H);
     }
 
     sctx.restore();
@@ -659,51 +844,18 @@
     }
   }
 
-  function drawCutscene(now, u, W, H) {
+  function drawWorldCutscene(now, u, W, H) {
     const sh = seaH(H);
-    if (cutscene.kind === "poseidon") {
-      const frames = poseidonFrames.filter(Boolean);
-      const fi = Math.min(frames.length - 1, Math.floor(u * frames.length));
-      const im = frames[fi] || frames[0];
-      const pulse = 1 + Math.sin(u * Math.PI) * 0.08;
-      const sz = Math.min(280, W * 0.68) * pulse;
-      const y = sh * (0.55 - Math.sin(Math.min(1, u * 1.4) * Math.PI) * 0.08);
-      drawImg(im, W / 2, y, sz, Math.min(1, u * 4) * Math.min(1, (1 - u) * 5));
-      if (u > 0.35 && u < 0.85 && Math.random() < 0.35) spawnBurst(W / 2, y + 40, 2);
-      if (imgSplash && u > 0.2) drawImg(imgSplash, W / 2, sh * 0.85, 150, 0.55 * (1 - Math.abs(u - 0.5)));
-    } else if (cutscene.kind === "plunder") {
+    if (cutscene.kind === "crash") {
       const isl = cutscene.meta.island ?? 0;
       const p = islandPos(isl, W, H);
-      // Staged: chest open → cascade → haul → burst → coins fly home
-      if (u < 0.22) {
-        const pop = u / 0.22;
-        drawImg(imgChestOpen || imgLootCascade, p.x, p.y - 8, 70 + 50 * pop, 0.95);
-        drawImg(imgLootBurst || imgSparkle, p.x, p.y - 20, 40 + 80 * pop, 0.7 * pop);
-      } else if (u < 0.5) {
-        const pop = (u - 0.22) / 0.28;
-        drawImg(imgLootCascade || imgChestOpen, p.x, p.y - 16, 100 + 30 * pop, 0.98);
-        drawImg(imgCoinBurst, p.x, p.y - 30, 110 + 40 * pop, 0.9);
-        if (Math.random() < 0.5) spawnBurst(p.x, p.y - 10, 2);
-      } else if (u < 0.72) {
-        drawImg(imgLootHaul || imgPlunderCrew, p.x, p.y + 10, 100, 0.95);
-        drawImg(imgLootCascade, p.x, p.y - 24, 90, 0.75);
-        if (cutscene.meta._flew !== 1) { cutscene.meta._flew = 1; launchLootFlies(isl); }
-      } else {
-        const fade = 1 - (u - 0.72) / 0.28;
-        drawImg(imgLootBurst || imgConfetti, p.x, p.y - 40, 130, 0.85 * fade);
-        drawImg(imgConfetti, p.x, p.y - 55, 120 * fade, 0.6 * fade);
-        drawImg(imgPlunderCrew, p.x, p.y + 18, 70, 0.85 * fade);
-      }
-    } else if (cutscene.kind === "crash") {
-      const isl = cutscene.meta.island ?? 0;
-      const p = islandPos(isl, W, H);
-      drawImg(imgCrash, p.x + 30, p.y + 20, 110, 0.95);
-      drawImg(imgImpact, p.x + 30, p.y + 10, 90, 0.8 * (1 - u));
+      drawImg(imgCrash, p.x + 30, p.y + 20, 110);
+      if (u < 0.85) drawImg(imgImpact, p.x + 30, p.y + 10, 90);
       shakeUntil = now + 80;
     } else if (cutscene.kind === "shark") {
       const x = W * (0.1 + 0.8 * u);
-      drawImg(sharkImg, x, sh * 0.72, 110, 0.95);
-      drawImg(imgSplash, x, sh * 0.8, 90, 0.6);
+      drawImg(sharkImg, x, sh * 0.72, 110);
+      drawImg(imgSplash, x, sh * 0.8, 90);
     }
   }
 
@@ -719,11 +871,9 @@
 
   function frame(now) {
     requestAnimationFrame(frame);
-    for (let i = 0; i < 4; i++) {
-      const want = chosenIsland[i] == null ? 0 : 1;
-      sailProgress[i] += (want - sailProgress[i]) * 0.075;
-    }
+    tickCutscene(now);
     drawSea(now);
+    lastFrameAt = now;
     if (lastState && lastState.view) tickClock(lastState.view);
     else tickClock(null);
   }
@@ -926,11 +1076,18 @@
   function renderWildcard(s, v) {
     const rev = v.reveal || {};
     subtitleEl.textContent = "Wild seas";
+    // Poseidon summary lives on the full-screen spectacle; keep HUD quiet while it plays.
+    if (rev.poseidon && cutscene && cutscene.kind === "poseidon") {
+      mainEl.innerHTML = `<div class="banner center"><div class="tag">Wildcard</div>
+        <h2 class="display">Poseidon rises…</h2>
+        <p class="muted">Full-screen rescue underway.</p></div>`;
+      return;
+    }
     let body = `<h2 class="display">Seas settle</h2>`;
     if (rev.poseidon) {
       const who = (v.players.find((p) => p.id === rev.poseidon.playerId) || {}).nick || "A pirate";
       body = `<h2 class="display">Poseidon’s Rescue!</h2>
-        <p class="muted">${esc(who)} saved — +${rev.poseidon.amount}. Watch the seas.</p>`;
+        <p class="muted">${esc(who)} saved — +${rev.poseidon.amount} gold returned.</p>`;
     } else if (rev.shark) {
       body = `<h2 class="display">Funny sharks!</h2><p class="muted">Success first… then a cheeky bite.</p>`;
     }
@@ -977,7 +1134,6 @@
     sharkImg = await loadImg("./assets/shark.png");
     shipImgs = await Promise.all(SHIP.map(loadImg));
     islandImgs = await Promise.all(ISLAND.map(loadImg));
-    poseidonFrames = await Promise.all(POSEIDON_FRAMES.map(loadImg));
     imgCoinBurst = await loadImg("./assets/vfx-coin-burst.png");
     imgChestOpen = await loadImg("./assets/vfx-chest-open.png");
     imgSparkle = await loadImg("./assets/vfx-sparkle.png");
