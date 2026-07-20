@@ -474,9 +474,10 @@
   const DIR16 = ["e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw","n","nne","ne","ene"];
   function islandChoiceSrc(i) {
     // Bottom-sheet cards only — voyage seas use baked islands.
+    // Map answer slot → biome hero from the scene's island set (mod 10 heroes).
     const s = SCENES[activeSceneIdx] || SCENES[0];
     const idx = s && s.islands && s.islands[i] != null ? s.islands[i] : i;
-    return `./assets/islands-pack/isl-${String(idx).padStart(2, "0")}.png`;
+    return `./assets/voyage-v2/islands/hero-${String(idx % 10).padStart(2, "0")}.png`;
   }
 
   const params = new URLSearchParams(location.search);

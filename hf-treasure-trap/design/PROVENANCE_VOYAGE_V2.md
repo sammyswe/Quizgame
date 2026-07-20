@@ -37,3 +37,11 @@ Raw downloads stay in `raw/voyage-v2/` (gitignored). Runtime uses compressed JPG
 ## Budget note
 
 This slice is the first ~38 generations toward the **500+** plan in `VOYAGE_ASSET_PACK_PLAN.md`. Regenerations continue when QA fails polish killers (muddy art, weak facings, cluttered HUD).
+
+## Island overlays + sky plates (`scripts/gen-voyage-v2-islands.mjs`)
+
+Manifest: `design/voyage-v2-islands-jobs.json`
+
+- 10 biome hero islands + 2×2 state sheets (idle / highlight / correct / wrong)
+- 4 sky plates for optional layering
+- Skull-rock prompts kept wholesome (ages 9+) after one NSFW reject
