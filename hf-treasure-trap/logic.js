@@ -50,8 +50,8 @@ const VENTURES = [
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 20000;
 const LOOT_MS = 40000;
-/** Hold long enough for sail arrival + island loot video on the quiz sea. */
-const REVEAL_HOLD_MS = 7800;
+/** Hold long enough for sail arrival + tap-to-loot plunder on the quiz sea. */
+const REVEAL_HOLD_MS = 12000;
 const VENTURE_REVEAL_MS = 5200;
 /** Poseidon: full-screen video + gold-saved summary. */
 const WILDCARD_MS = 9000;

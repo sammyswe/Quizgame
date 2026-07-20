@@ -46,3 +46,14 @@ Raw downloads in `raw/`; cutouts in `assets/`.
 | video/loot-d.mp4 | 6eea42be-071f-4b94-9643-53a5fd264d73 | Skull-rock loot |
 
 Client: HUD chrome moved to bottom dock; island loot videos play on the quiz sea after sail arrival; Poseidon is full-screen video then gold summary.
+
+## Ship flap + HUD/loot feel 2026-07-20e
+
+| asset | job id |
+|---|---|
+| ship-0 flap sheet | 58f2fb3b-1187-4e1b-83f7-32f431d0f457 |
+| ship-1 flap sheet | e4c00a68-c59e-41ce-868e-d6c19aaefb28 |
+| ship-2 flap sheet | 85e3bfc8-94c2-4027-990c-f9c914477eb8 |
+| ship-3 flap sheet | d9b149a6-5d8e-40ca-8e2a-bf6771c09fdb |
+
+Ships: no water under hull; 3-frame sail wind cycle. HUD: scores+timer top only. Tap-to-loot plunder with haptics. Loot Drop wager fleet (1–4) from bottom to picked island only.

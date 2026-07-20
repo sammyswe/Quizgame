@@ -38,58 +38,71 @@
     pointer-events: none;
   }
   #hud > * { pointer-events: auto; }
+  /* Compact top: player scores + chest timer only */
+  .top-chrome {
+    flex: 0 0 auto;
+    padding: max(6px, env(safe-area-inset-top)) 8px 4px;
+    display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
+    background: linear-gradient(180deg, rgba(4,20,28,.72) 0%, rgba(4,20,28,0) 100%);
+  }
   .world-space { flex: 1; min-height: 0; pointer-events: none; position: relative; }
-  /* Island loot video plays ON the quiz sea, not a separate takeover */
+  /* Tap-to-loot panel on the quiz sea */
   #worldFx {
-    position: absolute; left: 50%; top: 42%;
-    transform: translate(-50%, -50%) scale(.92);
-    width: min(78vw, 340px); aspect-ratio: 1;
+    position: absolute; left: 50%; top: 46%;
+    transform: translate(-50%, -50%);
+    width: min(82vw, 360px); aspect-ratio: 1;
     z-index: 6; display: none; pointer-events: none;
     border: 4px solid var(--edge);
     border-radius: 18px; overflow: hidden;
     background: #041018;
-    box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #5a3a12;
+    box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #5a3a12, 0 0 40px rgba(255,0,180,.25);
+    cursor: pointer;
   }
-  #worldFx.on { display: block; animation: fxIn .35s cubic-bezier(.2,1.3,.4,1) both; }
-  #worldFx video { width: 100%; height: 100%; object-fit: cover; display: block; background: #041018; }
+  #worldFx.on { display: block; pointer-events: auto; animation: fxIn .35s cubic-bezier(.2,1.3,.4,1) both; }
+  #worldFx video { width: 100%; height: 100%; object-fit: cover; display: block; background: #041018; pointer-events: none; }
   #worldFx .fx-label {
     position: absolute; left: 8px; top: 8px; padding: 3px 8px; border-radius: 999px;
     background: #3a2a10; color: var(--gold); font-size: .62rem; font-weight: 900;
-    letter-spacing: .06em; text-transform: uppercase;
+    letter-spacing: .06em; text-transform: uppercase; z-index: 2;
   }
+  #worldFx .tap-hint {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-family: var(--display); font-size: clamp(1.4rem, 6vw, 2rem);
+    color: var(--gold); text-shadow: 0 3px 0 #1a0e04, 0 0 18px rgba(255,0,200,.55);
+    z-index: 2; pointer-events: none; animation: tapPulse 0.7s ease-in-out infinite;
+  }
+  #worldFx .tap-hint.hide { display: none; }
+  #worldFx .loot-meter {
+    position: absolute; left: 12px; right: 12px; bottom: 12px; height: 14px;
+    border: 2px solid var(--edge); border-radius: 999px; background: #0a1820; z-index: 2;
+    overflow: hidden;
+  }
+  #worldFx .loot-meter .fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #ffd56a, #ff3db8 55%, #3dfff0);
+    box-shadow: 0 0 12px rgba(255,61,184,.6);
+    transition: width .08s linear;
+  }
+  @keyframes tapPulse { 50% { transform: scale(1.06); filter: brightness(1.15); } }
   @keyframes fxIn { from { transform: translate(-50%, -50%) scale(.72); } to { transform: translate(-50%, -50%) scale(1); } }
-  /* Solid quiz sheet — chrome lives HERE at the bottom, not over the sea */
   .quiz-sheet {
     flex: 0 0 auto;
-    max-height: 46vh;
+    max-height: 44vh;
     background: linear-gradient(180deg, #164556 0%, var(--sheet-2) 100%);
     border-top: 3px solid var(--edge);
     box-shadow: 0 -14px 32px rgba(0,0,0,.5);
-    padding: 10px 10px 0;
+    padding: 10px 10px max(12px, env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 8px;
     overflow: auto;
   }
   #main { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-  .dock-chrome {
-    flex: 0 0 auto;
-    margin: 2px -10px 0;
-    padding: 8px 10px max(10px, env(safe-area-inset-bottom));
-    background: linear-gradient(180deg, #0c2a36 0%, #081820 100%);
-    border-top: 2px solid #8a6828;
-    display: flex; flex-direction: column; gap: 6px;
-  }
-  .dock-chrome .top {
-    display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
-  }
-  .brand h1 { margin: 0; font-size: .95rem; color: var(--gold); text-shadow: 0 2px 0 #1a0e04; }
-  .brand p { margin: 0; font-size: .62rem; opacity: .9; }
   .chest-timer { width: 46px; height: 46px; position: relative; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
   .chest-timer img { width: 100%; height: 100%; object-fit: contain; }
   .chest-timer .sec {
     position: absolute; inset: 0; display: grid; place-items: center;
     font-family: var(--display); font-size: .95rem; color: #fff; text-shadow: 0 2px 4px #000;
   }
-  .ribbon { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+  .ribbon { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
   .ribbon::-webkit-scrollbar { display: none; }
   .chip {
     flex: 0 0 auto; display: flex; align-items: center; gap: 5px;
@@ -98,6 +111,7 @@
   }
   .chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
   .chip.you { border-color: var(--gold); }
+  #subtitle { display: none; }
   .banner {
     background: linear-gradient(180deg, #18485a 0%, #0f3342 100%);
     border: 2px solid var(--edge);
@@ -246,26 +260,26 @@
     </div>
   </div>
   <div id="hud">
+    <div class="top-chrome">
+      <div class="ribbon" id="ribbon"></div>
+      <div class="chest-timer" id="chestWrap">
+        <img id="chestImg" src="./assets/chest-full.png" alt="">
+        <div class="sec" id="chestSec">–</div>
+      </div>
+    </div>
     <div class="world-space" id="worldSpace">
       <div id="worldFx">
-        <div class="fx-label" id="fxLabel">Plunder</div>
+        <div class="fx-label" id="fxLabel">Tap to loot</div>
         <video id="fxVideo" playsinline muted></video>
+        <div class="tap-hint" id="tapHint">TAP!</div>
+        <div class="loot-meter"><div class="fill" id="lootFill"></div></div>
       </div>
     </div>
     <div class="quiz-sheet">
       <div id="main"></div>
-      <div class="dock-chrome">
-        <div class="top">
-          <div class="brand"><h1>TREASURE TRAP</h1><p id="subtitle">Voyage</p></div>
-          <div class="chest-timer" id="chestWrap">
-            <img id="chestImg" src="./assets/chest-full.png" alt="">
-            <div class="sec" id="chestSec">–</div>
-          </div>
-        </div>
-        <div class="ribbon" id="ribbon"></div>
-      </div>
     </div>
-    <div id="err" style="position:absolute;left:8px;right:8px;bottom:52%;pointer-events:none"></div>
+    <p id="subtitle"></p>
+    <div id="err" style="position:absolute;left:8px;right:8px;bottom:48%;pointer-events:none"></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -338,6 +352,8 @@
   const worldFxEl = document.getElementById("worldFx");
   const fxVideoEl = document.getElementById("fxVideo");
   const fxLabelEl = document.getElementById("fxLabel");
+  const tapHintEl = document.getElementById("tapHint");
+  const lootFillEl = document.getElementById("lootFill");
   const chestImg = document.getElementById("chestImg");
   const chestSec = document.getElementById("chestSec");
   const chestWrap = document.getElementById("chestWrap");
@@ -368,15 +384,23 @@
   let hitStopUntil = 0;
   /** Full-screen Poseidon video spectacle */
   let cutscene = null;
-  /** On-sea island loot video: { island, t0, waitingForSail, seat } */
+  /** On-sea tap-to-loot: { island, seat, progress, waitingForSail, active } */
   let islandLoot = null;
+  /** Loot Drop wager fleet: ships sized by gold, sail only to picked island */
+  let lootFleet = [];
   let fxParticles = [];
   let wakeDots = [];
   let cam = { x: 0, y: 0, z: 1, tx: 0, ty: 0, tz: 1 };
   let lastFrameAt = performance.now();
   let glitter = [];
   for (let i = 0; i < 28; i++) {
-    glitter.push({ x: Math.random(), y: Math.random() * 0.55, s: 1 + Math.random() * 2, ph: Math.random() * Math.PI * 2 });
+    glitter.push({ x: Math.random(), y: 0.02 + Math.random() * 0.18, s: 1 + Math.random() * 2, ph: Math.random() * Math.PI * 2 });
+  }
+
+  function haptic(ms) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    } catch (_) {}
   }
 
   const BOT_ANSWERS = [0, 0, 1];
@@ -481,42 +505,80 @@
       seat: seat == null ? 0 : seat,
       t0: performance.now(),
       waitingForSail: true,
-      playing: false,
+      active: false,
+      progress: 0,
     };
   }
   function startIslandLootVideo(islandIdx) {
-    if (!islandLoot) islandLoot = { island: islandIdx, seat: 0, t0: performance.now(), waitingForSail: false, playing: true };
+    if (!islandLoot) islandLoot = { island: islandIdx, seat: 0, t0: performance.now(), waitingForSail: false, active: true, progress: 0 };
     islandLoot.waitingForSail = false;
-    islandLoot.playing = true;
+    islandLoot.active = true;
+    islandLoot.progress = 0;
     islandLoot.playT0 = performance.now();
-    fxLabelEl.textContent = "Island " + LETTERS[islandIdx] + " plunder";
+    fxLabelEl.textContent = "Island " + LETTERS[islandIdx] + " · tap to loot";
+    tapHintEl.classList.remove("hide");
+    tapHintEl.textContent = "TAP!";
+    lootFillEl.style.width = "0%";
     stopVideo(fxVideoEl);
     fxVideoEl.src = LOOT_VID[islandIdx] || LOOT_VID[0];
-    fxVideoEl.onended = () => endIslandLoot();
-    fxVideoEl.onerror = () => {
-      // solid still card on sea if video missing
-      fxVideoEl.poster = LOOT_STILL[0];
-      setTimeout(endIslandLoot, 2200);
+    fxVideoEl.onended = null;
+    fxVideoEl.onloadedmetadata = () => {
+      try { fxVideoEl.pause(); fxVideoEl.currentTime = 0; } catch (_) {}
     };
+    fxVideoEl.onerror = () => { fxVideoEl.poster = LOOT_STILL[0]; };
     worldFxEl.classList.add("on");
+    casinoEl.classList.add("on");
     const p = fxVideoEl.play();
-    if (p && p.catch) p.catch(() => {});
-    launchLootFlies(islandIdx);
+    if (p && p.then) p.then(() => { try { fxVideoEl.pause(); fxVideoEl.currentTime = 0; } catch (_) {} }).catch(() => {});
   }
+  function tapLootBurst(clientX, clientY) {
+    const rect = worldFxEl.getBoundingClientRect();
+    const x = (clientX != null ? clientX : rect.left + rect.width / 2);
+    const y = (clientY != null ? clientY : rect.top + rect.height / 2);
+    // Map to canvas-ish particles near center sea
+    const cx = innerWidth / 2 + (Math.random() - 0.5) * 40;
+    const cy = seaH(innerHeight) * 0.42 + (Math.random() - 0.5) * 30;
+    spawnBurst(cx, cy, 8 + Math.floor(Math.random() * 6));
+    void x; void y;
+  }
+  function onTapLoot(ev) {
+    if (!islandLoot || !islandLoot.active) return;
+    ev.preventDefault();
+    const step = 0.09 + Math.random() * 0.05;
+    islandLoot.progress = Math.min(1, islandLoot.progress + step);
+    lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
+    haptic(islandLoot.progress > 0.85 ? [18, 30, 28] : 14);
+    const dur = fxVideoEl.duration && isFinite(fxVideoEl.duration) ? fxVideoEl.duration : 4;
+    try {
+      fxVideoEl.currentTime = Math.min(dur * 0.98, islandLoot.progress * dur);
+    } catch (_) {}
+    const pt = ev.touches && ev.touches[0] ? ev.touches[0] : ev;
+    tapLootBurst(pt.clientX, pt.clientY);
+    if (islandLoot.progress > 0.15) tapHintEl.classList.add("hide");
+    if (islandLoot.progress >= 1) {
+      casinoEl.classList.add("on");
+      haptic([20, 40, 35, 40, 50]);
+      spawnBurst(innerWidth / 2, seaH(innerHeight) * 0.4, 28);
+      launchLootFlies(islandLoot.island);
+      setTimeout(() => { casinoEl.classList.remove("on"); endIslandLoot(); }, 700);
+    }
+  }
+  worldFxEl.addEventListener("pointerdown", onTapLoot);
   function endIslandLoot() {
     worldFxEl.classList.remove("on");
     stopVideo(fxVideoEl);
+    tapHintEl.classList.remove("hide");
+    lootFillEl.style.width = "0%";
+    casinoEl.classList.remove("on");
     islandLoot = null;
   }
   function tickIslandLoot(now) {
     if (!islandLoot) return;
     if (islandLoot.waitingForSail) {
       const s = sailState[islandLoot.seat];
-      const arrived = !s || s.t >= 0.97 || (now - islandLoot.t0 > 5500);
+      const arrived = !s || s.t >= 0.97 || (now - islandLoot.t0 > 6500);
       if (arrived) startIslandLootVideo(islandLoot.island);
-      return;
     }
-    if (islandLoot.playing && now - (islandLoot.playT0 || now) > 5200) endIslandLoot();
   }
   function startCutscene(kind, animMs, meta) {
     if (kind === "poseidon") {
@@ -675,7 +737,9 @@
   const sea = document.getElementById("sea");
   const sctx = sea.getContext("2d");
   let bg = null, fogImg = null, cloudsImg = null, reefImg = null, gullImg = null;
-  let shipImgs = [], islandImgs = [];
+  /** shipFrames[seat][0..2] sail flap cycle */
+  let shipFrames = [[], [], [], []];
+  let islandImgs = [];
   let imgCoinBurst = null, imgChestOpen = null, imgSparkle = null, imgImpact = null;
   let imgSplash = null, imgWake = null, imgCrash = null, imgConfetti = null;
   let imgCheer = null, imgPlunderCrew = null, sharkImg = null;
@@ -726,17 +790,24 @@
   function easeInOut(t) {
     return t * t * (3 - 2 * t);
   }
-  /** Quadratic Bezier sail — ships arc across open water instead of teleporting in a line. */
-  function sailPoint(from, to, t, curve) {
+  /** Fairway control point — stay in open water lanes, not over answer islands/text. */
+  function fairwayControl(from, to, islandIdx, W, H, curve) {
+    const sh = seaH(H);
+    // Outer lanes for side islands, center fairway otherwise
+    let laneX = W * 0.5;
+    if (islandIdx === 0 || islandIdx === 2) laneX = W * 0.12;
+    else if (islandIdx === 1 || islandIdx === 3) laneX = W * 0.88;
+    else if (islandIdx === -1) laneX = W * 0.5;
+    const cy = from.y * 0.55 + to.y * 0.45;
+    return {
+      x: laneX + curve * W * 0.03,
+      y: Math.min(sh * 0.82, Math.max(sh * 0.28, cy)),
+    };
+  }
+  /** Quadratic Bezier through open-water fairway. */
+  function sailPoint(from, to, t, ctrl) {
     const e = easeInOut(Math.max(0, Math.min(1, t)));
-    const mx = (from.x + to.x) * 0.5;
-    const my = (from.y + to.y) * 0.5;
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const bulge = Math.min(90, 28 + len * 0.22);
-    const cx = mx + (-dy / len) * bulge * curve;
-    const cy = my + (dx / len) * bulge * curve * 0.55;
+    const cx = ctrl.x, cy = ctrl.y;
     const u = 1 - e;
     return {
       x: u * u * from.x + 2 * u * e * cx + e * e * to.x,
@@ -748,28 +819,95 @@
     if (target === -1) return "fog";
     return "i" + target;
   }
-  function ensureSail(seat, fromHome, to, key, dt) {
+  function ensureSail(seat, fromHome, to, key, dt, islandIdx, W, H) {
     let s = sailState[seat];
+    const curve = (seat % 2 === 0 ? 1 : -1) * (1 + (seat % 3) * 0.12);
     if (!s || s.key !== key) {
-      const cur = s ? sailPoint(s.from, s.to, s.t, s.curve) : fromHome;
+      const ctrl0 = s && s.ctrl ? s.ctrl : fairwayControl(fromHome, to, islandIdx, W, H, curve);
+      const cur = s ? sailPoint(s.from, s.to, s.t, s.ctrl || ctrl0) : fromHome;
+      const ctrl = fairwayControl(cur, to, islandIdx, W, H, curve);
       s = sailState[seat] = {
         from: { x: cur.x, y: cur.y },
         to: { x: to.x, y: to.y },
+        ctrl,
         t: 0,
-        curve: (seat % 2 === 0 ? 1 : -1) * (1 + (seat % 3) * 0.15),
+        curve,
         key,
       };
     } else {
       s.to.x = to.x; s.to.y = to.y;
+      s.ctrl = fairwayControl(s.from, s.to, islandIdx, W, H, s.curve);
     }
-    // ~5.5s full crossing — slow, readable voyage through the archipelago
-    s.t = Math.min(1, s.t + dt * 0.18);
-    return sailPoint(s.from, s.to, s.t, s.curve);
+    // Slow smooth voyage (~6s)
+    s.t = Math.min(1, s.t + dt * 0.16);
+    return sailPoint(s.from, s.to, s.t, s.ctrl);
   }
-  function sailHeading(from, to, t, curve) {
-    const a = sailPoint(from, to, Math.max(0, t - 0.02), curve);
-    const b = sailPoint(from, to, Math.min(1, t + 0.02), curve);
+  function sailHeading(s) {
+    if (!s) return 0;
+    const a = sailPoint(s.from, s.to, Math.max(0, s.t - 0.02), s.ctrl);
+    const b = sailPoint(s.from, s.to, Math.min(1, s.t + 0.02), s.ctrl);
     return Math.atan2(b.y - a.y, b.x - a.x);
+  }
+  function shipFrame(seat, now) {
+    const frames = shipFrames[seat % 4];
+    if (!frames || !frames.length) return null;
+    const fi = Math.floor(now / 220) % frames.length;
+    // Ping-pong flap: 0,1,2,1
+    const cycle = [0, 1, 2, 1];
+    return frames[cycle[fi % cycle.length]] || frames[0];
+  }
+  function wagerShipCount(amount, pool) {
+    if (!amount || amount <= 0) return 0;
+    const p = Math.max(pool || amount, 1);
+    const step = Math.max(20, p / 4);
+    return Math.max(1, Math.min(4, Math.ceil(amount / step)));
+  }
+  function syncLootFleet(s, v) {
+    if (!v || (v.phase !== "loot" && v.phase !== "loot_reveal")) {
+      lootFleet = [];
+      return;
+    }
+    const you = v.you;
+    if (!you) { lootFleet = []; return; }
+    let island = -1;
+    let amount = 0;
+    (v.ventures || []).forEach((ven, i) => {
+      const amt = (you.allocation && you.allocation[ven.id]) || 0;
+      if (amt > 0) { island = ven.island != null ? ven.island : i; amount = amt; }
+    });
+    // During venture reveal only show fleet if this island is the active venture
+    if (v.phase === "loot_reveal") {
+      const vi = v.lootVentureIndex || 0;
+      const ven = v.ventures[vi];
+      if (!ven || ven.island !== island) {
+        // Keep docked fleet on their island; don't hop every reveal
+        lootFleet.forEach((ship) => { ship.t = 1; });
+        return;
+      }
+    }
+    const n = wagerShipCount(amount, you.lootPool);
+    const W = innerWidth, H = innerHeight;
+    if (!n) { lootFleet = []; return; }
+    if (lootFleet.length === n && lootFleet[0] && lootFleet[0].island === island) return;
+    lootFleet = [];
+    for (let i = 0; i < n; i++) {
+      const from = {
+        x: W * (0.28 + (i + 0.5) * (0.44 / n)),
+        y: seaH(H) * 0.96,
+      };
+      const to = dockPos(island, W, H, i);
+      const curve = (i % 2 === 0 ? 1 : -1);
+      const ctrl = fairwayControl(from, to, island, W, H, curve);
+      const size = 34 + (amount / Math.max(you.lootPool || amount, 1)) * 22 + i * 2;
+      lootFleet.push({
+        from, to, ctrl, t: 0, island, size: Math.min(64, size), seat: i, curve,
+      });
+    }
+  }
+  function tickLootFleet(dt) {
+    lootFleet.forEach((ship) => {
+      ship.t = Math.min(1, ship.t + dt * 0.2);
+    });
   }
 
   function drawImg(im, x, y, sz) {
@@ -820,10 +958,11 @@
     }
 
     if (cloudsImg) {
-      const cw = W * 1.35, ch = cw * (cloudsImg.height / cloudsImg.width);
-      const cx = ((t * 8) % (cw + W)) - cw * 0.2;
-      sctx.drawImage(cloudsImg, cx, sh * 0.02, cw, ch * 0.55);
-      sctx.drawImage(cloudsImg, cx - cw * 0.7, sh * 0.08, cw * 0.85, ch * 0.42);
+      const cw = W * 1.4, ch = cw * (cloudsImg.height / cloudsImg.width);
+      const cx = ((t * 6) % (cw + W)) - cw * 0.25;
+      // Sky band only — top of the screen, never sitting on the ocean
+      sctx.drawImage(cloudsImg, cx, -ch * 0.15, cw, ch * 0.42);
+      sctx.drawImage(cloudsImg, cx - cw * 0.55, -ch * 0.02, cw * 0.9, ch * 0.34);
     }
 
     const far = [
@@ -864,7 +1003,7 @@
       const p = islandPos(i, W, H);
       const bob = Math.sin(t * 1.05 + i) * 2.5;
       const im = islandImgs[i];
-      const sz = Math.min(128, W * 0.30);
+      const sz = Math.min(148, W * 0.34);
       const highlight = pathPreview === i || (islandLoot && islandLoot.island === i);
       if (highlight) {
         sctx.fillStyle = "rgba(255,213,106,.22)";
@@ -891,11 +1030,12 @@
         const from = fleetPos(mySeat, Math.max(2, (v.players || []).length), W, H);
         const to = dockPos(pathPreview, W, H, 0);
         const curve = mySeat % 2 === 0 ? 1 : -1;
+        const ctrl = fairwayControl(from, to, pathPreview, W, H, curve);
         sctx.strokeStyle = "#ffd56a";
         sctx.setLineDash([7, 7]); sctx.lineWidth = 3;
         sctx.beginPath();
         for (let k = 0; k <= 22; k++) {
-          const pt = sailPoint(from, to, k / 22, curve);
+          const pt = sailPoint(from, to, k / 22, ctrl);
           if (k === 0) sctx.moveTo(pt.x, pt.y); else sctx.lineTo(pt.x, pt.y);
         }
         sctx.stroke();
@@ -917,41 +1057,80 @@
     const players = (v && v.players) || [];
     const n = Math.max(players.length, 2);
     let focusX = W * 0.5, focusY = sh * 0.7, focusZ = 1;
+    const inLootVisual = v && (v.phase === "loot" || v.phase === "loot_reveal");
     players.forEach((pl, seat) => {
+      // During Loot Drop the wager fleet carries the fantasy — keep captains parked at bottom.
+      if (inLootVisual) {
+        const home = fleetPos(seat, n, W, H);
+        const im = shipFrame(seat, now);
+        const sz = 48;
+        if (im) sctx.drawImage(im, home.x - sz / 2, home.y - sz / 2, sz, sz);
+        sctx.fillStyle = "#081820";
+        roundRect(sctx, home.x - 36, home.y + 20, 72, 14, 6); sctx.fill();
+        sctx.fillStyle = "#fff6e4";
+        sctx.font = "800 9px Trebuchet MS,sans-serif";
+        sctx.textAlign = "center";
+        sctx.fillText(pl.nick, home.x, home.y + 30);
+        return;
+      }
       const target = chosenIsland[seat];
       const from = fleetPos(seat, n, W, H);
       let to = from;
+      let isl = typeof target === "number" && target >= 0 ? target : -1;
       if (target === -1) to = fogHoldPos(W, H);
       else if (target != null) to = dockPos(target, W, H, seat);
       const s = sailState[seat];
-      const pos = ensureSail(seat, from, to, targetKey(target), dt);
+      const pos = ensureSail(seat, from, to, targetKey(target), dt, isl, W, H);
       const x = pos.x;
-      const y = pos.y + Math.sin(t * 2.1 + seat) * 3;
+      const y = pos.y + Math.sin(t * 2.1 + seat) * 2.5;
       const sailing = s && s.t > 0.02 && s.t < 0.98 && target != null;
-      if (sailing && Math.random() < 0.55) {
-        wakeDots.push({ x: x - 6, y: y + 18, t0: now, life: 700 + Math.random() * 400, rot: (s.curve || 1) * 0.3 });
+      if (sailing && Math.random() < 0.5) {
+        wakeDots.push({ x: x - 4, y: y + 14, t0: now, life: 650 + Math.random() * 350, rot: (s.curve || 1) * 0.3 });
       }
-      const im = shipImgs[seat % 4];
-      const sz = 70 + (pl.id === (lastState && lastState.you) ? 10 : 0);
-      sctx.fillStyle = "rgba(8,40,50,.28)";
-      sctx.beginPath(); sctx.ellipse(x, y + sz * 0.28, sz * 0.32, sz * 0.08, 0, 0, Math.PI * 2); sctx.fill();
-      if (target === -1 && fogImg && (sailState[seat] && sailState[seat].t > 0.45)) drawImg(fogImg, x, y - 6, 96);
+      const im = shipFrame(seat, now);
+      const sz = 52 + (pl.id === (lastState && lastState.you) ? 6 : 0);
+      // Soft hull shadow only — never a water disc baked into the sprite
+      sctx.fillStyle = "rgba(8,30,40,.22)";
+      sctx.beginPath(); sctx.ellipse(x, y + sz * 0.22, sz * 0.26, sz * 0.06, 0, 0, Math.PI * 2); sctx.fill();
+      if (target === -1 && fogImg && (sailState[seat] && sailState[seat].t > 0.45)) drawImg(fogImg, x, y - 6, 84);
       sctx.save();
       sctx.translate(x, y);
       if (sailing) {
-        const h = sailHeading(s.from, s.to, s.t, s.curve);
-        sctx.rotate(Math.max(-0.28, Math.min(0.28, (h - Math.PI / 2) * 0.35)));
+        const h = sailHeading(s);
+        sctx.rotate(Math.max(-0.22, Math.min(0.22, (h - Math.PI / 2) * 0.3)));
       }
       if (im) sctx.drawImage(im, -sz / 2, -sz / 2, sz, sz);
       sctx.restore();
       sctx.fillStyle = "#081820";
-      roundRect(sctx, x - 40, y + 28, 80, 16, 7); sctx.fill();
+      roundRect(sctx, x - 36, y + 22, 72, 14, 6); sctx.fill();
       sctx.fillStyle = "#fff6e4";
-      sctx.font = "800 10px Trebuchet MS,sans-serif";
+      sctx.font = "800 9px Trebuchet MS,sans-serif";
       sctx.textAlign = "center";
-      sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 39);
-      if (pl.id === (lastState && lastState.you) && sailing) { focusX = x; focusY = y; focusZ = 1.08; }
+      sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 32);
+      if (pl.id === (lastState && lastState.you) && sailing) { focusX = x; focusY = y; focusZ = 1.06; }
     });
+
+    // Loot Drop wager fleet — sized by gold, from bottom, only to the picked island
+    tickLootFleet(dt);
+    lootFleet.forEach((ship, i) => {
+      const pos = sailPoint(ship.from, ship.to, ship.t, ship.ctrl);
+      const x = pos.x, y = pos.y + Math.sin(t * 2 + i) * 2;
+      const im = shipFrame(i, now);
+      const sz = ship.size;
+      sctx.fillStyle = "rgba(8,30,40,.2)";
+      sctx.beginPath(); sctx.ellipse(x, y + sz * 0.22, sz * 0.26, sz * 0.06, 0, 0, Math.PI * 2); sctx.fill();
+      sctx.save();
+      sctx.translate(x, y);
+      if (ship.t < 0.98) {
+        const a = sailPoint(ship.from, ship.to, Math.max(0, ship.t - 0.02), ship.ctrl);
+        const b = sailPoint(ship.from, ship.to, Math.min(1, ship.t + 0.02), ship.ctrl);
+        const h = Math.atan2(b.y - a.y, b.x - a.x);
+        sctx.rotate(Math.max(-0.22, Math.min(0.22, (h - Math.PI / 2) * 0.3)));
+      }
+      if (im) sctx.drawImage(im, -sz / 2, -sz / 2, sz, sz);
+      sctx.restore();
+    });
+
     cam.tx = (focusX - W * 0.5) * 0.18;
     cam.ty = (focusY - sh * 0.55) * 0.12;
     cam.tz = focusZ;
@@ -1064,12 +1243,14 @@
       } else if (v.phase === "q_reveal" && v.reveal && v.reveal.results) {
         const r = v.reveal.results[p.id];
         chosenIsland[seat] = r && r.index != null ? r.index : null;
-      } else if (v.phase === "loot_reveal" && v.reveal) {
-        chosenIsland[seat] = v.lootVentureIndex;
+      } else if (v.phase === "loot" || v.phase === "loot_reveal") {
+        // Captains stay home; wager fleet handles Loot Drop sailing
+        chosenIsland[seat] = null;
       } else {
         chosenIsland[seat] = null;
       }
     });
+    syncLootFleet(s, v);
   }
 
   function renderWaiting(s) {
@@ -1176,6 +1357,7 @@
 
   function renderLoot(s, v) {
     pathPreview = null;
+    syncShips(s, v);
     subtitleEl.textContent = `Loot Drop · ${youPoolLabel(v)}`;
     const you = v.you;
     const can = s.status === "playing" && s.seats.includes(s.you) && !you.locked;
@@ -1202,9 +1384,16 @@
       el.onclick = () => {
         if (!can) return;
         act({ type: "pick", venture: ven.id });
-        pathPreview = i;
-        const my = v.players.findIndex((p) => p.id === s.you);
-        if (my >= 0) chosenIsland[my] = i;
+        pathPreview = null;
+        // Optimistic local alloc so wager fleet launches immediately
+        if (v.you) {
+          const pool = v.you.lootPool || 0;
+          v.you.allocation = {};
+          v.ventures.forEach((vv) => { v.you.allocation[vv.id] = 0; });
+          v.you.allocation[ven.id] = pool;
+        }
+        syncLootFleet(s, v);
+        haptic(12);
       };
       root.appendChild(el);
     });
@@ -1298,7 +1487,15 @@
     gullImg = await loadImg("./assets/seagulls.png");
     fogImg = await loadImg("./assets/fog.png");
     sharkImg = await loadImg("./assets/shark.png");
-    shipImgs = await Promise.all(SHIP.map(loadImg));
+    shipFrames = await Promise.all([0, 1, 2, 3].map(async (i) => {
+      const frames = await Promise.all([0, 1, 2].map((f) => loadImg(`./assets/ship-${i}-f${f}.png`)));
+      // Fallback to legacy static if flap frames missing
+      if (!frames[0]) {
+        const legacy = await loadImg(SHIP[i]);
+        return [legacy, legacy, legacy];
+      }
+      return frames;
+    }));
     islandImgs = await Promise.all(ISLAND.map(loadImg));
     // Preload videos so arrival loot starts instantly
     LOOT_VID.forEach((src) => { const v = document.createElement("video"); v.preload = "auto"; v.muted = true; v.src = src; });
