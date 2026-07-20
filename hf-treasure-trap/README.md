@@ -32,10 +32,15 @@ See `design/VOYAGE_VISUAL_DIRECTION.md` + `design/COIN_MASTER_POLISH.md`.
 
 ## Redeploy
 
+Platform caps: **~128MB zip** and **~64MB uncompressed**. Large single zips often HTTP 502; small zips usually apply with `success: false` (mode `rules`). Prefer batched deploys (logic/`index.html` first, then `reveal/` scenes in groups of 4).
+
 ```bash
 cd hf-treasure-trap
-zip -r game.zip index.html logic.js assets design scripts README.md -x 'raw/*' -x 'game.zip'
-higgsfield game deploy ./game.zip --game-id 001ac28c-b62c-4fca-9da9-9f9bda75b7c9 \
-  --title "Treasure Trap: Voyage" --description "…" \
-  --thumbnail "<https>" --favicon "<https>"
+# Slim runtime zip (skip legacy ship-*-dirs)
+zip -qr game-deploy.zip index.html logic.js assets README.md \
+  -x 'assets/ship-*-dirs/*' -x 'raw/*' -x 'game*.zip'
+higgsfield game deploy ./game-deploy.zip --game-id 001ac28c-b62c-4fca-9da9-9f9bda75b7c9 \
+  --title "Treasure Trap: Voyage" --description "Cartoon pirate party quiz"
 ```
+
+Reveal cutscenes: `assets/voyage-v2/reveal/SXX-L.mp4` (40). Biome SFX: `assets/voyage-v2/sfx/win-*.mp3`. Spec: `design/REVEAL_CUTSCENE.md`.
