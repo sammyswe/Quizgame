@@ -1,49 +1,36 @@
-# Treasure Trap: Voyage (Higgsfield Game)
+# Treasure Trap: Voyage (Higgsfield Path B)
 
-Beauty vertical slice of Treasure Trap as a Higgsfield-hosted multiplayer browser game.
+**Primary product build** — mobile-first multiplayer party quiz in the Higgsfield Game Generator.
 
 ## Live
 
 **https://lazy-crane-142.higgsfield.gg/**
 
 - Game id: `001ac28c-b62c-4fca-9da9-9f9bda75b7c9`
-- Mode: `logic.js` rules kernel (simultaneous turns + soft client countdown)
-- Players: **2** (kernel seats at `minPlayers`)
+- Art bible: `design/ART_BIBLE.md` · Shot list: `design/SHOT_LIST.md`
+- STYLE FORMULA: `design/STYLE_FORMULA.txt`
 
-## Loop
+## Beauty milestone
 
-1. **Play vs Bot** (default practice) or invite a friend (`?room=`)
-2. Nickname → raise sail
-3. **3** pirate trivia questions — tap an island; ship sails; soft ~18s clock
-4. Mini **Loot Drop** — allocate earned points to 4 ventures, lock in, multipliers + Poseidon rescue
-5. Winner → Play again (same room; bot rematches if you chose bot)
+1. **Play vs Bot** or invite 2–4 captains
+2. Lobby ready → cast off
+3. **3** polished questions (sail commit, fog rivalry, chest timer)
+4. **LOCKED Loot Drop** (correct venture returns / wrong lost) with cabin map, wheel lock, venture-by-venture reveal, Poseidon + funny sharks
+5. Winner → rematch
 
-Tip: `?bot=1` forces practice mode. The bot is a second WebSocket from your browser (~65% quiz accuracy).
+## Direction (owner 2026-07-20)
 
-## Layout
-
-```
-index.html      # canvas sea + HUD (relative assets)
-logic.js        # authoritative rules (no timers/imports)
-assets/         # islands (Higgsfield cutouts) + procedural pack
-design/         # STYLE_FORMULA, assets.csv, gdd.json
-```
+- Path B only — Phaser is not the forward architecture
+- Brawl Stars readability · Jackbox accessibility · Coin Master reward peaks
+- 2D runtime from 3D-look pre-rendered sprites
+- Target quality **8/10** before friend shares
 
 ## Redeploy
 
 ```bash
 cd hf-treasure-trap
-zip -r game.zip index.html logic.js assets design scripts -x '*.DS_Store' -x 'raw/*'
-higgsfield game deploy ./game.zip \
-  --game-id 001ac28c-b62c-4fca-9da9-9f9bda75b7c9 \
-  --title "Treasure Trap: Voyage" \
-  --description "…" \
-  --thumbnail "<https cover>" \
-  --favicon "<https icon>"
+zip -r game.zip index.html logic.js assets design scripts README.md -x 'raw/*' -x 'game.zip'
+higgsfield game deploy ./game.zip --game-id 001ac28c-b62c-4fca-9da9-9f9bda75b7c9 \
+  --title "Treasure Trap: Voyage" --description "…" \
+  --thumbnail "<https>" --favicon "<https>"
 ```
-
-## Notes
-
-- Higgsfield MCP was unavailable; assets via CLI + procedural fallback after daily grace gen limit.
-- Soft timer (T1): clients send `{type:"timeout"}`; server validates `deadlineAt`.
-- Path A (Phaser polish on main) remains the long-term product; this is the Path B beauty experiment.

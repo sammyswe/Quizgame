@@ -1,19 +1,23 @@
-id,role,type,description,size/ratio,style line ref,source,relative_scale,key
-bg-sea,fullscreen backdrop,background,tropical cartoon pirate sea with soft waves distant reefs warm sky no ships no UI,16:9,STYLE_FORMULA,generate,n/a,none
-island-a,answer island A,sprite,small tropical answer island with carved wooden letter A plaque,1:1,STYLE_FORMULA,generate,1.4,#00FF00
-island-b,answer island B,sprite,small tropical answer island with carved wooden letter B plaque,1:1,STYLE_FORMULA,generate,1.4,#00FF00
-island-c,answer island C,sprite,small tropical answer island with carved wooden letter C plaque,1:1,STYLE_FORMULA,generate,1.4,#00FF00
-island-d,answer island D,sprite,small tropical answer island with carved wooden letter D plaque,1:1,STYLE_FORMULA,generate,1.4,#00FF00
-ship-0,player ship seat0,sprite,chunky cartoon pirate sloop bright crimson red hull cream sail,1:1,STYLE_FORMULA,generate,1.0,#00FF00
-ship-1,player ship seat1,sprite,chunky cartoon pirate sloop bright sky-blue hull cream sail,1:1,STYLE_FORMULA,generate,1.0,#00FF00
-ship-2,player ship seat2,sprite,chunky cartoon pirate sloop bright golden-yellow hull cream sail,1:1,STYLE_FORMULA,generate,1.0,#00FF00
-ship-3,player ship seat3,sprite,chunky cartoon pirate sloop bright emerald-green hull cream sail,1:1,STYLE_FORMULA,generate,1.0,#00FF00
-coin,loot coin,sprite,single shiny gold pirate doubloon thick outline,1:1,STYLE_FORMULA,generate,0.35,#00FF00
-chest,loot chest,sprite,closed wooden treasure chest with gold trim glowing,1:1,STYLE_FORMULA,generate,0.9,#00FF00
-venture-0,loot venture icon,sprite,cartoon sandy cove treasure dig site icon,1:1,STYLE_FORMULA,generate,0.7,#00FF00
-venture-1,loot venture icon,sprite,cartoon stormy reef shipwreck icon,1:1,STYLE_FORMULA,generate,0.7,#00FF00
-venture-2,loot venture icon,sprite,cartoon tropical trading port market icon,1:1,STYLE_FORMULA,generate,0.7,#00FF00
-venture-3,loot venture icon,sprite,cartoon cursed temple ruin icon,1:1,STYLE_FORMULA,generate,0.7,#00FF00
-title-banner,lobby title,ui,carved wooden pirate title banner reading Treasure Trap,16:9,STYLE_FORMULA,generate,n/a,#00FF00
-thumb-cover,deploy thumbnail,background,hero marketing shot pirate fleet racing toward four answer islands tropical sea,16:9,STYLE_FORMULA,generate,n/a,none
-favicon,deploy icon,ui,simple gold pirate coin with skull emblem icon,1:1,STYLE_FORMULA,generate,n/a,#00FF00
+id,role,type,description,size/ratio,style line ref,source
+bg-sea,background,image,three-quarter diorama archipelago golden hour,9:16,STYLE_FORMULA,higgsfield
+island-a,sprite,image,palm cove biome A,1:1,STYLE_FORMULA,higgsfield
+island-b,sprite,image,volcanic biome B,1:1,STYLE_FORMULA,higgsfield
+island-c,sprite,image,jungle ruin biome C,1:1,STYLE_FORMULA,higgsfield
+island-d,sprite,image,cartoon skull-rock biome D,1:1,STYLE_FORMULA,higgsfield
+ship-0,sprite,image,timber ship red sail flag,1:1,STYLE_FORMULA,higgsfield
+ship-1,sprite,image,timber ship blue sail flag,1:1,STYLE_FORMULA,higgsfield
+ship-2,sprite,image,timber ship green sail flag,1:1,STYLE_FORMULA,higgsfield
+ship-3,sprite,image,timber ship gold sail flag,1:1,STYLE_FORMULA,higgsfield
+coin,sprite,image,glossy gold coin,1:1,STYLE_FORMULA,higgsfield
+chest-full,sprite,image,overflowing treasure chest,1:1,STYLE_FORMULA,higgsfield
+chest-low,sprite,image,nearly empty treasure chest,1:1,STYLE_FORMULA,higgsfield
+wheel,sprite,image,brass wood ship wheel,1:1,STYLE_FORMULA,higgsfield
+crew-token,sprite,image,tiny pirate crew token,1:1,STYLE_FORMULA,higgsfield
+fog,sprite,image,soft fog bank,1:1,STYLE_FORMULA,higgsfield
+portrait-0,sprite,image,captain bust red bandana,1:1,STYLE_FORMULA,higgsfield
+portrait-1,sprite,image,captain bust blue bandana,1:1,STYLE_FORMULA,higgsfield
+poseidon,sprite,image,cartoon Poseidon rescue,1:1,STYLE_FORMULA,higgsfield
+shark,sprite,image,funny cartoon shark,1:1,STYLE_FORMULA,higgsfield
+map-cabin,background,image,cabin treasure map table,9:16,STYLE_FORMULA,higgsfield
+thumb,marketing,image,16:9 cover fleet archipelago,16:9,STYLE_FORMULA,higgsfield
+favicon,marketing,image,chest app icon,1:1,STYLE_FORMULA,higgsfield

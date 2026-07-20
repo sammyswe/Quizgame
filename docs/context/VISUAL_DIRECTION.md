@@ -81,8 +81,9 @@ State changes are staged, never swapped silently.
 - Audio cues always have visual equivalents; visual cues have text/state equivalents.
 - Avoid rapid flashes and excessive camera shake.
 - Distortion attacks preserve an accessible path to understand and answer.
-- Laptop landscape (16:9) is the primary play surface. Responsive fallback remains usable, but
-  gameplay composition is authored for the shared landscape fleet board.
+- Laptop landscape (16:9) remains a useful shared-table surface for the legacy root app.
+  **Path B beauty milestone authors for phone-first portrait** (owner LOCKED 2026-07-20).
+  Responsive fallback remains usable; gameplay composition for Path B is authored handheld.
 
 ## Visual review questions
 

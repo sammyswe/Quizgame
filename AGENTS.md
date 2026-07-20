@@ -4,28 +4,28 @@ Instructions for AI agents (and humans) working in this repository.
 
 ## What this is
 
-Treasure Trap is a **cartoon pirate excursion party quiz** for 2–8 players. Friends on separate
-devices sail as a fleet, race toward answer islands, bluff, mutiny, fire pirate power-ups and
-survive high-stakes special rounds. Casino spectacle is deliberately concentrated in loot-box
-and jackpot moments; it is not the global visual skin.
+Treasure Trap is a **cartoon pirate excursion party quiz** for 2–8 players (Path B beauty
+milestone: 2–4 on phones). Friends on separate devices sail as a fleet, race toward answer
+islands, bluff, mutiny, fire pirate power-ups and survive high-stakes special rounds. Casino
+spectacle is deliberately concentrated in loot-box and jackpot moments; it is not the global
+visual skin.
 
-Start at `docs/context/INDEX.md` **and** `obsidian/_MOCs/Home.md`. Docs provide the compact
-Cursor router and progress ledgers; the Obsidian vault is the granular idea/design notebook
-(one mechanic per note, MOCs, Inbox, status tags). Agents must use **both**. Older root-level
-docs and `obsidian/Archive/` may describe the superseded seven-round prototype.
+**Forward build target (LOCKED 2026-07-20):** Higgsfield Game Generator Path B in
+`hf-treasure-trap/`. Root React/Phaser (`pnpm dev`) is legacy reference, not the polish target.
+
+Start at `docs/context/INDEX.md`, `docs/context/HANDOFF.md`, and `hf-treasure-trap/design/ART_BIBLE.md`
+plus `obsidian/_MOCs/Home.md`.
 
 ## Repository layout
 
+- `hf-treasure-trap/` — **Path B primary**: Higgsfield-hosted multiplayer game (logic.js + canvas).
 - `obsidian/` — Obsidian vault: working design notebook + granular source of truth for ideas
   and direction. Open this folder in Obsidian. See `obsidian/README.md`.
 - `docs/` / `docs/context/` — Compact agent routing (`INDEX.md`), `HANDOFF.md`, roadmaps.
-- `shared/` — TypeScript types, config constants, and **pure** game logic. No IO, no React,
-  no sockets. Everything here is unit-testable. This is the source of truth for game rules.
-- `server/` — Authoritative Node + Socket.IO server. Owns rooms, phases, timers, scores,
-  items, chests, missions. Clients send **intents**; the server mutates state and broadcasts.
-- `client/` — Vite + React + Tailwind + Framer Motion. Renders server state, never computes
-  scores itself.
-- `experiments/loot-drop/` — archived Phaser reference slice, not the root runtime.
+- `shared/` — TypeScript types, config constants, and **pure** game logic (legacy root app).
+- `server/` — Legacy authoritative Node + Socket.IO server for root `pnpm dev`.
+- `client/` — Legacy Vite + React + Phaser shell for root `pnpm dev`.
+- `experiments/loot-drop/` — archived Phaser reference slice.
 
 ## Hard rules
 
