@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Treasure Trap: Voyage</title>
+<style>
+  :root {
+    --sea-deep: #0b3a4a;
+    --sea: #1a6b7c;
+    --foam: #d8f4ff;
+    --sand: #f0d39a;
+    --gold: #ffd56a;
+    --gold-deep: #e0a020;
+    --ink: #2a1808;
+    --cream: #fff6e4;
+    --coral: #ff6b5a;
+    --lagoon: #3ecfbf;
+    --panel: rgba(10, 36, 48, 0.78);
+    --panel-edge: rgba(255, 213, 106, 0.55);
+    --danger: #ff7a6e;
+    --ok: #6dffb0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--sea-deep);
+    color: var(--cream);
+    font-family: "Trebuchet MS", "Segoe UI", "Avenir Next", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  #stage {
+    position: fixed; inset: 0;
+    display: grid; place-items: center;
+  }
+  canvas#sea {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+  #hud {
+    position: relative; z-index: 2;
+    width: min(920px, 100vw);
+    height: min(100dvh, 100%);
+    padding: max(12px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none;
+  }
+  #hud > * { pointer-events: auto; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    min-width: 0;
+  }
+  .brand img { width: 48px; height: 48px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.35)); }
+  .brand h1 {
+    margin: 0; font-size: clamp(1.05rem, 3.6vw, 1.55rem);
+    letter-spacing: .04em; line-height: 1.05;
+    text-shadow: 0 2px 0 #1a0e04, 0 6px 18px rgba(0,0,0,.45);
+    color: var(--gold);
+  }
+  .brand p { margin: 2px 0 0; font-size: .72rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .clock-wrap {
+    width: 64px; height: 64px; position: relative; flex: 0 0 auto;
+  }
+  .clock-wrap canvas { width: 100%; height: 100%; }
+  .scores {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    font-weight: 700; font-size: .9rem;
+  }
+  .pill .dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+  .pill.you { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(255,213,106,.25), 0 8px 24px rgba(0,0,0,.25); }
+  .panel {
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 22px;
+    padding: 14px 16px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 16px 40px rgba(0,0,0,.35);
+  }
+  .panel h2 {
+    margin: 0 0 8px; font-size: clamp(1.05rem, 3.5vw, 1.35rem);
+    color: var(--cream); letter-spacing: .02em;
+    text-shadow: 0 2px 8px rgba(0,0,0,.4);
+  }
+  .muted { opacity: .8; font-size: .9rem; line-height: 1.35; }
+  .grow { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; }
+  .islands {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .island-btn {
+    position: relative; overflow: hidden;
+    border: 3px solid rgba(255,255,255,.18);
+    border-radius: 18px;
+    min-height: 92px;
+    padding: 10px;
+    color: var(--cream);
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.18));
+    cursor: pointer;
+    transition: transform .08s ease, border-color .12s ease, filter .12s ease;
+    text-align: left;
+    display: grid; grid-template-columns: 72px 1fr; gap: 8px; align-items: center;
+  }
+  .island-btn img {
+    width: 72px; height: 72px; object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    pointer-events: none;
+  }
+  .island-btn strong {
+    display: block; font-size: 1.05rem; letter-spacing: .04em; color: var(--gold);
+  }
+  .island-btn span { display: block; font-size: .88rem; line-height: 1.2; margin-top: 2px; }
+  .island-btn:active:not(:disabled) { transform: scale(.96); }
+  .island-btn:disabled { opacity: .55; cursor: default; }
+  .island-btn.picked { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(255,213,106,.35) inset; }
+  .island-btn.correct { border-color: var(--ok); filter: saturate(1.2); }
+  .island-btn.wrong { border-color: var(--danger); }
+  .island-btn.dim { opacity: .35; }
+  .big-btn {
+    appearance: none; border: 0; cursor: pointer;
+    width: 100%;
+    padding: 16px 18px;
+    border-radius: 18px;
+    font: inherit; font-weight: 900; font-size: 1.15rem; letter-spacing: .06em;
+    color: var(--ink);
+    background: linear-gradient(180deg, #ffe08a, #f0b030);
+    box-shadow: 0 6px 0 #b07a10, 0 14px 28px rgba(0,0,0,.35);
+    transition: transform .08s ease, filter .12s ease;
+  }
+  .big-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #b07a10, 0 8px 18px rgba(0,0,0,.3); }
+  .big-btn:disabled { filter: grayscale(.35) brightness(.85); cursor: default; }
+  .big-btn.pulse { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%,100% { filter: brightness(1); }
+    50% { filter: brightness(1.12); }
+  }
+  .invite {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .invite input {
+    flex: 1; min-width: 0;
+    border-radius: 14px; border: 2px solid var(--panel-edge);
+    background: rgba(0,0,0,.35); color: var(--cream);
+    padding: 12px 12px; font: inherit; font-size: .82rem;
+  }
+  .ghost {
+    border: 2px solid var(--panel-edge); background: rgba(255,255,255,.08);
+    color: var(--cream); border-radius: 14px; padding: 11px 14px;
+    font: inherit; font-weight: 800; cursor: pointer;
+  }
+  .ghost:active { transform: scale(.97); }
+  .ventures {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .venture {
+    border: 3px solid rgba(255,255,255,.16);
+    border-radius: 16px;
+    padding: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,.2));
+    display: grid; grid-template-columns: 48px 1fr auto; gap: 8px; align-items: center;
+    cursor: pointer;
+  }
+  .venture img { width: 48px; height: 48px; object-fit: contain; }
+  .venture strong { display: block; font-size: .92rem; color: var(--gold); }
+  .venture small { opacity: .85; }
+  .venture .amt {
+    font-weight: 900; font-size: 1.1rem; color: var(--cream);
+    min-width: 2.2ch; text-align: right;
+  }
+  .venture:active { transform: scale(.97); }
+  .loot-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .loot-left {
+    display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 1.1rem;
+  }
+  .loot-left img { width: 28px; height: 28px; }
+  #toast {
+    position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(120%);
+    z-index: 20;
+    background: rgba(20,10,5,.92);
+    border: 2px solid var(--coral);
+    color: #fff; padding: 12px 18px; border-radius: 16px;
+    font-weight: 800; letter-spacing: .03em;
+    transition: transform .25s ease; pointer-events: none;
+    box-shadow: 0 12px 30px rgba(0,0,0,.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #err {
+    min-height: 1.1em; color: var(--danger); font-weight: 700; font-size: .9rem;
+    text-shadow: 0 1px 0 #000;
+  }
+  .center-card {
+    text-align: center; padding: 22px 18px;
+  }
+  .center-card .trophy {
+    width: 96px; height: 96px; margin: 0 auto 10px;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,.4));
+  }
+  .nick-modal {
+    position: fixed; inset: 0; z-index: 30;
+    display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 20%, rgba(40,110,130,.55), rgba(5,20,30,.92));
+    padding: 20px;
+  }
+  .nick-modal.hidden { display: none; }
+  .nick-modal .panel { width: min(420px, 100%); text-align: center; }
+  .nick-modal input {
+    width: 100%; margin: 12px 0 16px;
+    border-radius: 14px; border: 2px solid var(--panel-edge);
+    background: rgba(0,0,0,.35); color: var(--cream);
+    padding: 14px; font: inherit; font-size: 1.1rem; text-align: center;
+  }
+  .phase-tag {
+    display: inline-block;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(255,213,106,.18); color: var(--gold);
+    font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .reveal-pop {
+    animation: popin .35s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes popin {
+    from { transform: scale(.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="sea"></canvas>
+  <div id="hud">
+    <div class="topbar">
+      <div class="brand">
+        <img src="./assets/favicon.png" alt="">
+        <div>
+          <h1>TREASURE TRAP</h1>
+          <p id="subtitle">Voyage</p>
+        </div>
+      </div>
+      <div class="clock-wrap" id="clockWrap" title="Soft clock">
+        <canvas id="clock" width="128" height="128"></canvas>
+      </div>
+    </div>
+    <div class="scores" id="scores"></div>
+    <div class="grow" id="main"></div>
+    <div id="err"></div>
+  </div>
+</div>
+<div id="toast"></div>
+<div class="nick-modal" id="nickModal">
+  <div class="panel">
+    <div class="phase-tag">Name your pirate</div>
+    <h2>Who’s boarding?</h2>
+    <p class="muted">Cheeky nickname, ages 9+. This stays on this device tab.</p>
+    <input id="nickInput" maxlength="14" placeholder="e.g. Cap’n Spark" autocomplete="off">
+    <button class="big-btn pulse" id="nickGo">RAISE SAIL</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const LETTERS = ["A", "B", "C", "D"];
+  const ISLAND_SRC = [
+    "./assets/island-a.png",
+    "./assets/island-b.png",
+    "./assets/island-c.png",
+    "./assets/island-d.png",
+  ];
+  const SHIP_SRC = ["./assets/ship-0.png", "./assets/ship-1.png"];
+  const VENTURE_SRC = [
+    "./assets/venture-0.png",
+    "./assets/venture-1.png",
+    "./assets/venture-2.png",
+    "./assets/venture-3.png",
+  ];
+
+  const imgs = {};
+  function loadImg(src) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = src;
+    });
+  }
+
+  // --- room + identity -------------------------------------------------
+  const params = new URLSearchParams(location.search);
+  let room = params.get("room");
+  if (!room) {
+    room = Math.random().toString(36).slice(2, 8);
+    params.set("room", room);
+    history.replaceState(null, "", location.pathname + "?" + params);
+  }
+
+  let nick = sessionStorage.getItem("tt-nick") || "";
+  let playerId = sessionStorage.getItem("mp-player-id");
+  function setIdentity(name) {
+    nick = String(name || "Pirate").trim().slice(0, 14) || "Pirate";
+    sessionStorage.setItem("tt-nick", nick);
+    const base = "p-" + Math.random().toString(36).slice(2, 10);
+    playerId = base + "::" + encodeURIComponent(nick);
+    sessionStorage.setItem("mp-player-id", playerId);
+  }
+  if (!playerId || !nick) {
+    // wait for modal
+  } else if (!playerId.includes("::")) {
+    playerId = playerId + "::" + encodeURIComponent(nick);
+    sessionStorage.setItem("mp-player-id", playerId);
+  }
+
+  const mainEl = document.getElementById("main");
+  const scoresEl = document.getElementById("scores");
+  const errEl = document.getElementById("err");
+  const toastEl = document.getElementById("toast");
+  const subtitleEl = document.getElementById("subtitle");
+  const nickModal = document.getElementById("nickModal");
+  const nickInput = document.getElementById("nickInput");
+  const nickGo = document.getElementById("nickGo");
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toastEl.classList.remove("show"), 1600);
+  }
+
+  // --- websocket -------------------------------------------------------
+  const base = location.pathname.replace(/\/+$/, "");
+  const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://")
+    + location.host + base + "/ws/" + room;
+
+  let ws;
+  let lastState = null;
+  let clockSkew = 0;
+  let timeoutSentFor = null;
+  let shakeUntil = 0;
+
+  function send(obj) {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
+  }
+  function act(action) {
+    send({ type: "action", action });
+  }
+
+  function connect() {
+    if (!playerId) return;
+    ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      errEl.textContent = "";
+      send({ type: "join", playerId });
+    };
+    ws.onclose = () => {
+      subtitleEl.textContent = "Reconnecting…";
+      setTimeout(connect, 1400);
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "error") {
+        errEl.textContent = msg.error || "Rejected";
+        toast(msg.error || "Nope!");
+        shakeUntil = performance.now() + 420;
+        return;
+      }
+      if (msg.type !== "state") return;
+      errEl.textContent = "";
+      lastState = msg;
+      if (msg.view && msg.view.serverNow && msg.view.deadlineAt) {
+        clockSkew = msg.view.serverNow - Date.now();
+      }
+      render(msg);
+    };
+  }
+
+  // --- soft clock ------------------------------------------------------
+  const clockCanvas = document.getElementById("clock");
+  const cctx = clockCanvas.getContext("2d");
+
+  function serverNowApprox() {
+    return Date.now() + clockSkew;
+  }
+
+  function remainingMs(v) {
+    if (!v || !v.deadlineAt) return null;
+    return v.deadlineAt - serverNowApprox();
+  }
+
+  function drawClock(v) {
+    const w = clockCanvas.width, h = clockCanvas.height;
+    cctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, r = 52;
+    cctx.beginPath();
+    cctx.arc(cx, cy, r, 0, Math.PI * 2);
+    cctx.fillStyle = "rgba(8,30,40,.75)";
+    cctx.fill();
+    cctx.lineWidth = 8;
+    cctx.strokeStyle = "rgba(255,213,106,.25)";
+    cctx.stroke();
+
+    const rem = remainingMs(v);
+    if (rem == null) {
+      cctx.fillStyle = "#ffd56a";
+      cctx.font = "700 28px Trebuchet MS, sans-serif";
+      cctx.textAlign = "center";
+      cctx.textBaseline = "middle";
+      cctx.fillText("∞", cx, cy + 2);
+      return;
+    }
+    const total = v.phase === "loot" ? v.lootMs : (v.phase === "question" ? v.qMs : 1600);
+    const t = Math.max(0, Math.min(1, rem / total));
+    cctx.beginPath();
+    cctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * t);
+    cctx.strokeStyle = t < 0.25 ? "#ff7a6e" : "#ffd56a";
+    cctx.stroke();
+    const sec = Math.max(0, Math.ceil(rem / 1000));
+    cctx.fillStyle = "#fff6e4";
+    cctx.font = "800 34px Trebuchet MS, sans-serif";
+    cctx.textAlign = "center";
+    cctx.textBaseline = "middle";
+    cctx.fillText(String(sec), cx, cy + 2);
+
+    if (rem <= 0 && lastState && lastState.status === "playing") {
+      const key = String(v.deadlineAt) + ":" + v.phase;
+      if (timeoutSentFor !== key) {
+        timeoutSentFor = key;
+        act({ type: "timeout" });
+      }
+    }
+  }
+
+  // --- sea canvas ambience ---------------------------------------------
+  const sea = document.getElementById("sea");
+  const sctx = sea.getContext("2d");
+  let bg = null;
+  let shipImgs = [];
+  let islandImgs = [];
+  let t0 = performance.now();
+  let bob = [0, 0];
+  let sailProgress = [0, 0]; // 0 fleet, 1 at chosen island
+  let chosenIsland = [null, null];
+
+  function resizeSea() {
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    sea.width = innerWidth * dpr;
+    sea.height = innerHeight * dpr;
+    sea.style.width = innerWidth + "px";
+    sea.style.height = innerHeight + "px";
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resizeSea);
+  addEventListener("orientationchange", resizeSea);
+  resizeSea();
+
+  function islandPos(i, W, H) {
+    const slots = [
+      { x: W * 0.22, y: H * 0.34 },
+      { x: W * 0.78, y: H * 0.34 },
+      { x: W * 0.22, y: H * 0.58 },
+      { x: W * 0.78, y: H * 0.58 },
+    ];
+    return slots[i];
+  }
+
+  function fleetPos(seat, W, H) {
+    return { x: W * (0.38 + seat * 0.24), y: H * 0.78 };
+  }
+
+  function drawSea(now) {
+    const W = innerWidth, H = innerHeight;
+    const shake = now < shakeUntil ? (Math.sin(now * 0.08) * 6) : 0;
+    sctx.save();
+    sctx.translate(shake, 0);
+
+    if (bg) {
+      const scale = Math.max(W / bg.width, H / bg.height);
+      const dw = bg.width * scale, dh = bg.height * scale;
+      sctx.drawImage(bg, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    } else {
+      const g = sctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#1c7a8c");
+      g.addColorStop(1, "#0b3a4a");
+      sctx.fillStyle = g;
+      sctx.fillRect(0, 0, W, H);
+    }
+
+    // animated foam ribbons
+    const t = (now - t0) / 1000;
+    sctx.globalAlpha = 0.22;
+    for (let i = 0; i < 6; i++) {
+      const y = H * 0.25 + i * H * 0.1;
+      sctx.beginPath();
+      for (let x = 0; x <= W; x += 16) {
+        const yy = y + Math.sin(x * 0.012 + t * 1.4 + i) * 7;
+        if (x === 0) sctx.moveTo(x, yy); else sctx.lineTo(x, yy);
+      }
+      sctx.strokeStyle = "#d8f4ff";
+      sctx.lineWidth = 2;
+      sctx.stroke();
+    }
+    sctx.globalAlpha = 1;
+
+    // islands on the horizon band
+    for (let i = 0; i < 4; i++) {
+      const p = islandPos(i, W, H);
+      const im = islandImgs[i];
+      const bobY = Math.sin(t * 1.1 + i) * 4;
+      if (im) {
+        const sz = Math.min(140, W * 0.22);
+        sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bobY, sz, sz);
+      } else {
+        sctx.beginPath();
+        sctx.ellipse(p.x, p.y + bobY, 48, 22, 0, 0, Math.PI * 2);
+        sctx.fillStyle = "#3aa878";
+        sctx.fill();
+      }
+      sctx.fillStyle = "rgba(10,30,40,.55)";
+      sctx.beginPath();
+      sctx.arc(p.x - 34, p.y - 28 + bobY, 14, 0, Math.PI * 2);
+      sctx.fill();
+      sctx.fillStyle = "#ffd56a";
+      sctx.font = "800 14px Trebuchet MS, sans-serif";
+      sctx.textAlign = "center";
+      sctx.textBaseline = "middle";
+      sctx.fillText(LETTERS[i], p.x - 34, p.y - 27 + bobY);
+    }
+
+    // ships
+    const v = lastState && lastState.view;
+    const players = (v && v.players) || [];
+    for (let seat = 0; seat < 2; seat++) {
+      const pl = players[seat];
+      if (!pl) continue;
+      const targetIdx = chosenIsland[seat];
+      const from = fleetPos(seat, W, H);
+      let to = from;
+      if (targetIdx != null) to = islandPos(targetIdx, W, H);
+      const p = sailProgress[seat];
+      const x = from.x + (to.x - from.x) * p;
+      const y = from.y + (to.y - from.y) * p + Math.sin(t * 2.2 + seat) * 5;
+      const im = shipImgs[seat];
+      const sz = 70 + (pl.id === (lastState && lastState.you) ? 8 : 0);
+      if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
+      else {
+        sctx.fillStyle = pl.color || "#e74c3c";
+        sctx.fillRect(x - 24, y - 10, 48, 22);
+      }
+      // nameplate
+      sctx.fillStyle = "rgba(8,24,32,.7)";
+      const nx = x - 40, ny = y + 28, nw = 80, nh = 20, r = 8;
+      sctx.beginPath();
+      sctx.moveTo(nx + r, ny);
+      sctx.arcTo(nx + nw, ny, nx + nw, ny + nh, r);
+      sctx.arcTo(nx + nw, ny + nh, nx, ny + nh, r);
+      sctx.arcTo(nx, ny + nh, nx, ny, r);
+      sctx.arcTo(nx, ny, nx + nw, ny, r);
+      sctx.closePath();
+      sctx.fill();
+      sctx.fillStyle = "#fff6e4";
+      sctx.font = "700 11px Trebuchet MS, sans-serif";
+      sctx.textAlign = "center";
+      sctx.fillText(pl.nick, x, y + 39);
+    }
+
+    sctx.restore();
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    // ease sail progress
+    for (let i = 0; i < 2; i++) {
+      const want = chosenIsland[i] == null ? 0 : 1;
+      sailProgress[i] += (want - sailProgress[i]) * 0.08;
+    }
+    drawSea(now);
+    if (lastState && lastState.view) drawClock(lastState.view);
+    else drawClock(null);
+  }
+
+  // --- UI render -------------------------------------------------------
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[c]);
+  }
+
+  function renderScores(v, you) {
+    if (!v) { scoresEl.innerHTML = ""; return; }
+    scoresEl.innerHTML = v.players.map((p) => {
+      const isYou = p.id === you;
+      return `<div class="pill${isYou ? " you" : ""}"><span class="dot" style="background:${p.color}"></span>${escapeHtml(p.nick)}${isYou ? " (you)" : ""} · ${p.score}</div>`;
+    }).join("");
+  }
+
+  function renderWaiting(s) {
+    subtitleEl.textContent = "Gathering the crew…";
+    document.getElementById("clockWrap").style.opacity = "0.35";
+    mainEl.innerHTML = `
+      <div class="panel center-card reveal-pop">
+        <img src="./assets/title-banner.png" alt="" style="width:min(100%,420px);height:auto;margin:0 auto 8px;display:block;filter:drop-shadow(0 10px 24px rgba(0,0,0,.35))">
+        <div class="phase-tag">Waiting room</div>
+        <h2>Invite your rival pirate</h2>
+        <p class="muted">The voyage launches the moment a second captain joins. Sail to answer islands, race the soft clock, then gamble your loot on four ventures.</p>
+        <div class="invite" style="margin-top:14px">
+          <input readonly id="link" value="${escapeHtml(location.href)}">
+          <button class="ghost" id="copyBtn" type="button">COPY</button>
+        </div>
+        <p class="muted" style="margin-top:12px">Connected: ${s.connected || 1} · Need 2 captains</p>
+      </div>`;
+    document.getElementById("copyBtn").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        toast("Invite copied!");
+      } catch {
+        document.getElementById("link").select();
+        toast("Copy the link!");
+      }
+    };
+  }
+
+  function renderQuestion(s, v) {
+    document.getElementById("clockWrap").style.opacity = "1";
+    const q = v.question;
+    const you = v.you;
+    const seated = s.seats.includes(s.you);
+    const canAnswer = s.status === "playing" && seated && v.phase === "question" && !you.answered;
+    subtitleEl.textContent = `Question ${v.questionIndex + 1} / ${v.questionTotal}`;
+
+    // sync ship sails from public answered flags + private index
+    v.players.forEach((p, seat) => {
+      if (p.id === s.you) chosenIsland[seat] = you.answerIndex;
+      else chosenIsland[seat] = p.answered ? (chosenIsland[seat] ?? 0) : null;
+      // opponents: we don't know island — park near center-top when answered
+      if (p.id !== s.you && p.answered) {
+        // leave previous or default to a "sailed" feel toward mid
+        if (chosenIsland[seat] == null) chosenIsland[seat] = seat; // decorative
+      }
+      if (!p.answered) chosenIsland[seat] = null;
+    });
+    if (you.answerIndex != null) {
+      const mySeat = v.players.findIndex((p) => p.id === s.you);
+      if (mySeat >= 0) chosenIsland[mySeat] = you.answerIndex;
+    }
+
+    mainEl.innerHTML = `
+      <div class="panel reveal-pop">
+        <div class="phase-tag">Answer islands</div>
+        <h2>${escapeHtml(q.text)}</h2>
+        <p class="muted">${you.answered ? "Sailed! Waiting for the other captain…" : "Tap an island — your ship races there."}</p>
+      </div>
+      <div class="islands" id="islands"></div>`;
+
+    const root = document.getElementById("islands");
+    q.answers.forEach((label, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "island-btn";
+      if (you.answerIndex === i) btn.classList.add("picked");
+      btn.disabled = !canAnswer;
+      btn.innerHTML = `<img src="${ISLAND_SRC[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${escapeHtml(label)}</span></div>`;
+      btn.onclick = () => {
+        if (!canAnswer) return;
+        const mySeat = v.players.findIndex((p) => p.id === s.you);
+        if (mySeat >= 0) chosenIsland[mySeat] = i;
+        act({ type: "answer", index: i });
+      };
+      root.appendChild(btn);
+    });
+  }
+
+  function renderQReveal(s, v) {
+    document.getElementById("clockWrap").style.opacity = "1";
+    const q = v.question;
+    const rev = v.reveal;
+    subtitleEl.textContent = "Reveal!";
+    const my = rev && rev.results ? rev.results[s.you] : null;
+    const headline = my && my.correct
+      ? `Spot on! +${my.delta}`
+      : "Missed the mark";
+
+    v.players.forEach((p, seat) => {
+      const r = rev && rev.results ? rev.results[p.id] : null;
+      chosenIsland[seat] = r && r.index != null ? r.index : null;
+    });
+
+    mainEl.innerHTML = `
+      <div class="panel reveal-pop">
+        <div class="phase-tag">Answer reveal</div>
+        <h2>${headline}</h2>
+        <p class="muted">${escapeHtml(q.text)}</p>
+      </div>
+      <div class="islands" id="islands"></div>`;
+
+    const root = document.getElementById("islands");
+    q.answers.forEach((label, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "island-btn";
+      btn.disabled = true;
+      if (i === rev.correctIndex) btn.classList.add("correct");
+      else btn.classList.add("dim");
+      if (my && my.index === i && !my.correct) btn.classList.add("wrong");
+      btn.innerHTML = `<img src="${ISLAND_SRC[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${escapeHtml(label)}</span></div>`;
+      root.appendChild(btn);
+    });
+  }
+
+  function renderLoot(s, v) {
+    document.getElementById("clockWrap").style.opacity = "1";
+    subtitleEl.textContent = "Loot Drop";
+    chosenIsland = [null, null];
+    const you = v.you;
+    const seated = s.seats.includes(s.you);
+    const can = s.status === "playing" && seated && !you.locked;
+
+    mainEl.innerHTML = `
+      <div class="panel reveal-pop">
+        <div class="phase-tag">Special round</div>
+        <div class="loot-bar">
+          <div class="loot-left"><img src="./assets/coin.png" alt=""><span id="lootLeft">${you.lootLeft}</span> loot left</div>
+          <div class="muted">${you.locked ? "LOCKED IN" : "Tap ventures to stash coins"}</div>
+        </div>
+        <div class="ventures" id="ventures"></div>
+      </div>
+      <button class="big-btn${can ? " pulse" : ""}" id="lockBtn" ${can ? "" : "disabled"}>${you.locked ? "LOCKED!" : "LOCK IN"}</button>`;
+
+    const root = document.getElementById("ventures");
+    v.ventures.forEach((ven, i) => {
+      const amt = you.allocation[ven.id] || 0;
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "venture";
+      el.disabled = !can;
+      el.innerHTML = `<img src="${VENTURE_SRC[i]}" alt=""><div><strong>${escapeHtml(ven.name)}</strong><small>×${ven.mult}</small></div><div class="amt">${amt}</div>`;
+      el.onclick = () => {
+        if (!can) return;
+        if (you.lootLeft <= 0) {
+          toast("NO LOOT LEFT!");
+          shakeUntil = performance.now() + 420;
+          return;
+        }
+        const step = you.lootLeft >= 20 ? 20 : (you.lootLeft >= 10 ? 10 : you.lootLeft);
+        const next = amt + step;
+        act({ type: "alloc", venture: ven.id, amount: next });
+      };
+      root.appendChild(el);
+    });
+    document.getElementById("lockBtn").onclick = () => {
+      if (!can) return;
+      act({ type: "lock" });
+    };
+  }
+
+  function renderLootReveal(s, v) {
+    document.getElementById("clockWrap").style.opacity = "1";
+    subtitleEl.textContent = "Loot reveal";
+    const out = v.reveal && v.reveal.outcomes ? v.reveal.outcomes[s.you] : null;
+    let lines = "";
+    if (out) {
+      lines = Object.entries(out.byVenture).map(([id, row]) => {
+        const name = (v.ventures.find((x) => x.id === id) || {}).name || id;
+        return `<div class="pill" style="border-radius:14px">${escapeHtml(name)}: ${row.put} → ${row.got}</div>`;
+      }).join("");
+      if (out.rescued) lines += `<div class="pill" style="border-color:#3ecfbf">Poseidon’s Rescue +40</div>`;
+    }
+    mainEl.innerHTML = `
+      <div class="panel center-card reveal-pop">
+        <div class="phase-tag">Venture returns</div>
+        <img class="trophy" src="./assets/chest.png" alt="">
+        <h2>${out ? (out.gained >= out.wagered ? "The seas pay out!" : "Rough waters…") : "Revealing…"}</h2>
+        <p class="muted">${out ? `Wagered ${out.wagered} · Returned ${out.gained} · Score ${out.after}` : ""}</p>
+        <div class="scores" style="justify-content:center;margin-top:10px">${lines}</div>
+      </div>`;
+  }
+
+  function renderWinner(s, v) {
+    document.getElementById("clockWrap").style.opacity = "0.35";
+    subtitleEl.textContent = "Champion";
+    const winnerId = s.result && s.result.winner;
+    const win = (v.players || []).find((p) => p.id === winnerId);
+    const youWin = winnerId === s.you;
+    mainEl.innerHTML = `
+      <div class="panel center-card reveal-pop">
+        <div class="phase-tag">Voyage complete</div>
+        <img class="trophy" src="./assets/chest.png" alt="">
+        <h2>${youWin ? "You rule these waters!" : escapeHtml((win && win.nick) || "A rival") + " takes the gold"}</h2>
+        <p class="muted">Play again keeps this room — same invite link.</p>
+        <button class="big-btn pulse" id="resetBtn" style="margin-top:14px">PLAY AGAIN</button>
+      </div>`;
+    document.getElementById("resetBtn").onclick = () => send({ type: "reset" });
+  }
+
+  function render(s) {
+    const v = s.view;
+    renderScores(v, s.you);
+
+    if (s.status === "waiting" || !v) {
+      renderWaiting(s);
+      return;
+    }
+    if (s.status === "over" || v.phase === "winner") {
+      renderWinner(s, v);
+      return;
+    }
+    if (v.phase === "question") renderQuestion(s, v);
+    else if (v.phase === "q_reveal") renderQReveal(s, v);
+    else if (v.phase === "loot") renderLoot(s, v);
+    else if (v.phase === "loot_reveal") renderLootReveal(s, v);
+    else renderWaiting(s);
+  }
+
+  // --- boot ------------------------------------------------------------
+  async function boot() {
+    bg = await loadImg("./assets/bg-sea.jpg");
+    shipImgs = await Promise.all(SHIP_SRC.map(loadImg));
+    islandImgs = await Promise.all(ISLAND_SRC.map(loadImg));
+    requestAnimationFrame(frame);
+
+    if (nick && playerId) {
+      nickModal.classList.add("hidden");
+      connect();
+    } else {
+      nickInput.value = nick || "";
+      nickInput.focus();
+      const go = () => {
+        const n = nickInput.value.trim();
+        if (!n) { toast("Pick a nickname!"); return; }
+        setIdentity(n);
+        nickModal.classList.add("hidden");
+        connect();
+      };
+      nickGo.onclick = go;
+      nickInput.addEventListener("keydown", (e) => {
+        if (e.code === "Enter") go();
+      });
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

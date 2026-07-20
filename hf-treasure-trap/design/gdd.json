@@ -1,0 +1,17 @@
+{
+  "title": "Treasure Trap: Voyage",
+  "experience": "The player feels like a cheeky pirate racing a rival across a storybook sea because every answer is a ship sailing to an island and loot flies onto ventures in a jewel-bright reveal.",
+  "slice": "S",
+  "players": { "min": 2, "max": 2 },
+  "players_note": "Higgsfield kernel starts at minPlayers; fixed 2 for reliable invite→play. Expand later with host-gated seating if kernel gains it.",
+  "questions": 3,
+  "timerSeconds": 18,
+  "timerMode": "T1-soft-clock",
+  "perspective": "slight top-down voyage",
+  "style_formula_file": "design/STYLE_FORMULA.txt",
+  "deploy": {
+    "game_id": "001ac28c-b62c-4fca-9da9-9f9bda75b7c9",
+    "slug": "lazy-crane-142",
+    "url": "https://lazy-crane-142.higgsfield.gg/"
+  }
+}

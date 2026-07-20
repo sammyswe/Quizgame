@@ -38,6 +38,14 @@ updated: 2026-07-14
 - Higgsfield is the preferred art pipeline. Cloud-agent `balance`/generate may still fail;
   owner Apps UI / handed concept art is the reliable path.
 - `design/assets.csv` is the locked generation queue (STYLE-001).
+
+## Path B experiment (Higgsfield Game)
+
+- Branch work under `hf-treasure-trap/`: beauty vertical slice rebuilt as a Higgsfield-hosted
+  multiplayer game (`logic.js` + canvas client), not a Phaser polish pass.
+- Live: https://lazy-crane-142.higgsfield.gg/ (game id `001ac28c-b62c-4fca-9da9-9f9bda75b7c9`).
+- Slice: 2 captains → 3 questions → mini Loot Drop → winner. Soft client countdown (T1).
+- Does **not** replace root `pnpm dev` product; Path A (Phaser) remains the long-term app.
 - Drop owner-approved Phase-0 locks into `design/concept/approved/` before bulk regen.
 - Existing Higgsfield binaries and Phaser-drawn art are explicit fallbacks, not final art.
 
