@@ -55,7 +55,7 @@
     border: 4px solid var(--edge);
     border-radius: 18px; overflow: hidden;
     background: #041018;
-    box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #5a3a12, 0 0 40px rgba(255,0,180,.25);
+    box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #ff3db8, 0 0 0 6px #3dfff0, 0 0 48px rgba(255,0,180,.45);
     cursor: pointer;
   }
   #worldFx.on { display: block; pointer-events: auto; animation: fxIn .35s cubic-bezier(.2,1.3,.4,1) both; }
@@ -152,7 +152,16 @@
   .choice img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
   .choice strong { display: block; color: var(--gold); font-size: .88rem; }
   .choice span { display: block; font-size: .74rem; line-height: 1.15; }
-  .choice .amt { font-family: var(--display); font-size: 1rem; color: var(--gold); }
+  .choice .amt { font-family: var(--display); font-size: 1rem; color: var(--gold); text-align: center; min-width: 28px; }
+  .alloc-btns { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .alloc-btn {
+    width: 32px; height: 28px; border-radius: 8px; border: 2px solid var(--edge);
+    background: linear-gradient(180deg, #ffe08a, #e8a820); color: #1a1008;
+    font-family: var(--display); font-size: 1.1rem; font-weight: 900; cursor: pointer;
+    box-shadow: 0 2px 0 #9a6a10;
+  }
+  .alloc-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 #9a6a10; }
+  .alloc-btn:disabled { filter: grayscale(.5); opacity: .55; }
   .choice:active:not(:disabled) { transform: scale(.97); background: var(--choice-hi); }
   .choice:disabled { filter: none; opacity: 1; }
   .choice.picked { border-color: var(--gold); background: #2a5f4a; }
@@ -226,12 +235,30 @@
   }
   #spectacle .cs-summary {
     display: none; position: absolute; inset: 0;
-    background: linear-gradient(180deg, #0a2a38 0%, #041018 100%);
+    background:
+      radial-gradient(circle at 50% 35%, rgba(255,61,184,.35), transparent 45%),
+      radial-gradient(circle at 20% 70%, rgba(61,255,240,.28), transparent 40%),
+      radial-gradient(circle at 80% 60%, rgba(255,213,106,.3), transparent 40%),
+      linear-gradient(180deg, #1a0840 0%, #041018 100%);
     flex-direction: column; align-items: center; justify-content: center;
     padding: 24px 18px max(24px, env(safe-area-inset-bottom));
-    text-align: center; gap: 10px;
+    text-align: center; gap: 8px;
+    overflow: hidden;
   }
-  #spectacle .cs-summary.on { display: flex; }
+  #spectacle .cs-summary.on { display: flex; animation: sumPop .4s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes sumPop { from { transform: scale(.9); filter: brightness(1.4); } to { transform: scale(1); } }
+  #spectacle .cs-summary .coin-rain {
+    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  }
+  #spectacle .cs-summary .coin-rain i {
+    position: absolute; top: -10%; font-style: normal;
+    color: #ffd56a; font-size: 1.2rem;
+    animation: coinFall linear forwards;
+    text-shadow: 0 0 8px #ff3db8;
+  }
+  @keyframes coinFall {
+    to { transform: translateY(120vh) rotate(420deg); opacity: 0.2; }
+  }
   #spectacle .cs-summary .tag {
     display: inline-block; padding: 4px 10px; border-radius: 999px;
     background: #3a2a10; color: var(--gold);
@@ -490,11 +517,16 @@
     if (v.phase === "loot" && !you.locked) {
       botBusyKey = key;
       const pool = you.lootPool || 0;
-      later(700, () => {
-        const pick = Math.random() < 0.45 ? "v2" : "v0";
-        void pool;
-        botAct({ type: "pick", venture: pick });
-        later(500, () => botAct({ type: "lock" }));
+      const step = v.step || 10;
+      later(600, () => {
+        // Split: some on correct-ish v2, rest on another
+        const a = Math.floor(pool * 0.6 / step) * step;
+        const b = Math.max(0, pool - a);
+        botAct({ type: "alloc", venture: "v2", amount: a });
+        later(200, () => {
+          botAct({ type: "alloc", venture: "v0", amount: b });
+          later(400, () => botAct({ type: "lock" }));
+        });
       });
       return;
     }
@@ -562,6 +594,12 @@
   function sfxWhoosh() { beep(180, 0.12, "sawtooth", 0.03); beep(90, 0.18, "triangle", 0.04); }
   function sfxJackpot() {
     [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.18, "square", 0.06), i * 70));
+  }
+  function sfxSad() {
+    [392, 349, 294, 220].forEach((f, i) => setTimeout(() => beep(f, 0.22, "triangle", 0.05), i * 140));
+  }
+  function sfxSlot() {
+    beep(880 + Math.random() * 220, 0.04, "square", 0.035);
   }
 
   function queueIslandLoot(islandIdx, seat) {
@@ -633,16 +671,16 @@
     casinoEl.classList.add("on");
     const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
     islandLoot.coins = [];
-    for (let i = 0; i < 48; i++) {
+    for (let i = 0; i < 72; i++) {
       islandLoot.coins.push({
         x: W * 0.5, y: H * 0.48,
-        vx: (Math.random() - 0.5) * 14,
-        vy: -6 - Math.random() * 10,
-        r: 4 + Math.random() * 7,
+        vx: (Math.random() - 0.5) * 18,
+        vy: -8 - Math.random() * 12,
+        r: 5 + Math.random() * 9,
         rot: Math.random() * Math.PI,
-        vr: (Math.random() - 0.5) * 0.4,
-        life: 700 + Math.random() * 600,
-        gold: Math.random() > 0.25,
+        vr: (Math.random() - 0.5) * 0.5,
+        life: 800 + Math.random() * 700,
+        gold: Math.random() > 0.2,
       });
     }
     spawnBurst(innerWidth / 2, seaH(innerHeight) * 0.4, 30);
@@ -657,7 +695,7 @@
     islandLoot.progress = Math.min(1, islandLoot.progress + 0.07 + Math.random() * 0.04);
     lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
     haptic(islandLoot.progress > 0.8 ? [16, 24, 20] : 12);
-    sfxTick();
+    sfxSlot();
     if (islandLoot.progress < 0.35) fxChestEl.src = "./assets/chest-closed.png";
     else if (islandLoot.progress < 0.7) fxChestEl.src = "./assets/chest-spin.png";
     else fxChestEl.src = "./assets/chest-crack.png";
@@ -672,14 +710,23 @@
     lootFillEl.style.width = "0%";
     casinoEl.classList.remove("on");
     if (fxBurstCtx && fxBurstEl) fxBurstCtx.clearRect(0, 0, fxBurstEl.width, fxBurstEl.height);
+    const wasActive = !!islandLoot;
     islandLoot = null;
+    if (wasActive) {
+      // Sail home on the same middle-channel path
+      for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+      sendFleetHome();
+    }
   }
   function tickIslandLoot(now) {
     if (!islandLoot) return;
     if (islandLoot.waitingForSail) {
       const s = sailState[islandLoot.seat];
       const arrived = !s || s.t >= 0.97 || (now - islandLoot.t0 > 6500);
-      if (arrived) startIslandLootVideo(islandLoot.island);
+      if (arrived) {
+        if (islandLoot.empty) openEmptyChest();
+        else startIslandLootVideo(islandLoot.island);
+      }
       return;
     }
     if (islandLoot.active && islandLoot.stage !== "explode") {
@@ -690,9 +737,43 @@
       lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
       const wobble = Math.sin(islandLoot.spin * 0.08) * Math.min(22, islandLoot.spinVel * 1.2);
       fxChestEl.style.transform = `translate(-50%, -50%) rotate(${wobble}deg) scale(${1 + Math.min(0.12, islandLoot.spinVel * 0.004)})`;
-      if (islandLoot.spinVel > 8 && Math.random() < 0.08) sfxTick();
+      if (islandLoot.spinVel > 8 && Math.random() < 0.08) sfxSlot();
     }
     drawChestBurst(now);
+  }
+
+  function startEmptyChest(islandIdx, seat) {
+    islandLoot = {
+      island: islandIdx,
+      seat: seat == null ? 0 : seat,
+      t0: performance.now(),
+      waitingForSail: true,
+      active: false,
+      progress: 0,
+      spin: 0,
+      spinVel: 0,
+      stage: "idle",
+      empty: true,
+    };
+  }
+  function openEmptyChest() {
+    if (!islandLoot) return;
+    islandLoot.waitingForSail = false;
+    islandLoot.active = true;
+    islandLoot.stage = "empty";
+    islandLoot.progress = 1;
+    fxLabelEl.textContent = "Empty…";
+    tapHintEl.classList.add("hide");
+    lootFillEl.style.width = "100%";
+    worldFxEl.classList.add("on");
+    fxChestEl.src = "./assets/chest-open-gold.png";
+    fxChestEl.style.filter = "grayscale(0.7) brightness(0.75)";
+    sfxSad();
+    haptic([30, 60, 40]);
+    setTimeout(() => {
+      fxChestEl.style.filter = "";
+      endIslandLoot();
+    }, 1800);
   }
 
   function startCutscene(kind, animMs, meta) {
@@ -701,10 +782,10 @@
       return;
     }
     if (kind === "plunder") {
-      // Loot plays ON the quiz sea when the ship has sailed in
       const isl = meta && meta.island != null ? meta.island : 0;
       const seat = meta && meta.seat != null ? meta.seat : 0;
-      queueIslandLoot(isl, seat);
+      if (meta && meta.empty) startEmptyChest(isl, seat);
+      else queueIslandLoot(isl, seat);
       return;
     }
     cutscene = { kind, t0: performance.now(), animMs: animMs || 2000, summaryMs: 0, meta: meta || {}, stage: "world" };
@@ -719,12 +800,33 @@
     if (still) still.remove();
     const meta = cutscene.meta || {};
     if (cutscene.kind === "poseidon") {
-      const who = meta.who || "A pirate";
       const amt = meta.amount != null ? meta.amount : 0;
-      csTagEl.textContent = "Poseidon’s Rescue";
-      csTitleEl.textContent = "Gold saved!";
-      csGoldEl.innerHTML = `<b>+${amt}</b> gold`;
-      csBodyEl.textContent = `${who} was lifted from the wreck — loot returned to the fleet chest.`;
+      const spent = meta.spent != null ? meta.spent : amt;
+      csTagEl.textContent = "RESCUE";
+      csTitleEl.textContent = "BACK!";
+      csGoldEl.innerHTML = `<b>+${amt}</b>`;
+      csBodyEl.innerHTML = `staked ${spent}`;
+      // coin rain
+      let rain = document.getElementById("csRain");
+      if (!rain) {
+        rain = document.createElement("div");
+        rain.className = "coin-rain";
+        rain.id = "csRain";
+        csSummaryEl.insertBefore(rain, csSummaryEl.firstChild);
+      }
+      rain.innerHTML = "";
+      for (let i = 0; i < 28; i++) {
+        const d = document.createElement("i");
+        d.textContent = "●";
+        d.style.left = (Math.random() * 100) + "%";
+        d.style.animationDuration = (1.2 + Math.random() * 1.4) + "s";
+        d.style.animationDelay = (Math.random() * 0.5) + "s";
+        d.style.color = i % 3 === 0 ? "#ff3db8" : (i % 3 === 1 ? "#3dfff0" : "#ffd56a");
+        rain.appendChild(d);
+      }
+      sfxJackpot();
+      haptic([20, 40, 25, 50, 30]);
+      spawnBurst(innerWidth / 2, innerHeight * 0.4, 24);
     }
     csSummaryEl.classList.add("on");
     casinoEl.classList.remove("on");
@@ -793,19 +895,22 @@
           if (mine && mine.correct) {
             startCutscene("plunder", 4200, { island: msg.view.reveal.correctIndex, seat: Math.max(0, mySeat) });
           } else if (mine && !mine.correct && mine.index != null) {
-            startCutscene("crash", 1600, { island: mine.index });
+            startCutscene("plunder", 4200, { island: mine.index, seat: Math.max(0, mySeat), empty: true });
           }
         }
         if (msg.view.phase === "loot_reveal") {
           hitStopUntil = performance.now() + 50;
+          renderLootReveal._did = false;
         }
         if (msg.view.phase === "loot_wildcard") {
           if (msg.view.reveal && msg.view.reveal.poseidon) {
             const pid = msg.view.reveal.poseidon.playerId;
             const who = ((msg.view.players || []).find((p) => p.id === pid) || {}).nick || "A pirate";
+            const po = msg.view.reveal.poseidon;
             startCutscene("poseidon", 3600, {
               playerId: pid,
-              amount: msg.view.reveal.poseidon.amount,
+              amount: po.amount,
+              spent: po.spent != null ? po.spent : po.amount,
               who,
             });
           } else if (msg.view.reveal && msg.view.reveal.shark) {
@@ -813,15 +918,8 @@
           }
         }
       }
-      // Plunder / crash when venture flips during loot reveal
-      if (msg.view && msg.view.phase === "loot_reveal" && prev === "loot_reveal" && prevVi !== msg.view.lootVentureIndex) {
-        const vi = msg.view.lootVentureIndex;
-        const ven = msg.view.ventures[vi];
-        const cell = msg.view.reveal && msg.view.reveal.outcomes && msg.view.reveal.outcomes[msg.you]
-          && msg.view.reveal.outcomes[msg.you].byVenture[ven.id];
-        if (cell && cell.ok) startCutscene("plunder", 4200, { island: ven.island, seat: Math.max(0, (msg.view.players || []).findIndex((p) => p.id === msg.you)) });
-        else if (cell && cell.put) startCutscene("crash", 1600, { island: ven.island });
-      }
+      // Correct-island-only reveal — no per-wrong-island beats
+
       render(msg);
       if (wantBot && msg.status === "waiting") connectBot();
     };
@@ -883,22 +981,23 @@
   /** Spaced archipelago — clear sailing channels between islands. */
   function islandPos(i, W, H) {
     const sh = seaH(H);
+    // Wide centre channel + gaps between rows for water-only sailing
     return [
-      { x: W * 0.16, y: sh * 0.30 },
-      { x: W * 0.84, y: sh * 0.30 },
-      { x: W * 0.16, y: sh * 0.70 },
-      { x: W * 0.84, y: sh * 0.70 },
+      { x: W * 0.14, y: sh * 0.28 },
+      { x: W * 0.86, y: sh * 0.28 },
+      { x: W * 0.14, y: sh * 0.72 },
+      { x: W * 0.86, y: sh * 0.72 },
     ][i];
   }
-  function islandSize(W) { return Math.min(118, W * 0.26); }
-  function islandRadius(W) { return islandSize(W) * 0.46; }
-  /** Ship berth BESIDE island on open water — never overlapping land. */
+  function islandSize(W) { return Math.min(108, W * 0.24); }
+  function islandRadius(W) { return islandSize(W) * 0.48; }
+  /** Ship berth on the OUTER water — never between islands / over land. */
   function dockPos(i, W, H, seatOffset) {
     const p = islandPos(i, W, H);
-    const outward = (i % 2 === 0) ? -1 : 1; // outer edge of map
+    const outward = (i % 2 === 0) ? -1 : 1;
     const r = islandRadius(W);
-    const ox = outward * (r + Math.min(38, W * 0.08));
-    const oy = (seatOffset || 0) * 11;
+    const ox = outward * (r + Math.min(46, W * 0.1));
+    const oy = (seatOffset || 0) * 10;
     return { x: p.x + ox, y: p.y + oy };
   }
   function fleetPos(seat, n, W, H) {
@@ -936,56 +1035,44 @@
     }
     return false;
   }
-  /** Corridor waypoint graph — ships sail lanes, never over islands. */
-  function navNodes(W, H) {
+  /**
+   * STRICT water-only route: vertical travel ONLY on the centre channel,
+   * horizontal travel ONLY on clear latitude bands (never across island rows).
+   */
+  function middleChannelPath(from, to, W, H) {
     const sh = seaH(H);
-    const xs = [0.08, 0.30, 0.50, 0.70, 0.92];
-    const ys = [0.18, 0.40, 0.55, 0.78, 0.92];
-    const nodes = [];
-    xs.forEach((xf) => ys.forEach((yf) => {
-      const x = W * xf, y = sh * yf;
-      if (!pointInIsland(x, y, W, H, 14)) nodes.push({ x, y });
-    }));
-    return nodes;
-  }
-  function findSeaPath(from, to, W, H) {
-    if (!segmentBlocked(from.x, from.y, to.x, to.y, W, H, 18)) {
-      return [from, to];
-    }
-    const nodes = navNodes(W, H);
-    const pts = nodes.concat([from, to]);
-    const start = pts.length - 2, goal = pts.length - 1;
-    const N = pts.length;
-    const dist = Array(N).fill(Infinity);
-    const prev = Array(N).fill(-1);
-    dist[start] = 0;
-    const used = Array(N).fill(false);
-    for (let iter = 0; iter < N; iter++) {
-      let u = -1, best = Infinity;
-      for (let i = 0; i < N; i++) if (!used[i] && dist[i] < best) { best = dist[i]; u = i; }
-      if (u < 0) break;
-      used[u] = true;
-      if (u === goal) break;
-      for (let v = 0; v < N; v++) {
-        if (used[v]) continue;
-        if (segmentBlocked(pts[u].x, pts[u].y, pts[v].x, pts[v].y, W, H, 16)) continue;
-        const w = Math.hypot(pts[u].x - pts[v].x, pts[u].y - pts[v].y);
-        if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
-      }
-    }
-    if (prev[goal] < 0 && dist[goal] === Infinity) {
-      // Fallback: go via bottom-center then side lane
-      const sh = seaH(H);
-      const mid = { x: W * 0.5, y: sh * 0.88 };
-      const side = to.x < W * 0.5 ? { x: W * 0.08, y: (from.y + to.y) / 2 } : { x: W * 0.92, y: (from.y + to.y) / 2 };
-      return [from, mid, side, to];
-    }
-    const path = [];
-    for (let cur = goal; cur >= 0; cur = prev[cur]) path.push(pts[cur]);
-    path.reverse();
-    if (!path.length || path[0] !== from) path.unshift(from);
+    const CX = W * 0.5;
+    const topBand = sh * 0.16;   // above top islands
+    const midBand = sh * 0.50;   // between island rows
+    const botBand = sh * 0.90;   // below everything / fleet
+    const path = [{ x: from.x, y: from.y }];
+    const push = (x, y) => {
+      const last = path[path.length - 1];
+      if (Math.hypot(last.x - x, last.y - y) < 4) return;
+      path.push({ x, y });
+    };
+    // 1) Enter centre channel at current latitude
+    push(CX, from.y);
+    // 2) Decide approach band from target Y
+    const topRow = to.y < midBand;
+    const approachY = topRow ? topBand : botBand;
+    // Sail vertically in the MIDDLE only
+    push(CX, midBand);
+    push(CX, approachY);
+    // 3) Horizontal along clear band to dock longitude
+    push(to.x, approachY);
+    // 4) Final short vertical/horizontal into dock (outer water)
+    push(to.x, to.y);
     return path;
   }
+  function findSeaPath(from, to, W, H) {
+    return middleChannelPath(from, to, W, H);
+  }
+  function reversePath(path) {
+    if (!path || path.length < 2) return path ? path.slice() : [];
+    return path.slice().reverse().map((p) => ({ x: p.x, y: p.y }));
+  }
+
   function polylinePoint(path, t) {
     if (!path || path.length < 2) return path && path[0] ? path[0] : { x: 0, y: 0 };
     const e = easeInOut(Math.max(0, Math.min(1, t)));
@@ -1017,13 +1104,34 @@
     let s = sailState[seat];
     if (!s || s.key !== key) {
       const cur = s && s.path ? polylinePoint(s.path, s.t) : fromHome;
-      const path = findSeaPath({ x: cur.x, y: cur.y }, to, W, H);
-      s = sailState[seat] = { path, t: 0, key, heading: 0 };
+      let path;
+      if (key === "home" && s && s.outbound && s.outbound.length > 1) {
+        // Return on the SAME path, reversed
+        path = reversePath(s.outbound);
+      } else {
+        path = findSeaPath({ x: cur.x, y: cur.y }, to, W, H);
+      }
+      const outbound = (key !== "home") ? path.slice() : (s && s.outbound) || null;
+      s = sailState[seat] = { path, t: 0, key, heading: 0, outbound };
     }
-    s.t = Math.min(1, s.t + dt * 0.15);
+    s.t = Math.min(1, s.t + dt * 0.14);
     const pos = polylinePoint(s.path, s.t);
     s.heading = pos.heading || s.heading || 0;
     return pos;
+  }
+  function sendFleetHome() {
+    for (let seat = 0; seat < 4; seat++) {
+      const s = sailState[seat];
+      if (!s || !s.path) continue;
+      if (!s.outbound) s.outbound = s.path.slice();
+      sailState[seat] = {
+        path: reversePath(s.outbound),
+        t: 0,
+        key: "home",
+        heading: 0,
+        outbound: s.outbound,
+      };
+    }
   }
   const DIR_NAMES = ["e", "se", "s", "sw", "w", "nw", "n", "ne"];
   function headingToDir(heading) {
@@ -1051,32 +1159,33 @@
     }
     const you = v.you;
     if (!you) { lootFleet = []; return; }
-    let island = -1;
-    let amount = 0;
+    const W = innerWidth, H = innerHeight;
+    const pool = you.lootPool || 0;
+    const wanted = [];
     (v.ventures || []).forEach((ven, i) => {
       const amt = (you.allocation && you.allocation[ven.id]) || 0;
-      if (amt > 0) { island = ven.island != null ? ven.island : i; amount = amt; }
-    });
-    if (v.phase === "loot_reveal") {
-      const vi = v.lootVentureIndex || 0;
-      const ven = v.ventures[vi];
-      if (!ven || ven.island !== island) {
-        lootFleet.forEach((ship) => { ship.t = 1; });
-        return;
+      if (amt <= 0) return;
+      const island = ven.island != null ? ven.island : i;
+      // During reveal, only keep ships on the correct island
+      if (v.phase === "loot_reveal") {
+        const vi = v.lootVentureIndex || 0;
+        const active = v.ventures[vi];
+        if (!active || active.island !== island) return;
       }
-    }
-    const n = wagerShipCount(amount, you.lootPool);
-    const W = innerWidth, H = innerHeight;
-    if (!n) { lootFleet = []; return; }
-    if (lootFleet.length === n && lootFleet[0] && lootFleet[0].island === island) return;
+      const n = wagerShipCount(amt, pool);
+      for (let k = 0; k < n; k++) wanted.push({ island, amount: amt, k, n });
+    });
+    const sig = wanted.map((w) => w.island + ":" + w.amount + ":" + w.k).join("|");
+    if (lootFleet._sig === sig) return;
     lootFleet = [];
-    for (let i = 0; i < n; i++) {
-      const from = { x: W * (0.28 + (i + 0.5) * (0.44 / n)), y: seaH(H) * 0.96 };
-      const to = dockPos(island, W, H, i);
+    lootFleet._sig = sig;
+    wanted.forEach((w, idx) => {
+      const from = { x: W * (0.22 + (idx + 0.5) * (0.56 / Math.max(1, wanted.length))), y: seaH(H) * 0.96 };
+      const to = dockPos(w.island, W, H, w.k);
       const path = findSeaPath(from, to, W, H);
-      const size = 34 + (amount / Math.max(you.lootPool || amount, 1)) * 22;
-      lootFleet.push({ path, t: 0, island, size: Math.min(58, size), seat: i, heading: 0 });
-    }
+      const size = 32 + (w.amount / Math.max(pool, 1)) * 26;
+      lootFleet.push({ path, t: 0, island: w.island, size: Math.min(58, size), seat: idx % 4, heading: 0, outbound: path.slice() });
+    });
   }
   function tickLootFleet(dt) {
     lootFleet.forEach((ship) => {
@@ -1142,9 +1251,8 @@
     }
 
     const far = [
-      { x: W * 0.10, y: sh * 0.16, sz: Math.min(48, W * 0.11), i: 2 },
-      { x: W * 0.48, y: sh * 0.11, sz: Math.min(40, W * 0.09), i: 0 },
-      { x: W * 0.86, y: sh * 0.18, sz: Math.min(46, W * 0.10), i: 1 },
+      { x: W * 0.18, y: sh * 0.07, sz: Math.min(34, W * 0.08), i: 2 },
+      { x: W * 0.82, y: sh * 0.06, sz: Math.min(30, W * 0.07), i: 0 },
     ];
     for (const f of far) {
       const im = islandImgs[f.i];
@@ -1521,7 +1629,7 @@
     mainEl.innerHTML = `<div class="banner center pop">
       <div class="tag">Special round</div>
       <h2 class="display">Loot Drop quiz</h2>
-      <p class="muted">Answer like a normal question. Your block loot sails with your pick — wrong island crashes, correct returns gold.</p>
+      <p class="muted">Split your gold across islands — only the correct one pays.</p>
     </div>`;
   }
 
@@ -1532,49 +1640,60 @@
     const you = v.you;
     const can = s.status === "playing" && s.seats.includes(s.you) && !you.locked;
     const q = v.question;
-    const picked = v.ventures.findIndex((ven) => (you.allocation[ven.id] || 0) > 0);
+    const step = v.step || 10;
+    const left = you.lootLeft != null ? you.lootLeft : Math.max(0, (you.lootPool || 0) - Object.values(you.allocation || {}).reduce((a, b) => a + b, 0));
+    const spent = (you.lootPool || 0) - left;
     mainEl.innerHTML = `<div class="banner pop">
-      <div class="tag">Loot Drop · question</div>
-      <h2 class="display">${esc((q && q.text) || "Pick the right island")}</h2>
-      <p class="muted">${you.locked ? "Locked in — waiting for rivals…" : `Stake ${you.lootPool} gold on one answer, then lock.`}</p>
+      <div class="tag">Loot Drop</div>
+      <h2 class="display">${esc((q && q.text) || "Split your gold")}</h2>
+      <p class="muted">${you.locked ? "Locked — waiting…" : `Left <b>${left}</b> · Staked <b>${spent}</b> · tap +/- to split`}</p>
     </div>
     <div class="choices" id="choices"></div>
-    <button class="big${can && picked >= 0 ? " pulse" : ""}" id="lockBtn" ${can && picked >= 0 ? "" : "disabled"}>
+    <button class="big${can && spent > 0 ? " pulse" : ""}" id="lockBtn" ${can && spent > 0 ? "" : "disabled"}>
       <img src="./assets/wheel.png" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:6px">${you.locked ? "LOCKED!" : "TURN THE WHEEL"}
     </button>`;
     const root = document.getElementById("choices");
     (q && q.answers ? q.answers : ["A","B","C","D"]).forEach((label, i) => {
       const ven = v.ventures[i];
       const amt = you.allocation[ven.id] || 0;
-      const el = document.createElement("button");
-      el.type = "button";
+      const el = document.createElement("div");
       el.className = "choice" + (amt > 0 ? " picked" : "");
-      el.disabled = !can;
-      el.innerHTML = `<img src="${ISLAND[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>${amt > 0 ? `<div class="amt">${amt}</div>` : ""}`;
-      el.onclick = () => {
-        if (!can) return;
-        act({ type: "pick", venture: ven.id });
-        pathPreview = null;
-        // Optimistic local alloc so wager fleet launches immediately
-        if (v.you) {
-          const pool = v.you.lootPool || 0;
-          v.you.allocation = {};
-          v.ventures.forEach((vv) => { v.you.allocation[vv.id] = 0; });
-          v.you.allocation[ven.id] = pool;
-        }
-        syncLootFleet(s, v);
-        haptic(12);
-      };
+      el.style.cursor = "default";
+      el.innerHTML = `<img src="${ISLAND[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>
+        <div class="alloc-btns">
+          <button type="button" class="alloc-btn" data-d="-1" ${!can || amt <= 0 ? "disabled" : ""}>−</button>
+          <div class="amt">${amt}</div>
+          <button type="button" class="alloc-btn" data-d="1" ${!can || left < step ? "disabled" : ""}>+</button>
+        </div>`;
+      el.querySelectorAll(".alloc-btn").forEach((btn) => {
+        btn.onclick = (ev) => {
+          ev.stopPropagation();
+          if (!can) return;
+          const d = Number(btn.getAttribute("data-d"));
+          const next = Math.max(0, amt + d * step);
+          const others = Object.entries(you.allocation || {}).reduce((a, [k, val]) => a + (k === ven.id ? 0 : (val || 0)), 0);
+          if (others + next > (you.lootPool || 0)) { toast("No loot left!"); haptic([40, 30, 40]); return; }
+          act({ type: "alloc", venture: ven.id, amount: next });
+          if (v.you) {
+            v.you.allocation = { ...(v.you.allocation || {}), [ven.id]: next };
+            v.you.lootLeft = (v.you.lootPool || 0) - Object.values(v.you.allocation).reduce((a, b) => a + (b || 0), 0);
+          }
+          syncLootFleet(s, v);
+          haptic(10);
+          renderLoot(s, v);
+        };
+      });
       root.appendChild(el);
     });
     document.getElementById("lockBtn").onclick = () => {
-      if (!can || picked < 0) return;
+      if (!can || spent <= 0) return;
       hitStopUntil = performance.now() + 70;
       casinoEl.classList.add("on");
       setTimeout(() => casinoEl.classList.remove("on"), 600);
       act({ type: "lock" });
     };
   }
+
   function youPoolLabel(v) {
     return v && v.you ? `${v.you.lootPool} gold` : "";
   }
@@ -1586,13 +1705,20 @@
     const rev = v.reveal;
     const mine = rev && rev.outcomes ? rev.outcomes[s.you] : null;
     const cell = mine && mine.byVenture ? mine.byVenture[ven.id] : null;
-    const ok = cell && cell.ok;
-    subtitleEl.textContent = `Venture ${vi + 1}/4`;
+    const got = cell ? cell.got : 0;
+    const spent = mine ? mine.wagered : 0;
+    subtitleEl.textContent = "Pay day";
     mainEl.innerHTML = `<div class="banner center pop">
-      <div class="tag">${ok ? "Plunder!" : "Reef crash"}</div>
-      <h2 class="display">${esc(ven.name)}</h2>
-      <p class="muted">${cell ? (ok ? `Crews return with ${cell.got} gold!` : (cell.put ? "Comic crash — loot lost." : "No crews here.")) : "…"}</p>
+      <div class="tag">Correct island</div>
+      <h2 class="display">${esc(LETTERS[ven.island] || ven.name)}</h2>
+      <p class="muted"><b>+${got}</b> back · staked ${spent}</p>
     </div>`;
+    // Chest juice on correct island only
+    if (!renderLootReveal._did) {
+      renderLootReveal._did = true;
+      const mySeat = (v.players || []).findIndex((p) => p.id === s.you);
+      startCutscene("plunder", 4200, { island: ven.island, seat: Math.max(0, mySeat), empty: got <= 0 });
+    }
   }
 
   function renderWildcard(s, v) {

@@ -50,9 +50,9 @@ const VENTURES = [
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 20000;
 const LOOT_MS = 40000;
-/** Answer + tap-loot window; ships then return during scoreboard. */
-const REVEAL_HOLD_MS = 7000;
-const SCOREBOARD_MS = 3000;
+/** Answer + chest window; then ships home + scoreboard. */
+const REVEAL_HOLD_MS = 6500;
+const SCOREBOARD_MS = 3200;
 const VENTURE_REVEAL_MS = 5200;
 /** Poseidon: full-screen video + gold-saved summary. */
 const WILDCARD_MS = 9000;
@@ -235,30 +235,24 @@ function computeLootOutcomes(state) {
 
 function startVentureReveal(state) {
   const outcomes = computeLootOutcomes(state);
+  const correct = LOOT_QUESTION.correctIndex;
   state.reveal = {
     kind: "loot_sequence",
     outcomes,
-    correctIndex: LOOT_QUESTION.correctIndex,
-    ventureIndex: 0,
+    correctIndex: correct,
+    ventureIndex: correct,
     poseidon: null,
     shark: null,
   };
+  // Only reveal the correct island — skip wrong-venture beat-by-beat.
   state.phase = "loot_reveal";
-  state.lootVentureIndex = 0;
+  state.lootVentureIndex = correct;
   state.phaseStartedAt = now();
   state.deadlineAt = state.phaseStartedAt + VENTURE_REVEAL_MS;
 }
 
 function advanceLootReveal(state) {
-  const next = (state.lootVentureIndex || 0) + 1;
-  if (next < 4) {
-    state.lootVentureIndex = next;
-    state.reveal.ventureIndex = next;
-    state.phaseStartedAt = now();
-    state.deadlineAt = state.phaseStartedAt + VENTURE_REVEAL_MS;
-    return;
-  }
-  // Wildcards after all ventures shown
+  // Single correct-island reveal, then wildcards.
   applyWildcards(state);
   state.phase = "loot_wildcard";
   state.phaseStartedAt = now();
@@ -290,7 +284,7 @@ function applyWildcards(state) {
     // Move lost amount onto correct venture visually
     o.byVenture[correctId].got = (o.byVenture[correctId].got || 0) + rescue;
     state.scores[poseidonTarget] = o.after;
-    state.reveal.poseidon = { playerId: poseidonTarget, amount: rescue };
+    state.reveal.poseidon = { playerId: poseidonTarget, amount: rescue, spent: o.wagered };
   }
 
   // Shark: if majority backed correct, bite everyone who returned > 0 (funny bounded)
@@ -558,33 +552,28 @@ export function viewFor(state, playerId) {
         const filtered = { ...raw, byVenture: {} };
         for (let i = 0; i < 4; i++) {
           const vid = VENTURES[i].id;
-          if (i <= vi || state.phase === "loot_wildcard" || state.phase === "winner") {
+          // Only the correct island is revealed — never parade wrong islands.
+          if (i === vi || state.phase === "loot_wildcard" || state.phase === "winner") {
             filtered.byVenture[vid] = raw.byVenture[vid];
           } else {
             filtered.byVenture[vid] = { put: "?", got: "?", ok: null };
           }
         }
-        // Hide other players' exact puts until wildcard/end — show only resolved venture results publicly
         if (id !== playerId && state.phase === "loot_reveal") {
-          for (let i = 0; i <= vi; i++) {
-            const vid = VENTURES[i].id;
-            const cell = raw.byVenture[vid];
-            filtered.byVenture[vid] = {
-              put: cell.put > 0 ? true : false,
-              got: cell.got,
-              ok: cell.ok,
-            };
-          }
+          const vid = VENTURES[vi].id;
+          const cell = raw.byVenture[vid];
+          filtered.byVenture[vid] = {
+            put: cell.put > 0 ? true : false,
+            got: cell.got,
+            ok: cell.ok,
+          };
         }
         outcomes[id] = filtered;
       }
       publicReveal = {
         kind: "loot_sequence",
         outcomes,
-        correctIndex:
-          state.phase === "loot_wildcard" || vi >= LOOT_QUESTION.correctIndex
-            ? LOOT_QUESTION.correctIndex
-            : null,
+        correctIndex: LOOT_QUESTION.correctIndex,
         ventureIndex: vi,
         poseidon: state.phase === "loot_wildcard" ? state.reveal.poseidon : null,
         shark: state.phase === "loot_wildcard" ? state.reveal.shark : null,
@@ -607,9 +596,7 @@ export function viewFor(state, playerId) {
             text: LOOT_QUESTION.text,
             answers: LOOT_QUESTION.answers,
             correctIndex:
-              state.phase === "loot_wildcard" ||
-              (state.phase === "loot_reveal" &&
-                (state.lootVentureIndex || 0) >= LOOT_QUESTION.correctIndex)
+              state.phase === "loot_wildcard" || state.phase === "loot_reveal"
                 ? LOOT_QUESTION.correctIndex
                 : null,
           }
