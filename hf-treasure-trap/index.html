@@ -28,11 +28,15 @@
     -webkit-tap-highlight-color: transparent; user-select: none;
   }
   h1,h2,.display { font-family: var(--display); font-weight: 800; letter-spacing: .02em; }
-  #stage { position: fixed; inset: 0; }
-  canvas#sea { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    background: var(--sea-deep);
+  }
   #hud {
     position: relative; z-index: 2;
-    height: 100%; width: min(480px, 100%);
+    flex: 1; min-height: 0;
+    width: min(480px, 100%);
     margin: 0 auto;
     display: flex; flex-direction: column;
     pointer-events: none;
@@ -41,11 +45,28 @@
   /* Compact top: player scores + chest timer only */
   .top-chrome {
     flex: 0 0 auto;
+    z-index: 4;
     padding: max(6px, env(safe-area-inset-top)) 8px 4px;
     display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
     background: linear-gradient(180deg, rgba(4,20,28,.72) 0%, rgba(4,20,28,0) 100%);
   }
-  .world-space { flex: 1 1 60%; min-height: 0; pointer-events: none; position: relative; }
+  /* Sea band = exclusive voyage viewport. Q&A never paints over this. */
+  .sea-band {
+    flex: 1 1 58%;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    background: #0a3d4d;
+  }
+  canvas#sea {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+  .world-space {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 2;
+  }
   .world-space.loot-active { pointer-events: auto; }
   /* Hidden decode source — frames are painted onto #sea under live ships */
   #revealClip { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
@@ -126,22 +147,22 @@
   @keyframes tapPulse { 50% { transform: scale(1.06); filter: brightness(1.15); } }
   @keyframes fxIn { from { transform: translate(-50%, -50%) scale(.72); } to { transform: translate(-50%, -50%) scale(1); } }
   .quiz-sheet {
-    flex: 0 0 40%;
-    max-height: 40vh;
+    flex: 0 0 38%;
+    max-height: 38vh;
     min-height: 0;
+    z-index: 5;
     background: linear-gradient(180deg, #164556 0%, var(--sheet-2) 100%);
     border-top: 3px solid var(--edge);
-    box-shadow: 0 -14px 32px rgba(0,0,0,.5);
+    box-shadow: 0 -10px 24px rgba(0,0,0,.45);
     padding: 8px 10px max(10px, env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 6px;
-    overflow: hidden; /* no scroll — 60/40 locked composition */
+    overflow: hidden; /* separate section — never overlays the sea band */
   }
   /* Full-screen leaderboard between rounds */
-  body.phase-scoreboard #sea { filter: brightness(0.35) saturate(0.7); }
+  body.phase-scoreboard .sea-band { display: none; }
   body.phase-scoreboard .top-chrome { opacity: 0.35; }
-  body.phase-scoreboard .world-space { display: none; }
   body.phase-scoreboard .quiz-sheet {
-    position: absolute; inset: 0; z-index: 30;
+    flex: 1 1 auto;
     max-height: none; height: 100%; width: 100%;
     border-top: none;
     padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
@@ -384,7 +405,6 @@
 </head>
 <body>
 <div id="stage">
-  <canvas id="sea"></canvas>
   <video id="revealClip" playsinline muted preload="auto"></video>
   <div class="casino-flash" id="casino"></div>
   <div id="spectacle" aria-live="polite">
@@ -404,16 +424,19 @@
         <div class="sec" id="chestSec">–</div>
       </div>
     </div>
-    <div class="world-space" id="worldSpace">
-      <div id="worldFx">
-        <div class="fx-label" id="fxLabel">Tap to spin</div>
-        <div class="slot-reels" id="slotReels" aria-hidden="true">
-          <span>7</span><span>★</span><span>$</span>
+    <div class="sea-band" id="seaBand">
+      <canvas id="sea"></canvas>
+      <div class="world-space" id="worldSpace">
+        <div id="worldFx">
+          <div class="fx-label" id="fxLabel">Tap to spin</div>
+          <div class="slot-reels" id="slotReels" aria-hidden="true">
+            <span>7</span><span>★</span><span>$</span>
+          </div>
+          <img id="fxChest" class="fx-chest" src="./assets/chest-closed.png" alt="">
+          <canvas id="fxBurst" class="fx-burst"></canvas>
+          <div class="tap-hint" id="tapHint">TAP!</div>
+          <div class="loot-meter"><div class="fill" id="lootFill"></div></div>
         </div>
-        <img id="fxChest" class="fx-chest" src="./assets/chest-closed.png" alt="">
-        <canvas id="fxBurst" class="fx-burst"></canvas>
-        <div class="tap-hint" id="tapHint">TAP!</div>
-        <div class="loot-meter"><div class="fill" id="lootFill"></div></div>
       </div>
     </div>
     <div class="quiz-sheet">
@@ -1331,7 +1354,7 @@
       cutscene.summaryMs = 3800;
       sfxJackpot();
       haptic([20, 40, 25, 50, 30, 40]);
-      spawnBurst(innerWidth / 2, innerHeight * 0.4, 32);
+      { const vs = viewSize(); spawnBurst(vs.W / 2, vs.H * 0.4, 32); }
       casinoEl.classList.add("on");
       setTimeout(() => casinoEl.classList.remove("on"), 900);
     }
@@ -1424,8 +1447,19 @@
             travelFx = { t0: performance.now(), fromIdx: activeSceneIdx, toIdx, stage: "out" };
           }
           activeSceneIdx = toIdx;
+          // Prefetch the four possible reveal plates for this sea (decode before answer lock)
+          try {
+            const sid = (SCENES[toIdx] && SCENES[toIdx].id) || `S${String(toIdx).padStart(2, "0")}`;
+            LETTERS.forEach((L) => {
+              const v = document.createElement("video");
+              v.preload = "auto";
+              v.muted = true;
+              v.src = revealClipPath(sid, L);
+              v.load();
+            });
+          } catch (_) {}
           // Start in the MIDDLE of the new sea (no bottom enter)
-          const W = innerWidth, H = innerHeight;
+          const { W, H } = viewSize();
           const n = Math.max((msg.view.players || []).length, 2);
           for (let seat = 0; seat < n; seat++) {
             const home = fleetPos(seat, n, W, H);
@@ -1516,13 +1550,25 @@
   function loadImg(src) {
     return new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
   }
+  const seaBandEl = document.getElementById("seaBand");
+  /** Voyage viewport size — sea band only (Q&A is a separate section below). */
+  function viewSize() {
+    const r = (seaBandEl || sea).getBoundingClientRect();
+    const W = Math.max(1, Math.round(r.width || sea.clientWidth || innerWidth));
+    const H = Math.max(1, Math.round(r.height || sea.clientHeight || innerHeight * 0.58));
+    return { W, H };
+  }
   function resize() {
     const dpr = Math.min(devicePixelRatio || 1, 1.75);
-    sea.width = innerWidth * dpr; sea.height = innerHeight * dpr;
-    sea.style.width = innerWidth + "px"; sea.style.height = innerHeight + "px";
+    const { W, H } = viewSize();
+    sea.width = W * dpr; sea.height = H * dpr;
+    sea.style.width = W + "px"; sea.style.height = H + "px";
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  addEventListener("resize", resize); addEventListener("orientationchange", resize); resize();
+  addEventListener("resize", resize); addEventListener("orientationchange", resize);
+  // Layout may settle after first paint
+  requestAnimationFrame(() => { resize(); requestAnimationFrame(resize); });
+  resize();
 
   function currentScene() {
     const v = lastState && lastState.view;
@@ -1545,11 +1591,12 @@
   }
   function playTop(H) {
     const s = currentScene();
-    return H * (s.waterTop != null ? s.waterTop : 0.08);
+    return mapY(s.waterTop != null ? s.waterTop : 0.06, H);
   }
   function playBottom(H) {
     const s = currentScene();
-    return H * (s.waterBot != null ? s.waterBot : 0.70);
+    const bot = Math.min(s.waterBot != null ? s.waterBot : 0.58, PLATE_Y_SPAN - 0.01);
+    return mapY(bot, H);
   }
   function seaH(H) { return playBottom(H); }
   function clampChannelX(x, W) {
@@ -1558,27 +1605,32 @@
     const hi = W * (s.channel ? s.channel[1] : 0.70);
     return Math.max(lo, Math.min(hi, x));
   }
-  /** Max Y fraction for islands/plaques so the 40% Q&A sheet never covers them. */
-  const ISLAND_SAFE_Y = 0.58;
+  /**
+   * Sea band shows the UPPER plate of each 9:16 baked sea (where all 4 islands live).
+   * Authored lane Y is in full-plate space; map into the sea-band viewport.
+   */
+  const PLATE_Y_SPAN = 0.62;
   function safeY(normY) {
-    return Math.min(normY == null ? ISLAND_SAFE_Y : normY, ISLAND_SAFE_Y);
+    return Math.min(normY == null ? 0.5 : normY, PLATE_Y_SPAN - 0.02);
   }
+  function mapX(nx, W) { return nx * W; }
+  function mapY(ny, H) { return (safeY(ny) / PLATE_Y_SPAN) * H; }
   function islandBox(i) {
     const s = currentScene();
     const L = LETTERS[i];
     if (s.islandBoxes && s.islandBoxes[L]) return s.islandBoxes[L];
-    const c = islandPos(i, 1, 1);
+    const c = (s.islandCenters && s.islandCenters[L]) || { x: 0.25, y: 0.3 };
     return { x: Math.max(0.02, c.x - 0.16), y: Math.max(0.04, c.y - 0.14), w: 0.32, h: 0.28 };
   }
-  /** Island centres from authored lane JSON (normalized → pixels). */
+  /** Island centres from authored lane JSON (normalized → sea-band pixels). */
   function islandPos(i, W, H) {
     const s = currentScene();
     const L = LETTERS[i];
     if (s.islandCenters && s.islandCenters[L]) {
-      return { x: s.islandCenters[L].x * W, y: safeY(s.islandCenters[L].y) * H };
+      return { x: mapX(s.islandCenters[L].x, W), y: mapY(s.islandCenters[L].y, H) };
     }
     const lay = (s.layout && s.layout[i]) || { x: 0.22 + (i % 2) * 0.56, y: 0.28 + Math.floor(i / 2) * 0.26 };
-    return { x: lay.x * W, y: safeY(lay.y) * H };
+    return { x: mapX(lay.x, W), y: mapY(lay.y, H) };
   }
   function islandSpriteIndex(i) {
     const s = currentScene();
@@ -1594,19 +1646,19 @@
     const spread = ((seatOffset || 0) - 1.5) * Math.min(11, W * 0.014);
     const box = islandBox(i);
     if (s.docks && s.docks[L]) {
-      return { x: s.docks[L].x * W + spread, y: safeY(s.docks[L].y) * H + spread * 0.25 };
+      return { x: mapX(s.docks[L].x, W) + spread, y: mapY(s.docks[L].y, H) + spread * 0.25 };
     }
     const towardCenter = (i % 2 === 0) ? 1 : -1;
-    const edgeX = towardCenter > 0 ? (box.x + box.w) * W : box.x * W;
+    const edgeX = towardCenter > 0 ? mapX(box.x + box.w, W) : mapX(box.x, W);
     return {
       x: clampChannelX(edgeX + towardCenter * 4 + spread, W),
-      y: Math.max(playTop(H) + 12, Math.min(playBottom(H) - 12, (box.y + box.h * 0.62) * H + spread * 0.4)),
+      y: Math.max(playTop(H) + 12, Math.min(playBottom(H) - 12, mapY(box.y + box.h * 0.62, H) + spread * 0.4)),
     };
   }
   function fleetPos(seat, n, W, H) {
     const s = currentScene();
     if (s.home && s.home[seat]) {
-      return { x: s.home[seat].x * W, y: s.home[seat].y * H };
+      return { x: mapX(s.home[seat].x, W), y: mapY(s.home[seat].y, H) };
     }
     const bot = playBottom(H);
     const spread = Math.min(W * 0.22, 28 * n);
@@ -1658,7 +1710,15 @@
     return false;
   }
   function normPathToPx(pts, W, H) {
-    return (pts || []).map((p) => ({ x: p.x * W, y: p.y * H }));
+    return (pts || []).map((p) => ({ x: mapX(p.x, W), y: mapY(p.y, H) }));
+  }
+  /** Draw the upper island plate into the sea band (Q&A is a separate section below). */
+  function drawVoyagePlate(img, W, H, bobY) {
+    if (!img) return false;
+    const sw = img.width;
+    const sh = Math.max(1, img.height * PLATE_Y_SPAN);
+    sctx.drawImage(img, 0, 0, sw, sh, 0, bobY || 0, W, H);
+    return true;
   }
   /**
    * Fallback fairway if a scene is missing authored lanes.
@@ -1937,7 +1997,7 @@
     }
     const you = v.you;
     if (!you) { lootFleet = []; return; }
-    const W = innerWidth, H = innerHeight;
+    const { W, H } = viewSize();
     const pool = you.lootPool || 0;
     const wanted = [];
     // One ship per DISTINCT island the player funded (not all gold on one)
@@ -1978,7 +2038,7 @@
   }
 
   function drawSea(now) {
-    const W = innerWidth, H = innerHeight;
+    const { W, H } = viewSize();
     if (now < hitStopUntil) return;
     const shake = now < shakeUntil ? Math.sin(now * 0.09) * 5 : 0;
     sctx.save();
@@ -2005,22 +2065,23 @@
     const celebPlaying = islandCelebrate && islandCelebrate.stage === "play";
     const useRevealVid = celebPlaying && islandCelebrate.videoOk && revealClipEl
       && revealClipEl.readyState >= 2 && !revealClipEl.paused;
+    const bobY = (kind === "voyage" || kind === "travel") ? Math.cos(t * 0.04) * 1.2 : 0;
     if (useRevealVid) {
-      // Seamless plate: full-scene cutscene under live ships (LOCKED approach)
+      // Same upper-plate crop as the static sea so the swap stays seamless
       const vw = revealClipEl.videoWidth || 720;
-      const vh = revealClipEl.videoHeight || 1280;
-      const scale = Math.max(W / vw, H / vh);
-      const dw = vw * scale;
-      const dh = vh * scale;
-      sctx.drawImage(revealClipEl, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      const vh = Math.max(1, (revealClipEl.videoHeight || 1280) * PLATE_Y_SPAN);
+      sctx.drawImage(revealClipEl, 0, 0, vw, vh, 0, bobY, W, H);
+    } else if (kind === "voyage" || kind === "travel") {
+      if (!drawVoyagePlate(drawBg, W, H, bobY)) {
+        const g = sctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
+        sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
+      }
     } else if (drawBg) {
-      // Full-bleed cover — baked 9:16 seas already include ~10% sky / 90% water
       const scale = Math.max(W / drawBg.width, H / drawBg.height);
       const dw = drawBg.width * scale;
       const dh = drawBg.height * scale;
-      const bx = (W - dw) / 2;
-      const by = (H - dh) / 2 + (kind === "voyage" || kind === "travel" ? Math.cos(t * 0.04) * 1.5 : 0);
-      sctx.drawImage(drawBg, bx, by, dw, dh);
+      sctx.drawImage(drawBg, (W - dw) / 2, (H - dh) / 2, dw, dh);
       if (kind === "below_deck") {
         const vg = sctx.createRadialGradient(W * 0.5, H * 0.42, 40, W * 0.5, H * 0.45, H * 0.7);
         vg.addColorStop(0, "rgba(0,0,0,0)");
@@ -2033,39 +2094,15 @@
       g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
       sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
     }
-    // Procedural fallback / boost when clip missing — must still read as a reveal beat
-    if (celebPlaying && kind === "voyage") {
+    // No gold sparkles on the winning island — they hide the authored cutscene.
+    // Fallback only: gentle dim on the three losers when the clip is missing.
+    if (celebPlaying && !useRevealVid && kind === "voyage") {
       const u = Math.min(1, (now - (islandCelebrate.playT0 || islandCelebrate.t0)) / islandCelebrate.animMs);
       for (let i = 0; i < 4; i++) {
+        if (i === islandCelebrate.correctIndex) continue;
         const b = islandBox(i);
-        const bx = b.x * W, by = b.y * H, bw = b.w * W, bh = b.h * H;
-        if (i === islandCelebrate.correctIndex) {
-          const pulse = 0.35 + 0.25 * Math.sin(now / 70);
-          const g = sctx.createRadialGradient(bx + bw * 0.5, by + bh * 0.45, 8, bx + bw * 0.5, by + bh * 0.45, bw * 0.85);
-          g.addColorStop(0, `rgba(255,213,106,${(useRevealVid ? 0.28 : 0.7) * pulse})`);
-          g.addColorStop(0.55, `rgba(255,180,60,${(useRevealVid ? 0.1 : 0.28) * pulse})`);
-          g.addColorStop(1, "rgba(0,0,0,0)");
-          sctx.fillStyle = g;
-          sctx.fillRect(bx - 24, by - 24, bw + 48, bh + 48);
-          if (!useRevealVid) {
-            for (let k = 0; k < 10; k++) {
-              const ang = u * Math.PI * 5 + k * 0.7;
-              sctx.fillStyle = k % 2 ? "#ffd56a" : "#fff6e4";
-              sctx.beginPath();
-              sctx.arc(bx + bw * 0.5 + Math.cos(ang) * bw * 0.4 * (0.4 + u), by + bh * 0.4 + Math.sin(ang * 1.3) * bh * 0.3, 3.5, 0, Math.PI * 2);
-              sctx.fill();
-            }
-          }
-        } else if (!useRevealVid) {
-          sctx.fillStyle = `rgba(12,20,28,${0.38 + 0.18 * u})`;
-          sctx.fillRect(bx, by, bw, bh);
-          sctx.fillStyle = `rgba(180,170,140,${0.18 + 0.12 * Math.sin(now / 180 + i)})`;
-          for (let d = 0; d < 5; d++) {
-            sctx.beginPath();
-            sctx.arc(bx + bw * (0.25 + d * 0.14), by + bh * 0.55 + (d % 2) * 7, 3, 0, Math.PI * 2);
-            sctx.fill();
-          }
-        }
+        sctx.fillStyle = `rgba(12,20,28,${0.32 + 0.14 * u})`;
+        sctx.fillRect(b.x * W, b.y * H, b.w * W, b.h * H);
       }
     }
     // Soft scene crossfade when entering a new destination after scoreboard
@@ -2142,46 +2179,20 @@
         const sc = currentScene();
         const p = islandPos(i, W, H);
         const pl = sc.plaques && sc.plaques[L]
-          ? { x: sc.plaques[L].x * W, y: safeY(sc.plaques[L].y) * H }
+          ? { x: mapX(sc.plaques[L].x, W), y: mapY(sc.plaques[L].y, H) }
           : { x: p.x, y: p.y - 18 };
         const highlight = pathPreview === i || (islandLoot && islandLoot.island === i);
-        const isCorrect = rev && rev.correctIndex === i && (v.phase === "q_reveal" || v.phase === "scene_travel");
+        // No gold sparkles over the winning island during cutscene — they hide the animation
+        const celebrating = !!(islandCelebrate && (islandCelebrate.stage === "wait" || islandCelebrate.stage === "play"));
+        const isCorrect = !celebrating && rev && rev.correctIndex === i && v.phase === "scene_travel";
         const isWrong = rev && pathPreview === i && rev.correctIndex !== i && v.phase === "q_reveal";
-        if (highlight || isCorrect) {
-          const pulse = 0.18 + 0.12 * (0.5 + 0.5 * Math.sin(t * 6));
-          sctx.fillStyle = isCorrect ? `rgba(255,213,106,${0.28 + pulse})` : "rgba(255,213,106,.18)";
+        if (highlight && !celebrating) {
+          sctx.fillStyle = "rgba(255,213,106,.18)";
           sctx.beginPath();
           sctx.ellipse(p.x, p.y, islandSize(W) * 0.42, islandSize(W) * 0.30, 0, 0, Math.PI * 2);
           sctx.fill();
         }
-        if (isCorrect) {
-          // Additive keyed sprites — never opaque black boxes
-          sctx.save();
-          sctx.globalCompositeOperation = "lighter";
-          const glow = vfxGlow.length ? vfxGlow[Math.floor(t * 6) % vfxGlow.length] : imgSparkle;
-          if (glow) {
-            const spark = 40 + 14 * Math.sin(t * 8);
-            sctx.globalAlpha = 0.85;
-            sctx.drawImage(glow, p.x - spark, p.y - spark - 6, spark * 2, spark * 2);
-          }
-          const boom = vfxFire.length ? vfxFire[Math.floor(t * 7) % vfxFire.length] : null;
-          if (boom) {
-            const sz = 70 + 10 * Math.sin(t * 5 + i);
-            sctx.globalAlpha = 0.9;
-            sctx.drawImage(boom, p.x - sz / 2, p.y - sz / 2 - 18, sz, sz);
-          }
-          sctx.restore();
-          // Procedural spark pops (no bitmap plate)
-          for (let k = 0; k < 3; k++) {
-            const ang = t * 3 + k * 2.1 + i;
-            const rad = 18 + (k + 1) * 10 + Math.sin(t * 9 + k) * 4;
-            sctx.fillStyle = k % 2 ? "rgba(255,213,106,.85)" : "rgba(255,61,184,.7)";
-            sctx.beginPath();
-            sctx.arc(p.x + Math.cos(ang) * rad, p.y + Math.sin(ang) * rad - 8, 2.2, 0, Math.PI * 2);
-            sctx.fill();
-          }
-        }
-        drawPlaqueLetter(pl.x, pl.y, L, highlight || isCorrect);
+        drawPlaqueLetter(pl.x, pl.y, L, (highlight || isCorrect) && !celebrating);
         if (isWrong) {
           sctx.fillStyle = "rgba(20,10,10,.25)";
           sctx.beginPath();
@@ -2397,7 +2408,7 @@
   }
 
   function launchLootFlies(islandIdx) {
-    const W = innerWidth, H = innerHeight;
+    const { W, H } = viewSize();
     const from = islandPos(islandIdx, W, H);
     const players = (lastState && lastState.view && lastState.view.players) || [];
     const mySeat = players.findIndex((p) => p.id === (lastState && lastState.you));
