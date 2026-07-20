@@ -46,12 +46,13 @@
     background: linear-gradient(180deg, rgba(4,20,28,.72) 0%, rgba(4,20,28,0) 100%);
   }
   .world-space { flex: 1; min-height: 0; pointer-events: none; position: relative; }
+  .world-space.loot-active { pointer-events: auto; }
   /* Tap-to-loot panel on the quiz sea */
   #worldFx {
-    position: absolute; left: 50%; top: 46%;
+    position: absolute; left: 50%; top: 42%;
     transform: translate(-50%, -50%);
-    width: min(82vw, 360px); aspect-ratio: 1;
-    z-index: 6; display: none; pointer-events: none;
+    width: min(86vw, 380px); aspect-ratio: 1;
+    z-index: 20; display: none; pointer-events: none;
     border: 5px solid #ffd56a;
     border-radius: 20px; overflow: hidden;
     background:
@@ -65,12 +66,16 @@
       0 0 56px rgba(255,0,180,.55),
       inset 0 0 40px rgba(255,213,106,.12);
     cursor: pointer;
-    animation: none;
+    touch-action: manipulation;
   }
   #worldFx.on { display: block; pointer-events: auto; animation: fxIn .35s cubic-bezier(.2,1.3,.4,1) both; }
-  #worldFx.spinning { animation: neonPulse .35s ease-in-out infinite; }
-  @keyframes neonPulse {
-    50% { box-shadow: 0 12px 28px rgba(0,0,0,.55), 0 0 0 3px #3dfff0, 0 0 0 7px #ff3db8, 0 0 64px rgba(61,255,240,.65); }
+  #worldFx.spinning {
+    box-shadow:
+      0 12px 28px rgba(0,0,0,.55),
+      0 0 0 3px #3dfff0,
+      0 0 0 7px #ff3db8,
+      0 0 64px rgba(61,255,240,.65),
+      inset 0 0 40px rgba(255,213,106,.18);
   }
   #worldFx .fx-chest {
     position: absolute; left: 50%; top: 46%; width: 58%; height: auto;
@@ -458,6 +463,7 @@
   const csTitleEl = document.getElementById("csTitle");
   const csGoldEl = document.getElementById("csGold");
   const csBodyEl = document.getElementById("csBody");
+  const worldSpaceEl = document.getElementById("worldSpace");
   const worldFxEl = document.getElementById("worldFx");
   const fxChestEl = document.getElementById("fxChest");
   const fxBurstEl = document.getElementById("fxBurst");
@@ -685,99 +691,141 @@
     islandLoot.active = true;
     islandLoot.progress = 0;
     islandLoot.spin = 0;
-    islandLoot.spinVel = 3.5;
+    islandLoot.spinVel = 4.5;
     islandLoot.stage = "spin";
     islandLoot.playT0 = performance.now();
+    islandLoot._exploded = false;
     fxLabelEl.textContent = "SPIN!";
     tapHintEl.classList.remove("hide");
     tapHintEl.textContent = "TAP!";
     lootFillEl.style.width = "0%";
     worldFxEl.classList.remove("exploding", "empty");
     worldFxEl.classList.add("on", "spinning");
+    if (worldSpaceEl) worldSpaceEl.classList.add("loot-active");
     casinoEl.classList.add("on");
+    setTimeout(() => casinoEl.classList.remove("on"), 500);
     fxChestEl.src = "./assets/chest-closed.png";
     fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1)";
     tickSlotReels();
     resizeFxBurst();
     sfxWhoosh();
+    haptic(18);
   }
   function drawChestBurst(now) {
     if (!fxBurstCtx || !fxBurstEl || !islandLoot || !islandLoot.coins) return;
     const W = fxBurstEl.width, H = fxBurstEl.height;
     fxBurstCtx.clearRect(0, 0, W, H);
+    // Soft flash behind coins during explode
+    if (islandLoot.stage === "explode") {
+      const pulse = 0.25 + 0.2 * Math.sin(now / 60);
+      const g = fxBurstCtx.createRadialGradient(W * 0.5, H * 0.45, 10, W * 0.5, H * 0.45, W * 0.55);
+      g.addColorStop(0, `rgba(255,213,106,${0.45 + pulse})`);
+      g.addColorStop(0.45, `rgba(255,61,184,${0.2 + pulse * 0.4})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      fxBurstCtx.fillStyle = g;
+      fxBurstCtx.fillRect(0, 0, W, H);
+    }
     islandLoot.coins = islandLoot.coins.filter((c) => {
-      c.vy += c.dust ? 0.08 : 0.35; c.x += c.vx; c.y += c.vy; c.life -= 16;
+      c.vy += c.dust ? 0.08 : 0.28; c.x += c.vx; c.y += c.vy; c.life -= 16;
+      c.vx *= 0.995;
       if (c.life <= 0) return false;
       fxBurstCtx.save();
       fxBurstCtx.translate(c.x, c.y);
       fxBurstCtx.rotate(c.rot);
       if (c.dust) fxBurstCtx.fillStyle = "rgba(180,180,170,.7)";
-      else if (c.neon) fxBurstCtx.fillStyle = Math.random() > 0.5 ? "#ff3db8" : "#3dfff0";
+      else if (c.neon) fxBurstCtx.fillStyle = c.neonHue || "#ff3db8";
       else fxBurstCtx.fillStyle = c.gold ? "#ffd56a" : "#fff6e4";
       fxBurstCtx.beginPath();
-      fxBurstCtx.ellipse(0, 0, c.r, c.r * 0.7, 0, 0, Math.PI * 2);
+      fxBurstCtx.ellipse(0, 0, c.r, c.r * 0.72, 0, 0, Math.PI * 2);
       fxBurstCtx.fill();
+      if (!c.dust) {
+        fxBurstCtx.fillStyle = "rgba(255,255,255,.55)";
+        fxBurstCtx.beginPath();
+        fxBurstCtx.ellipse(-c.r * 0.25, -c.r * 0.25, c.r * 0.28, c.r * 0.18, 0, 0, Math.PI * 2);
+        fxBurstCtx.fill();
+      }
       fxBurstCtx.restore();
       c.rot += c.vr;
       return true;
     });
   }
   function explodeChest() {
-    if (!islandLoot) return;
+    if (!islandLoot || islandLoot._exploded) return;
+    islandLoot._exploded = true;
     islandLoot.stage = "explode";
     islandLoot.spinVel = 0;
+    islandLoot.progress = 1;
+    lootFillEl.style.width = "100%";
+    tapHintEl.classList.add("hide");
+    fxLabelEl.textContent = "JACKPOT!";
     worldFxEl.classList.remove("spinning");
     worldFxEl.classList.add("exploding");
     fxChestEl.src = "./assets/chest-open-gold.png";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1.18)";
     if (slotReelsEl) {
       const spans = slotReelsEl.querySelectorAll("span");
       spans.forEach((sp) => { sp.textContent = "7"; sp.style.color = "#ff3db8"; });
     }
-    haptic([20, 40, 30, 50, 40, 60]);
+    haptic([20, 40, 30, 50, 40, 60, 40]);
     sfxJackpot();
     casinoEl.classList.add("on");
+    resizeFxBurst();
     const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
     islandLoot.coins = [];
-    for (let i = 0; i < 96; i++) {
+    for (let i = 0; i < 140; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 4 + Math.random() * 16;
       islandLoot.coins.push({
-        x: W * 0.5, y: H * 0.48,
-        vx: (Math.random() - 0.5) * 22,
-        vy: -10 - Math.random() * 14,
-        r: 5 + Math.random() * 11,
+        x: W * 0.5 + (Math.random() - 0.5) * 20,
+        y: H * 0.48,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd * 0.55 - 8 - Math.random() * 14,
+        r: 6 + Math.random() * 14,
         rot: Math.random() * Math.PI,
-        vr: (Math.random() - 0.5) * 0.6,
-        life: 900 + Math.random() * 800,
-        gold: Math.random() > 0.15,
-        neon: Math.random() > 0.55,
+        vr: (Math.random() - 0.5) * 0.8,
+        life: 1200 + Math.random() * 1000,
+        gold: Math.random() > 0.22,
+        neon: Math.random() > 0.4,
+        neonHue: Math.random() > 0.5 ? "#ff3db8" : "#3dfff0",
       });
     }
-    spawnBurst(innerWidth / 2, seaH(innerHeight) * 0.4, 40);
+    // Keep jackpot juice INSIDE the chest panel — do not spray the sea canvas
     launchLootFlies(islandLoot.island);
-    setTimeout(() => { casinoEl.classList.remove("on"); endIslandLoot(); }, 1300);
+    setTimeout(() => { casinoEl.classList.remove("on"); endIslandLoot(); }, 2200);
   }
+  let lastTapAt = 0;
   function onTapLoot(ev) {
-    if (!islandLoot || !islandLoot.active || islandLoot.stage === "explode" || islandLoot.empty) return;
-    ev.preventDefault();
+    if (!islandLoot || !islandLoot.active || islandLoot.stage === "explode" || islandLoot.empty || islandLoot._exploded) return;
+    const nowTap = performance.now();
+    if (nowTap - lastTapAt < 50) return;
+    lastTapAt = nowTap;
+    if (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
     ensureAudio();
-    islandLoot.spinVel = Math.min(32, islandLoot.spinVel + 5 + Math.random() * 2.5);
-    islandLoot.progress = Math.min(1, islandLoot.progress + 0.08 + Math.random() * 0.05);
+    islandLoot.spinVel = Math.min(36, islandLoot.spinVel + 6 + Math.random() * 3);
+    islandLoot.progress = Math.min(1, islandLoot.progress + 0.12 + Math.random() * 0.06);
     lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
     haptic(islandLoot.progress > 0.8 ? [16, 24, 20] : 12);
     sfxSlot();
     tickSlotReels();
-    if (islandLoot.progress < 0.35) fxChestEl.src = "./assets/chest-closed.png";
-    else if (islandLoot.progress < 0.7) fxChestEl.src = "./assets/chest-spin.png";
+    if (islandLoot.progress < 0.3) fxChestEl.src = "./assets/chest-closed.png";
+    else if (islandLoot.progress < 0.65) fxChestEl.src = "./assets/chest-spin.png";
     else fxChestEl.src = "./assets/chest-crack.png";
-    if (islandLoot.progress > 0.12) tapHintEl.classList.add("hide");
+    if (islandLoot.progress > 0.08) tapHintEl.classList.add("hide");
     if (islandLoot.progress >= 1) explodeChest();
   }
   worldFxEl.addEventListener("pointerdown", onTapLoot);
   function endIslandLoot() {
     worldFxEl.classList.remove("on", "exploding", "spinning", "empty");
+    if (worldSpaceEl) worldSpaceEl.classList.remove("loot-active");
     tapHintEl.classList.remove("hide");
     lootFillEl.style.width = "0%";
     casinoEl.classList.remove("on");
     fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%)";
     if (slotReelsEl) {
       slotReelsEl.querySelectorAll("span").forEach((sp) => { sp.style.color = ""; });
     }
@@ -785,7 +833,6 @@
     const wasActive = !!islandLoot;
     islandLoot = null;
     if (wasActive) {
-      // Sail home on the same middle-channel path
       for (let i = 0; i < 4; i++) chosenIsland[i] = null;
       sendFleetHome();
     }
@@ -794,24 +841,34 @@
     if (!islandLoot) return;
     if (islandLoot.waitingForSail) {
       const s = sailState[islandLoot.seat];
-      const arrived = !s || s.t >= 0.97 || (now - islandLoot.t0 > 6500);
+      // Don't wait forever — open chest once ship is mostly there (or 1.2s)
+      const arrived = !s || s.t >= 0.72 || (now - islandLoot.t0 > 1200);
       if (arrived) {
         if (islandLoot.empty) openEmptyChest();
         else startIslandLootVideo(islandLoot.island);
       }
       return;
     }
-    if (islandLoot.active && islandLoot.stage !== "explode" && !islandLoot.empty) {
-      islandLoot.spinVel *= 0.985;
+    if (islandLoot.active && islandLoot.stage !== "explode" && !islandLoot.empty && !islandLoot._exploded) {
+      islandLoot.spinVel *= 0.988;
       islandLoot.spin += islandLoot.spinVel;
-      // subtle auto progress so it never softlocks, but taps dominate
-      islandLoot.progress = Math.min(0.92, islandLoot.progress + 0.0018);
+      // Auto progress so the jackpot always lands even without perfect tapping
+      islandLoot.progress = Math.min(1, islandLoot.progress + 0.0045);
       lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
-      const wobble = Math.sin(islandLoot.spin * 0.08) * Math.min(22, islandLoot.spinVel * 1.2);
-      fxChestEl.style.transform = `translate(-50%, -50%) rotate(${wobble}deg) scale(${1 + Math.min(0.14, islandLoot.spinVel * 0.004)})`;
-      if (islandLoot.spinVel > 6 && Math.random() < 0.12) {
+      const wobble = Math.sin(islandLoot.spin * 0.08) * Math.min(24, islandLoot.spinVel * 1.3);
+      fxChestEl.style.transform = `translate(-50%, -50%) rotate(${wobble}deg) scale(${1 + Math.min(0.16, islandLoot.spinVel * 0.004)})`;
+      if (islandLoot.spinVel > 5 && Math.random() < 0.14) {
         sfxSlot();
         tickSlotReels();
+      }
+      if (islandLoot.progress >= 0.3 && islandLoot.progress < 0.65) fxChestEl.src = "./assets/chest-spin.png";
+      else if (islandLoot.progress >= 0.65 && islandLoot.progress < 1) fxChestEl.src = "./assets/chest-crack.png";
+      // Force jackpot after a short spin window
+      if (islandLoot.playT0 && now - islandLoot.playT0 > 2600) {
+        islandLoot.progress = 1;
+        explodeChest();
+      } else if (islandLoot.progress >= 1) {
+        explodeChest();
       }
     }
     drawChestBurst(now);
@@ -842,6 +899,7 @@
     lootFillEl.style.width = "100%";
     worldFxEl.classList.remove("spinning");
     worldFxEl.classList.add("on", "empty");
+    if (worldSpaceEl) worldSpaceEl.classList.add("loot-active");
     fxChestEl.src = "./assets/chest-open-gold.png";
     fxChestEl.style.filter = "grayscale(1) brightness(0.55) saturate(0)";
     fxChestEl.style.transform = "translate(-50%, -50%) scale(0.92) rotate(-6deg)";
@@ -1020,8 +1078,8 @@
           }
         }
         if (msg.view.phase === "scoreboard") {
-          if (islandLoot) endIslandLoot();
-          else {
+          // Never kill an active chest — let jackpot finish, then sail home from endIslandLoot
+          if (!islandLoot) {
             for (let i = 0; i < 4; i++) chosenIsland[i] = null;
             sendFleetHome();
           }
@@ -1104,40 +1162,53 @@
   }
   addEventListener("resize", resize); addEventListener("orientationchange", resize); resize();
 
-  /** Sea playfield = upper ~52% of screen (quiz sheet owns the lower half). */
-  function seaH(H) { return H * 0.52; }
-  /** Corner archipelago — wide middle channel + clear water bands. */
+  /**
+   * Backdrop (bg-sea.jpg): water is a CENTER channel. Sky/clouds sit in the top
+   * ~20% of the painted image; beaches/rocks own the left/right edges. The quiz
+   * sheet covers the bottom. ALL ship motion uses these full-screen water bounds.
+   */
+  function playTop(H) { return H * 0.22; }
+  function playBottom(H) { return H * 0.50; }
+  /** Playfield floor = bottom of water corridor (above quiz sheet). */
+  function seaH(H) { return playBottom(H); }
+  function clampChannelX(x, W) {
+    return Math.max(W * 0.34, Math.min(W * 0.66, x));
+  }
+  /** Answer islands sit ON the water channel — not on side beaches / sky. */
   function islandPos(i, W, H) {
-    const sh = seaH(H);
+    const top = playTop(H), bot = playBottom(H);
+    const y0 = top + (bot - top) * 0.30;
+    const y1 = top + (bot - top) * 0.68;
+    const xl = W * 0.38;
+    const xr = W * 0.62;
     return [
-      { x: W * 0.11, y: sh * 0.24 },
-      { x: W * 0.89, y: sh * 0.24 },
-      { x: W * 0.11, y: sh * 0.76 },
-      { x: W * 0.89, y: sh * 0.76 },
+      { x: xl, y: y0 },
+      { x: xr, y: y0 },
+      { x: xl, y: y1 },
+      { x: xr, y: y1 },
     ][i];
   }
-  function islandSize(W) { return Math.min(88, W * 0.19); }
-  function islandRadius(W) { return islandSize(W) * 0.46; }
-  /** Ship berth on the OUTER water — never between islands / over land. */
+  function islandSize(W) { return Math.min(78, W * 0.17); }
+  function islandRadius(W) { return islandSize(W) * 0.44; }
+  /** Berths toward the CHANNEL centre — never outward onto beaches. */
   function dockPos(i, W, H, seatOffset) {
     const p = islandPos(i, W, H);
-    const outward = (i % 2 === 0) ? -1 : 1;
-    const r = islandRadius(W);
-    const ox = outward * (r + Math.min(54, W * 0.12));
-    const oy = ((seatOffset || 0) - 1.5) * 9;
-    // Keep berths on-screen and in water margins
-    const x = Math.max(W * 0.04, Math.min(W * 0.96, p.x + ox));
-    const y = Math.max(seaH(H) * 0.08, Math.min(seaH(H) * 0.95, p.y + oy));
+    const towardCenter = (i % 2 === 0) ? 1 : -1;
+    const x = clampChannelX(p.x + towardCenter * Math.min(22, W * 0.04) + ((seatOffset || 0) - 1.5) * 5, W);
+    const y = Math.max(playTop(H) + 10, Math.min(playBottom(H) - 10, p.y + ((seatOffset || 0) - 1.5) * 8));
     return { x, y };
   }
   function fleetPos(seat, n, W, H) {
-    const sh = seaH(H);
-    const spread = Math.min(0.55, 0.16 * n);
-    const start = 0.5 - spread / 2;
-    return { x: W * (start + (spread * (seat + 0.5) / n)), y: sh * 0.92 };
+    const bot = playBottom(H);
+    const spread = Math.min(W * 0.20, 26 * n);
+    const cx = W * 0.5;
+    return {
+      x: clampChannelX(cx - spread / 2 + (spread * (seat + 0.5) / Math.max(1, n)), W),
+      y: bot - 12,
+    };
   }
   function fogHoldPos(W, H) {
-    return { x: W * 0.5, y: seaH(H) * 0.86 };
+    return { x: W * 0.5, y: playBottom(H) - 28 };
   }
   function easeInOut(t) { return t * t * (3 - 2 * t); }
 
@@ -1166,35 +1237,31 @@
     return false;
   }
   /**
-   * STRICT water-only route — ships NEVER travel sideways across island latitudes.
-   * Leave/arrive via vertical hops on outer dock X, then only:
-   *   • horizontal on topBand / botBand
-   *   • vertical on the centre channel (x = W/2)
+   * Water-only route matched to bg-sea.jpg:
+   * vertical only on centre channel X, horizontal only on water latitude bands
+   * (never into sky above playTop, never onto side beaches outside the channel).
    */
   function middleChannelPath(from, to, W, H) {
-    const sh = seaH(H);
     const CX = W * 0.5;
-    const topBand = sh * 0.10;   // above top islands
-    const gapBand = sh * 0.50;
-    const botBand = sh * 0.94;   // below bottom islands / fleet
-    const clearBand = (y) => (y < gapBand ? topBand : botBand);
-    const path = [{ x: from.x, y: from.y }];
+    const topBand = playTop(H) + 14;
+    const botBand = playBottom(H) - 14;
+    const mid = (topBand + botBand) * 0.5;
+    const clearBand = (y) => (y < mid ? topBand : botBand);
+    const clampY = (y) => Math.max(topBand, Math.min(botBand, y));
+    const path = [{ x: clampChannelX(from.x, W), y: clampY(from.y) }];
     const push = (x, y) => {
+      const nx = clampChannelX(x, W);
+      const ny = clampY(y);
       const last = path[path.length - 1];
-      if (Math.hypot(last.x - x, last.y - y) < 3) return;
-      path.push({ x, y });
+      if (Math.hypot(last.x - nx, last.y - ny) < 3) return;
+      path.push({ x: nx, y: ny });
     };
     const fromBand = clearBand(from.y);
     const toBand = clearBand(to.y);
-    // 1) Vertical at current X to a clear band (outer docks are water — safe)
     push(from.x, fromBand);
-    // 2) Horizontal on that clear band into the middle channel
     push(CX, fromBand);
-    // 3) Vertical ONLY in the middle channel to the destination band
     push(CX, toBand);
-    // 4) Horizontal on destination clear band to dock longitude
     push(to.x, toBand);
-    // 5) Short vertical into the outer dock
     push(to.x, to.y);
     return path;
   }
@@ -1313,7 +1380,7 @@
     lootFleet = [];
     lootFleet._sig = sig;
     wanted.forEach((w, idx) => {
-      const from = { x: W * (0.22 + (idx + 0.5) * (0.56 / Math.max(1, wanted.length))), y: seaH(H) * 0.96 };
+      const from = { x: W * (0.40 + (idx + 0.5) * (0.20 / Math.max(1, wanted.length))), y: playBottom(H) - 8 };
       const to = dockPos(w.island, W, H, w.k);
       const path = findSeaPath(from, to, W, H);
       const size = 32 + (w.amount / Math.max(pool, 1)) * 26;
@@ -1355,11 +1422,24 @@
     sctx.translate(-W / 2 - cam.x, -sh * 0.48 - cam.y);
 
     if (bg) {
-      const scale = Math.max(W / bg.width, H / bg.height) * 1.08;
-      const dw = bg.width * scale, dh = bg.height * scale;
-      const ox = Math.sin(t * 0.08) * 10;
-      const oy = Math.cos(t * 0.06) * 6;
-      sctx.drawImage(bg, (W - dw) / 2 + ox, (H - dh) / 2 + oy - 20, dw, dh);
+      // Align painted water channel to playTop..playBottom (not sky / beaches).
+      const imgWaterTop = 0.24;
+      const screenTop = playTop(H);
+      const screenBot = playBottom(H);
+      const scale = (W / bg.width) * 1.08;
+      const dw = bg.width * scale;
+      const dh = bg.height * scale;
+      const bx = (W - dw) / 2 + Math.sin(t * 0.08) * 4;
+      const by = screenTop - imgWaterTop * dh + Math.cos(t * 0.06) * 3;
+      sctx.drawImage(bg, bx, by, dw, dh);
+      // Soft vignette so side beaches read as out-of-bounds
+      const vg = sctx.createLinearGradient(0, 0, W, 0);
+      vg.addColorStop(0, "rgba(4,24,32,.55)");
+      vg.addColorStop(0.28, "rgba(4,24,32,0)");
+      vg.addColorStop(0.72, "rgba(4,24,32,0)");
+      vg.addColorStop(1, "rgba(4,24,32,.55)");
+      sctx.fillStyle = vg;
+      sctx.fillRect(0, screenTop - 4, W, screenBot - screenTop + 8);
     } else {
       const g = sctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
@@ -1369,44 +1449,23 @@
     for (const g of glitter) {
       const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2.2 + g.ph));
       if (tw < 0.45) continue;
+      const gy = playTop(H) + g.y * (playBottom(H) - playTop(H));
       sctx.fillStyle = "#fff6c8";
       sctx.beginPath();
-      sctx.arc(g.x * W, g.y * sh, g.s * tw, 0, Math.PI * 2);
+      sctx.arc(g.x * W, gy, g.s * tw, 0, Math.PI * 2);
       sctx.fill();
     }
 
+    // Clouds stay in the SKY only — never over the sailing water
     if (cloudsImg) {
-      const cw = W * 1.4, ch = cw * (cloudsImg.height / cloudsImg.width);
-      const cx = ((t * 6) % (cw + W)) - cw * 0.25;
-      // Sky band only — top of the screen, never sitting on the ocean
-      sctx.drawImage(cloudsImg, cx, -ch * 0.15, cw, ch * 0.42);
-      sctx.drawImage(cloudsImg, cx - cw * 0.55, -ch * 0.02, cw * 0.9, ch * 0.34);
+      const cw = W * 1.3, ch = cw * (cloudsImg.height / cloudsImg.width) * 0.28;
+      const cx = ((t * 5) % (cw + W)) - cw * 0.2;
+      sctx.globalAlpha = 0.55;
+      sctx.drawImage(cloudsImg, cx, playTop(H) - ch * 0.85, cw, ch);
+      sctx.globalAlpha = 1;
     }
 
-    const far = [
-      { x: W * 0.16, y: sh * 0.045, sz: Math.min(28, W * 0.065), i: 2 },
-      { x: W * 0.84, y: sh * 0.04, sz: Math.min(26, W * 0.06), i: 0 },
-    ];
-    for (const f of far) {
-      const im = islandImgs[f.i];
-      const bob = Math.sin(t * 0.65 + f.i) * 1.4;
-      sctx.fillStyle = "rgba(8,40,55,.30)";
-      sctx.beginPath();
-      sctx.ellipse(f.x, f.y + f.sz * 0.32 + bob, f.sz * 0.42, f.sz * 0.1, 0, 0, Math.PI * 2);
-      sctx.fill();
-      if (im) sctx.drawImage(im, f.x - f.sz / 2, f.y - f.sz / 2 + bob, f.sz, f.sz);
-    }
-
-    if (reefImg) {
-      const reefs = [
-        { x: W * 0.04, y: sh * 0.48, sz: Math.min(40, W * 0.09) },
-        { x: W * 0.96, y: sh * 0.52, sz: Math.min(42, W * 0.09) },
-      ];
-      for (const r of reefs) {
-        const bob = Math.sin(t * 1.1 + r.x) * 2;
-        sctx.drawImage(reefImg, r.x - r.sz / 2, r.y - r.sz / 2 + bob, r.sz, r.sz);
-      }
-    }
+    // No far-island / reef props on the sailing channel — backdrop already has them.
 
     birds.forEach((b, bi) => {
       b.x += b.vx * dt * 16;
@@ -1414,17 +1473,18 @@
       if (b.x < -0.2) { b.x = 1.1; b.vx = -Math.abs(b.vx); }
       const flap = birdFrames.length ? birdFrames[Math.floor(now / 90 + bi * 2) % birdFrames.length] : null;
       const bx = b.x * W;
-      const by = sh * (0.04 + 0.08 * Math.abs(Math.sin(b.phase))) + Math.sin(t * 3.2 + b.phase) * 6;
+      const by = playTop(H) - 18 + Math.sin(t * 3.2 + b.phase) * 5;
       if (flap) {
         sctx.save();
         sctx.translate(bx, by);
         sctx.scale(b.vx < 0 ? -1 : 1, 1);
         sctx.rotate(Math.sin(t * 2.8 + b.phase) * 0.15);
-        sctx.drawImage(flap, -24, -16, 48, 32);
+        sctx.drawImage(flap, -20, -12, 40, 26);
         sctx.restore();
       }
     });
 
+    // Answer islands
     for (let i = 0; i < 4; i++) {
       const p = islandPos(i, W, H);
       const bob = Math.sin(t * 1.05 + i) * 2.5;
@@ -1448,6 +1508,20 @@
       sctx.font = "900 13px Trebuchet MS,sans-serif";
       sctx.textAlign = "center"; sctx.textBaseline = "middle";
       sctx.fillText(LETTERS[i], p.x - sz * 0.28, p.y - sz * 0.22 + bob);
+    }
+
+    // Debug: water corridor outline (only with ?sailDebug=1)
+    if (params.get("sailDebug") === "1") {
+      sctx.save();
+      sctx.strokeStyle = "rgba(255,61,184,.85)";
+      sctx.lineWidth = 2;
+      sctx.setLineDash([6, 5]);
+      sctx.strokeRect(W * 0.34, playTop(H), W * 0.32, playBottom(H) - playTop(H));
+      sctx.beginPath();
+      sctx.moveTo(W * 0.5, playTop(H));
+      sctx.lineTo(W * 0.5, playBottom(H));
+      sctx.stroke();
+      sctx.restore();
     }
 
     if (pathPreview != null) {
@@ -1979,6 +2053,12 @@
     imgLootBurst = await loadImg("./assets/loot-burst.png");
     void imgCheer;
     requestAnimationFrame(frame);
+
+    // Local harness: ?chestTest=1 opens the slot chest immediately
+    if (params.get("chestTest") === "1") {
+      nickModal.classList.add("hidden");
+      setTimeout(() => startIslandLootVideo(0), 350);
+    }
 
     function start(vsBot) {
       const n = nickInput.value.trim() || nick;

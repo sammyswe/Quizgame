@@ -51,7 +51,7 @@ const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 20000;
 const LOOT_MS = 40000;
 /** Answer + chest window; then ships home + scoreboard. */
-const REVEAL_HOLD_MS = 6500;
+const REVEAL_HOLD_MS = 9000;
 const SCOREBOARD_MS = 3200;
 const VENTURE_REVEAL_MS = 5200;
 /** Poseidon: full-screen video + gold-saved summary. */

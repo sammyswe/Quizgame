@@ -69,4 +69,4 @@ Ships: no water under hull; 3-frame sail wind cycle. HUD: scores+timer top only.
 | bird flap strip | 4524fda0-d692-4a5a-8eea-864e9e8760f4 |
 | chest spin sheet | 53d8030c-a6e2-48f3-bb60-77e8ebc0e01d |
 
-Sailing uses middle-channel-only routes (vertical on x=50%, horizontal only on clear top/bottom bands) and reverses the same path home after chest. Loot Drop supports split +/- allocation; reveal shows correct island only. Wrong-island chests open empty with sad SFX. Tap-loot is slot-machine spin/explode. Scoreboard phase (~3.2s) after each question with overtake flash. Poseidon summary is minimal-copy (+gold / spent) with coin rain.
+Sailing is clamped to the painted centre water channel of `bg-sea.jpg` (full-screen playTop/playBottom + channel X). Backdrop is aligned so image water matches that corridor; side vignette marks beaches out-of-bounds. Chest jackpot plays inside `#worldFx` (scoreboard no longer kills it); empty wrong-island chests use sad SFX.
