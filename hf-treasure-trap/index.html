@@ -10,10 +10,13 @@
     --cream: #fff6e4;
     --gold: #ffd56a;
     --ink: #1a1008;
-    --panel: rgba(8, 32, 44, 0.78);
-    --edge: rgba(201, 150, 58, 0.7);
-    --ok: #6dffb0;
-    --bad: #ff7a6e;
+    --sheet: #123a4a;
+    --sheet-2: #0d2e3c;
+    --choice: #1a4d5e;
+    --choice-hi: #245f73;
+    --edge: #c9963a;
+    --ok: #3dcc8a;
+    --bad: #e85a4f;
     --display: "Trebuchet MS", "Segoe UI", "Avenir Next", sans-serif;
     --body: "Segoe UI", "Trebuchet MS", sans-serif;
   }
@@ -31,16 +34,19 @@
     position: relative; z-index: 2;
     height: 100%; width: min(480px, 100%);
     margin: 0 auto;
-    padding: max(6px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 6px;
+    display: flex; flex-direction: column;
     pointer-events: none;
   }
   #hud > * { pointer-events: auto; }
+  .sea-chrome {
+    padding: max(6px, env(safe-area-inset-top)) 8px 4px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
   .top {
     display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
   }
   .brand h1 { margin: 0; font-size: 1rem; color: var(--gold); text-shadow: 0 2px 0 #1a0e04; }
-  .brand p { margin: 0; font-size: .65rem; opacity: .85; }
+  .brand p { margin: 0; font-size: .65rem; opacity: .9; text-shadow: 0 1px 2px #000; }
   .chest-timer { width: 48px; height: 48px; position: relative; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
   .chest-timer img { width: 100%; height: 100%; object-fit: contain; }
   .chest-timer .sec {
@@ -51,50 +57,57 @@
   .ribbon::-webkit-scrollbar { display: none; }
   .chip {
     flex: 0 0 auto; display: flex; align-items: center; gap: 5px;
-    padding: 3px 8px 3px 3px; background: var(--panel); border: 2px solid var(--edge);
-    border-radius: 999px; font-size: .72rem; font-weight: 900; backdrop-filter: blur(6px);
+    padding: 3px 8px 3px 3px; background: #123a4a; border: 2px solid var(--edge);
+    border-radius: 999px; font-size: .72rem; font-weight: 900;
   }
   .chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
   .chip.you { border-color: var(--gold); }
   .world-space { flex: 1; min-height: 0; pointer-events: none; }
-  .dock {
-    display: flex; flex-direction: column; gap: 6px;
-    max-height: 42vh;
+  /* Solid quiz sheet — separate from the sea world */
+  .quiz-sheet {
+    flex: 0 0 auto;
+    max-height: 48vh;
+    background: linear-gradient(180deg, var(--sheet) 0%, var(--sheet-2) 100%);
+    border-top: 3px solid var(--edge);
+    box-shadow: 0 -10px 28px rgba(0,0,0,.45);
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 8px;
+    overflow: auto;
   }
   .banner {
-    background: linear-gradient(180deg, rgba(14,74,92,.9), rgba(8,32,44,.88));
-    border: 2px solid var(--edge); border-radius: 14px;
-    padding: 8px 10px; box-shadow: 0 8px 20px rgba(0,0,0,.3);
-    backdrop-filter: blur(8px);
+    background: #0f3342;
+    border: 2px solid var(--edge);
+    border-radius: 12px;
+    padding: 8px 10px;
   }
-  .banner .tag {
+  .banner .tag, .quiz-sheet > .tag {
     display: inline-block; margin-bottom: 3px; padding: 2px 7px; border-radius: 999px;
-    background: rgba(255,213,106,.16); color: var(--gold);
+    background: #3a2a10; color: var(--gold);
     font-size: .62rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase;
   }
   .banner h2 {
     margin: 0; font-size: clamp(.95rem, 3.6vw, 1.1rem); line-height: 1.2;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .banner .muted { margin: 3px 0 0; opacity: .8; font-size: .75rem; }
-  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .banner .muted { margin: 3px 0 0; opacity: .85; font-size: .75rem; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
   .choice {
-    border: 2px solid rgba(255,255,255,.18); border-radius: 12px;
-    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(0,0,0,.25));
-    color: var(--cream); padding: 6px 8px; cursor: pointer; text-align: left;
-    display: grid; grid-template-columns: 36px 1fr auto; gap: 6px; align-items: center;
-    min-height: 48px; transition: transform .08s ease;
+    border: 3px solid #2a6a7c; border-radius: 12px;
+    background: var(--choice);
+    color: var(--cream); padding: 8px; cursor: pointer; text-align: left;
+    display: grid; grid-template-columns: 40px 1fr auto; gap: 7px; align-items: center;
+    min-height: 54px; transition: transform .08s ease, background .12s ease;
   }
-  .choice img { width: 36px; height: 36px; object-fit: contain; }
-  .choice strong { display: block; color: var(--gold); font-size: .85rem; }
-  .choice span { display: block; font-size: .72rem; line-height: 1.1; opacity: .95; }
-  .choice .amt { font-family: var(--display); font-size: 1rem; }
-  .choice:active:not(:disabled) { transform: scale(.97); }
-  .choice:disabled { opacity: .55; }
-  .choice.picked { border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(255,213,106,.3); }
-  .choice.correct { border-color: var(--ok); }
-  .choice.wrong { border-color: var(--bad); }
-  .choice.dim { opacity: .35; }
+  .choice img { width: 40px; height: 40px; object-fit: contain; }
+  .choice strong { display: block; color: var(--gold); font-size: .88rem; }
+  .choice span { display: block; font-size: .74rem; line-height: 1.15; }
+  .choice .amt { font-family: var(--display); font-size: 1rem; color: var(--gold); }
+  .choice:active:not(:disabled) { transform: scale(.97); background: var(--choice-hi); }
+  .choice:disabled { filter: none; opacity: 1; }
+  .choice.picked { border-color: var(--gold); background: #2a5f4a; }
+  .choice.correct { border-color: var(--ok); background: #1f5a40; }
+  .choice.wrong { border-color: var(--bad); background: #5a2a28; }
+  .choice.dim { opacity: .45; }
   .big {
     width: 100%; border: 0; cursor: pointer; padding: 12px 14px; border-radius: 14px;
     font-family: var(--display); font-size: 1.1rem; color: var(--ink);
@@ -134,7 +147,10 @@
     padding: 14px;
   }
   .nick-modal.hidden { display: none; }
-  .nick-modal .banner { width: min(420px, 100%); margin-bottom: 8vh; }
+  .nick-modal .banner, .nick-modal .quiz-sheet {
+    width: min(420px, 100%); margin-bottom: 6vh;
+    max-height: none; border-radius: 16px; border: 2px solid var(--edge);
+  }
   .nick-modal input {
     width: 100%; margin: 8px 0 10px; border-radius: 12px; border: 2px solid var(--edge);
     background: rgba(0,0,0,.35); color: var(--cream); padding: 12px; font: inherit; text-align: center;
@@ -168,23 +184,25 @@
   <div class="casino-flash" id="casino"></div>
   <div class="cutscene-veil" id="veil"></div>
   <div id="hud">
-    <div class="top">
-      <div class="brand"><h1>TREASURE TRAP</h1><p id="subtitle">Voyage</p></div>
-      <div class="chest-timer" id="chestWrap">
-        <img id="chestImg" src="./assets/chest-full.png" alt="">
-        <div class="sec" id="chestSec">–</div>
+    <div class="sea-chrome">
+      <div class="top">
+        <div class="brand"><h1>TREASURE TRAP</h1><p id="subtitle">Voyage</p></div>
+        <div class="chest-timer" id="chestWrap">
+          <img id="chestImg" src="./assets/chest-full.png" alt="">
+          <div class="sec" id="chestSec">–</div>
+        </div>
       </div>
+      <div class="ribbon" id="ribbon"></div>
     </div>
-    <div class="ribbon" id="ribbon"></div>
     <div class="world-space" id="worldSpace"></div>
-    <div class="dock" id="main"></div>
-    <div id="err"></div>
+    <div class="quiz-sheet" id="main"></div>
+    <div id="err" style="position:absolute;left:8px;right:8px;bottom:48%;pointer-events:none"></div>
   </div>
 </div>
 <div id="toast"></div>
 <div class="nick-modal" id="nickModal">
-  <div class="banner center">
-    <div class="tag">Mobile voyage</div>
+  <div class="quiz-sheet center" style="border-radius:16px;border:2px solid var(--edge)">
+    <div class="tag" style="align-self:center">Mobile voyage</div>
     <h2 class="display">Name your pirate</h2>
     <p class="muted">Play vs bot or invite friends.</p>
     <input id="nickInput" maxlength="14" placeholder="Cap’n Spark" autocomplete="nickname">
@@ -320,9 +338,9 @@
       const pool = you.lootPool || 0;
       later(700, () => {
         const pick = Math.random() < 0.45 ? "v2" : "v0";
-        const amt = Math.floor(pool / 10) * 10;
-        if (amt > 0) botAct({ type: "alloc", venture: pick, amount: amt });
-        later(450, () => botAct({ type: "lock" }));
+        void pool;
+        botAct({ type: "pick", venture: pick });
+        later(500, () => botAct({ type: "lock" }));
       });
       return;
     }
@@ -383,7 +401,7 @@
           hitStopUntil = performance.now() + 60;
           const mine = msg.view.reveal && msg.view.reveal.results && msg.view.reveal.results[msg.you];
           if (mine && mine.correct) {
-            startCutscene("plunder", 2200, { island: msg.view.reveal.correctIndex });
+            startCutscene("plunder", 2800, { island: msg.view.reveal.correctIndex });
           }
         }
         if (msg.view.phase === "loot_reveal") {
@@ -403,7 +421,7 @@
         const ven = msg.view.ventures[vi];
         const cell = msg.view.reveal && msg.view.reveal.outcomes && msg.view.reveal.outcomes[msg.you]
           && msg.view.reveal.outcomes[msg.you].byVenture[ven.id];
-        if (cell && cell.ok) startCutscene("plunder", 2000, { island: ven.island });
+        if (cell && cell.ok) startCutscene("plunder", 2800, { island: ven.island });
         else if (cell && cell.put) startCutscene("crash", 1600, { island: ven.island });
       }
       render(msg);
@@ -435,11 +453,13 @@
   // --- canvas ---
   const sea = document.getElementById("sea");
   const sctx = sea.getContext("2d");
-  let bg = null, cabin = null, fogImg = null;
+  let bg = null, fogImg = null;
   let shipImgs = [], islandImgs = [], poseidonFrames = [];
   let imgCoinBurst = null, imgChestOpen = null, imgSparkle = null, imgImpact = null;
   let imgSplash = null, imgWake = null, imgCrash = null, imgConfetti = null;
   let imgCheer = null, imgPlunderCrew = null, sharkImg = null;
+  let imgLootCascade = null, imgLootTrail = null, imgLootHaul = null, imgLootBurst = null;
+  let flyCoins = [];
   const t0 = performance.now();
 
   function loadImg(src) {
@@ -453,30 +473,33 @@
   }
   addEventListener("resize", resize); addEventListener("orientationchange", resize); resize();
 
+  /** Sea playfield = upper ~52% of screen (quiz sheet owns the lower half). */
+  function seaH(H) { return H * 0.52; }
   function islandPos(i, W, H) {
-    // Keep islands in upper mid band so HUD dock at bottom doesn't cover ships
+    const sh = seaH(H);
     return [
-      { x: W * 0.24, y: H * 0.34 },
-      { x: W * 0.76, y: H * 0.34 },
-      { x: W * 0.24, y: H * 0.52 },
-      { x: W * 0.76, y: H * 0.52 },
+      { x: W * 0.24, y: sh * 0.38 },
+      { x: W * 0.76, y: sh * 0.38 },
+      { x: W * 0.24, y: sh * 0.68 },
+      { x: W * 0.76, y: sh * 0.68 },
     ][i];
   }
-  /** Ship berth BESIDE island (sea side), never on top of land. */
+  /** Ship berth BESIDE island on open water — never overlapping land mass. */
   function dockPos(i, W, H, seatOffset) {
     const p = islandPos(i, W, H);
-    const outward = (i % 2 === 0) ? 1 : -1; // left islands → berth to the right (inward/sea)
-    const ox = outward * Math.min(58, W * 0.12);
-    const oy = Math.min(48, H * 0.055) + (seatOffset || 0) * 14;
+    const outward = (i % 2 === 0) ? 1 : -1;
+    const ox = outward * Math.min(62, W * 0.13);
+    const oy = Math.min(42, H * 0.04) + (seatOffset || 0) * 12;
     return { x: p.x + ox, y: p.y + oy };
   }
   function fleetPos(seat, n, W, H) {
+    const sh = seaH(H);
     const spread = Math.min(0.5, 0.14 * n);
     const start = 0.5 - spread / 2;
-    return { x: W * (start + (spread * (seat + 0.5) / n)), y: H * 0.70 };
+    return { x: W * (start + (spread * (seat + 0.5) / n)), y: sh * 0.88 };
   }
   function fogHoldPos(W, H) {
-    return { x: W * 0.5, y: H * 0.58 };
+    return { x: W * 0.5, y: seaH(H) * 0.78 };
   }
 
   function drawImg(im, x, y, sz, alpha) {
@@ -494,25 +517,28 @@
     sctx.translate(shake, 0);
 
     const v = lastState && lastState.view;
-    const useCabin = v && v.phase === "loot";
-    const plate = useCabin && cabin ? cabin : bg;
-    if (plate) {
-      const scale = Math.max(W / plate.width, H / plate.height);
-      const dw = plate.width * scale, dh = plate.height * scale;
-      const ox = Math.sin((now - t0) / 1000 * 0.15) * 6;
-      sctx.drawImage(plate, (W - dw) / 2 + ox, (H - dh) / 2, dw, dh);
+    // Always open ocean — ships never sail over land in the backdrop
+    if (bg) {
+      const sh = seaH(H);
+      // Cover full screen with water; quiz sheet paints over the lower half in DOM
+      const scale = Math.max(W / bg.width, H / bg.height);
+      const dw = bg.width * scale, dh = bg.height * scale;
+      const ox = Math.sin((now - t0) / 1000 * 0.12) * 5;
+      sctx.drawImage(bg, (W - dw) / 2 + ox, (H - dh) / 2, dw, dh);
+      void sh;
     } else {
       const g = sctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#1c7a8c"); g.addColorStop(1, "#0a3d4d");
+      g.addColorStop(0, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
       sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
     }
 
     const t = (now - t0) / 1000;
-    if (!useCabin) {
-      // soft wave lines
-      sctx.globalAlpha = 0.18;
+    {
+      // soft wave lines in sea band only
+      sctx.globalAlpha = 0.16;
+      const sh = seaH(H);
       for (let i = 0; i < 5; i++) {
-        const y = H * 0.30 + i * H * 0.07;
+        const y = sh * 0.22 + i * sh * 0.12;
         sctx.beginPath();
         for (let x = 0; x <= W; x += 14) {
           const yy = y + Math.sin(x * 0.014 + t * 1.5 + i) * 4;
@@ -522,18 +548,18 @@
       }
       sctx.globalAlpha = 1;
 
-      // islands with soft contact shadow (composites onto sea)
+      // islands with soft contact shadow on water
       for (let i = 0; i < 4; i++) {
         const p = islandPos(i, W, H);
         const bob = Math.sin(t * 1.05 + i) * 2.5;
         const im = islandImgs[i];
-        const sz = Math.min(108, W * 0.26);
+        const sz = Math.min(100, W * 0.24);
         sctx.fillStyle = "rgba(5,25,35,.28)";
         sctx.beginPath();
         sctx.ellipse(p.x, p.y + sz * 0.28 + bob, sz * 0.38, sz * 0.10, 0, 0, Math.PI * 2);
         sctx.fill();
         if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
-        sctx.fillStyle = "rgba(10,30,40,.75)";
+        sctx.fillStyle = "rgba(10,30,40,.85)";
         sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 11, 0, Math.PI * 2); sctx.fill();
         sctx.fillStyle = "#ffd56a";
         sctx.font = "900 12px Trebuchet MS,sans-serif";
@@ -589,8 +615,19 @@
       if (age > p.life) return false;
       p.x += p.vx; p.y += p.vy; p.vy += 0.06;
       const a = 1 - age / p.life;
-      const im = p.kind === "coin" ? imgCoinBurst : imgSparkle;
-      drawImg(im, p.x, p.y, 28 + 20 * a, a);
+      const im = p.kind === "coin" ? (imgLootTrail || imgCoinBurst) : imgSparkle;
+      drawImg(im, p.x, p.y, 26 + 18 * a, a);
+      return true;
+    });
+
+    // flying loot coins (island → ship)
+    flyCoins = flyCoins.filter((c) => {
+      const age = (now - c.t0) / c.dur;
+      if (age >= 1) return false;
+      const e = 1 - Math.pow(1 - age, 2.4);
+      const x = c.x0 + (c.x1 - c.x0) * e;
+      const y = c.y0 + (c.y1 - c.y0) * e - Math.sin(age * Math.PI) * 40;
+      drawImg(imgLootTrail || imgCoinBurst, x, y, 34, 0.95);
       return true;
     });
 
@@ -604,26 +641,59 @@
     sctx.restore();
   }
 
+  function launchLootFlies(islandIdx) {
+    const W = innerWidth, H = innerHeight;
+    const from = islandPos(islandIdx, W, H);
+    const players = (lastState && lastState.view && lastState.view.players) || [];
+    const mySeat = players.findIndex((p) => p.id === (lastState && lastState.you));
+    const to = fleetPos(mySeat >= 0 ? mySeat : 0, Math.max(2, players.length), W, H);
+    for (let i = 0; i < 10; i++) {
+      flyCoins.push({
+        x0: from.x + (Math.random() - 0.5) * 30,
+        y0: from.y + (Math.random() - 0.5) * 20,
+        x1: to.x + (Math.random() - 0.5) * 24,
+        y1: to.y,
+        t0: performance.now() + i * 55,
+        dur: 700 + Math.random() * 280,
+      });
+    }
+  }
+
   function drawCutscene(now, u, W, H) {
+    const sh = seaH(H);
     if (cutscene.kind === "poseidon") {
       const frames = poseidonFrames.filter(Boolean);
       const fi = Math.min(frames.length - 1, Math.floor(u * frames.length));
       const im = frames[fi] || frames[0];
       const pulse = 1 + Math.sin(u * Math.PI) * 0.08;
-      const sz = Math.min(300, W * 0.72) * pulse;
-      const y = H * (0.38 - Math.sin(Math.min(1, u * 1.4) * Math.PI) * 0.06);
+      const sz = Math.min(280, W * 0.68) * pulse;
+      const y = sh * (0.55 - Math.sin(Math.min(1, u * 1.4) * Math.PI) * 0.08);
       drawImg(im, W / 2, y, sz, Math.min(1, u * 4) * Math.min(1, (1 - u) * 5));
       if (u > 0.35 && u < 0.85 && Math.random() < 0.35) spawnBurst(W / 2, y + 40, 2);
-      if (imgSplash && u > 0.2) drawImg(imgSplash, W / 2, H * 0.62, 160, 0.55 * (1 - Math.abs(u - 0.5)));
+      if (imgSplash && u > 0.2) drawImg(imgSplash, W / 2, sh * 0.85, 150, 0.55 * (1 - Math.abs(u - 0.5)));
     } else if (cutscene.kind === "plunder") {
       const isl = cutscene.meta.island ?? 0;
       const p = islandPos(isl, W, H);
-      const pop = Math.sin(Math.min(1, u * 1.6) * Math.PI);
-      drawImg(imgChestOpen, p.x, p.y - 10, 90 + 40 * pop, 0.95);
-      drawImg(imgCoinBurst, p.x, p.y - 20, 120 + 50 * pop, 0.85);
-      drawImg(imgConfetti, p.x, p.y - 50, 140 * pop, 0.7);
-      drawImg(imgPlunderCrew, p.x, p.y + 30, 70, 0.9);
-      if (u < 0.6 && Math.random() < 0.4) spawnBurst(p.x, p.y, 3);
+      // Staged: chest open → cascade → haul → burst → coins fly home
+      if (u < 0.22) {
+        const pop = u / 0.22;
+        drawImg(imgChestOpen || imgLootCascade, p.x, p.y - 8, 70 + 50 * pop, 0.95);
+        drawImg(imgLootBurst || imgSparkle, p.x, p.y - 20, 40 + 80 * pop, 0.7 * pop);
+      } else if (u < 0.5) {
+        const pop = (u - 0.22) / 0.28;
+        drawImg(imgLootCascade || imgChestOpen, p.x, p.y - 16, 100 + 30 * pop, 0.98);
+        drawImg(imgCoinBurst, p.x, p.y - 30, 110 + 40 * pop, 0.9);
+        if (Math.random() < 0.5) spawnBurst(p.x, p.y - 10, 2);
+      } else if (u < 0.72) {
+        drawImg(imgLootHaul || imgPlunderCrew, p.x, p.y + 10, 100, 0.95);
+        drawImg(imgLootCascade, p.x, p.y - 24, 90, 0.75);
+        if (cutscene.meta._flew !== 1) { cutscene.meta._flew = 1; launchLootFlies(isl); }
+      } else {
+        const fade = 1 - (u - 0.72) / 0.28;
+        drawImg(imgLootBurst || imgConfetti, p.x, p.y - 40, 130, 0.85 * fade);
+        drawImg(imgConfetti, p.x, p.y - 55, 120 * fade, 0.6 * fade);
+        drawImg(imgPlunderCrew, p.x, p.y + 18, 70, 0.85 * fade);
+      }
     } else if (cutscene.kind === "crash") {
       const isl = cutscene.meta.island ?? 0;
       const p = islandPos(isl, W, H);
@@ -632,8 +702,8 @@
       shakeUntil = now + 80;
     } else if (cutscene.kind === "shark") {
       const x = W * (0.1 + 0.8 * u);
-      drawImg(sharkImg, x, H * 0.55, 120, 0.95);
-      drawImg(imgSplash, x, H * 0.6, 90, 0.6);
+      drawImg(sharkImg, x, sh * 0.72, 110, 0.95);
+      drawImg(imgSplash, x, sh * 0.8, 90, 0.6);
     }
   }
 
@@ -783,57 +853,58 @@
     pathPreview = null;
     subtitleEl.textContent = "Loot Drop";
     casinoEl.classList.add("on");
-    setTimeout(() => casinoEl.classList.remove("on"), 1000);
+    setTimeout(() => casinoEl.classList.remove("on"), 900);
     mainEl.innerHTML = `<div class="banner center pop">
       <div class="tag">Special round</div>
-      <h2 class="display">Quiz the treasure map</h2>
-      <p class="muted">Same as a question — send crews to the island you think is right. Wrong reefs crash. Correct returns your gold.</p>
+      <h2 class="display">Loot Drop quiz</h2>
+      <p class="muted">Answer like a normal question. Your block loot sails with your pick — wrong island crashes, correct returns gold.</p>
     </div>`;
   }
 
   function renderLoot(s, v) {
     pathPreview = null;
-    subtitleEl.textContent = "Loot Drop quiz";
+    subtitleEl.textContent = `Loot Drop · ${youPoolLabel(v)}`;
     const you = v.you;
     const can = s.status === "playing" && s.seats.includes(s.you) && !you.locked;
     const q = v.question;
+    const picked = v.ventures.findIndex((ven) => (you.allocation[ven.id] || 0) > 0);
     mainEl.innerHTML = `<div class="banner pop">
-      <div class="tag">Loot Drop · quiz</div>
-      <h2 class="display">${esc((q && q.text) || "Where’s the treasure?")}</h2>
-      <div class="loot-bar">
-        <span><img src="./assets/crew-token.png" alt=""> ${you.lootLeft} gold left</span>
-        <span class="muted">${you.locked ? "LOCKED" : "Tap islands to stake"}</span>
-      </div>
+      <div class="tag">Loot Drop · question</div>
+      <h2 class="display">${esc((q && q.text) || "Pick the right island")}</h2>
+      <p class="muted">${you.locked ? "Locked in — waiting for rivals…" : `Stake ${you.lootPool} gold on one answer, then lock.`}</p>
     </div>
     <div class="choices" id="choices"></div>
-    <button class="big${can ? " pulse" : ""}" id="lockBtn" ${can ? "" : "disabled"}>
+    <button class="big${can && picked >= 0 ? " pulse" : ""}" id="lockBtn" ${can && picked >= 0 ? "" : "disabled"}>
       <img src="./assets/wheel.png" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:6px">${you.locked ? "LOCKED!" : "TURN THE WHEEL"}
     </button>`;
     const root = document.getElementById("choices");
-    v.ventures.forEach((ven, i) => {
+    (q && q.answers ? q.answers : ["A","B","C","D"]).forEach((label, i) => {
+      const ven = v.ventures[i];
       const amt = you.allocation[ven.id] || 0;
-      const label = (q && q.answers && q.answers[i]) || ven.name;
       const el = document.createElement("button");
       el.type = "button";
       el.className = "choice" + (amt > 0 ? " picked" : "");
       el.disabled = !can;
-      el.innerHTML = `<img src="${ISLAND[ven.island]}" alt=""><div><strong>${LETTERS[i]} · ${esc(ven.name)}</strong><span>${esc(label)}</span></div><div class="amt">${amt}</div>`;
+      el.innerHTML = `<img src="${ISLAND[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>${amt > 0 ? `<div class="amt">${amt}</div>` : ""}`;
       el.onclick = () => {
         if (!can) return;
-        if (you.lootLeft <= 0) { toast("NO LOOT LEFT!"); shakeUntil = performance.now() + 350; return; }
-        const step = v.step || 10;
-        const add = Math.min(you.lootLeft >= step * 2 ? step * 2 : step, you.lootLeft);
-        act({ type: "alloc", venture: ven.id, amount: amt + add });
+        act({ type: "pick", venture: ven.id });
+        pathPreview = i;
+        const my = v.players.findIndex((p) => p.id === s.you);
+        if (my >= 0) chosenIsland[my] = i;
       };
       root.appendChild(el);
     });
     document.getElementById("lockBtn").onclick = () => {
-      if (!can) return;
+      if (!can || picked < 0) return;
       hitStopUntil = performance.now() + 70;
       casinoEl.classList.add("on");
       setTimeout(() => casinoEl.classList.remove("on"), 600);
       act({ type: "lock" });
     };
+  }
+  function youPoolLabel(v) {
+    return v && v.you ? `${v.you.lootPool} gold` : "";
   }
 
   function renderLootReveal(s, v) {
@@ -902,7 +973,6 @@
 
   async function boot() {
     bg = await loadImg("./assets/bg-sea.jpg");
-    cabin = await loadImg("./assets/map-cabin.jpg");
     fogImg = await loadImg("./assets/fog.png");
     sharkImg = await loadImg("./assets/shark.png");
     shipImgs = await Promise.all(SHIP.map(loadImg));
@@ -918,6 +988,10 @@
     imgConfetti = await loadImg("./assets/vfx-confetti.png");
     imgCheer = await loadImg("./assets/ship-cheer.png");
     imgPlunderCrew = await loadImg("./assets/plunder-crew.png");
+    imgLootCascade = await loadImg("./assets/loot-cascade.png");
+    imgLootTrail = await loadImg("./assets/loot-trail.png");
+    imgLootHaul = await loadImg("./assets/loot-haul.png");
+    imgLootBurst = await loadImg("./assets/loot-burst.png");
     void imgCheer;
     requestAnimationFrame(frame);
 

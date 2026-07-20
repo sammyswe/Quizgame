@@ -32,19 +32,19 @@ const QUESTIONS = [
   },
 ];
 
-/** Loot Drop venture question — one correct island */
+/** Loot Drop uses a real quiz question — one correct answer island. */
 const LOOT_QUESTION = {
   id: "loot",
-  text: "Where did the old captain bury the block’s treasure?",
-  answers: ["Palm Cove", "Ember Isle", "Ruin Falls", "Skull Spire"],
+  text: "Which legendary pirate was nicknamed Blackbeard?",
+  answers: ["Calico Jack", "Henry Morgan", "Edward Teach", "Anne Bonny"],
   correctIndex: 2,
 };
 
 const VENTURES = [
-  { id: "v0", name: "Palm Cove", island: 0 },
-  { id: "v1", name: "Ember Isle", island: 1 },
-  { id: "v2", name: "Ruin Falls", island: 2 },
-  { id: "v3", name: "Skull Spire", island: 3 },
+  { id: "v0", name: "A", island: 0 },
+  { id: "v1", name: "B", island: 1 },
+  { id: "v2", name: "C", island: 2 },
+  { id: "v3", name: "D", island: 3 },
 ];
 
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
@@ -418,6 +418,15 @@ export function validateAction(state, playerId, action) {
       }
       return { ok: true };
     }
+    case "pick": {
+      // Quiz-style: put entire loot pool on one answer island.
+      if (state.phase !== "loot") return { ok: false, error: "Loot Drop has not begun." };
+      if (state.locked[playerId]) return { ok: false, error: "You already locked in!" };
+      if (!VENTURES.some((v) => v.id === action.venture)) {
+        return { ok: false, error: "Unknown venture." };
+      }
+      return { ok: true };
+    }
     case "lock": {
       if (state.phase !== "loot") return { ok: false, error: "Loot Drop has not begun." };
       if (state.locked[playerId]) return { ok: false, error: "Already locked!" };
@@ -481,6 +490,13 @@ export function applyAction(state, playerId, action) {
       const cur = s.allocations[playerId] || emptyAlloc();
       cur[action.venture] = Math.floor(action.amount / STEP) * STEP;
       s.allocations[playerId] = cur;
+      break;
+    }
+    case "pick": {
+      const pool = Math.floor((s.lootPool[playerId] || 0) / STEP) * STEP;
+      const next = emptyAlloc();
+      next[action.venture] = pool;
+      s.allocations[playerId] = next;
       break;
     }
     case "lock": {
