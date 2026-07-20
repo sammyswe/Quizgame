@@ -1,6 +1,6 @@
 /**
  * Treasure Trap: Voyage — Path B logic.js
- * Beauty milestone: lobby → 3 questions → LOCKED Loot Drop → winner.
+ * Beauty milestone: lobby → 10 scene questions → LOCKED Loot Drop → winner.
  * Soft client countdown (T1): clients may send { type: "timeout" }.
  * Loot Drop: correct venture returns wager; wrong ventures lose (not multipliers).
  */
@@ -11,6 +11,7 @@ export const meta = {
   maxPlayers: 4,
 };
 
+/** Ten questions — each maps to a unique voyage scene backdrop. */
 const QUESTIONS = [
   {
     id: "q1",
@@ -30,6 +31,48 @@ const QUESTIONS = [
     answers: ["Starboard", "Port", "Bow", "Stern"],
     correctIndex: 1,
   },
+  {
+    id: "q4",
+    text: "What is a pirate’s favourite drink?",
+    answers: ["Rum", "Tea", "Milk", "Ink"],
+    correctIndex: 0,
+  },
+  {
+    id: "q5",
+    text: "Where do pirates bury their treasure?",
+    answers: ["On an island", "In the crow’s nest", "Under the galley", "In the bilge"],
+    correctIndex: 0,
+  },
+  {
+    id: "q6",
+    text: "What do you call the front of a ship?",
+    answers: ["Bow", "Stern", "Keel", "Mast"],
+    correctIndex: 0,
+  },
+  {
+    id: "q7",
+    text: "A pirate lookout sits in the…",
+    answers: ["Crow’s nest", "Powder room", "Galley", "Brig"],
+    correctIndex: 0,
+  },
+  {
+    id: "q8",
+    text: "What is the pirate word for friend?",
+    answers: ["Matey", "Admiral", "Lubber", "Purser"],
+    correctIndex: 0,
+  },
+  {
+    id: "q9",
+    text: "Which tool helps pirates navigate by the stars?",
+    answers: ["Sextant", "Anvil", "Ladle", "Belaying pin"],
+    correctIndex: 0,
+  },
+  {
+    id: "q10",
+    text: "What do pirates shout when they spot land?",
+    answers: ["Land ho!", "Full stop!", "Tea time!", "Abandon ink!"],
+    correctIndex: 0,
+  },
 ];
 
 /** Loot Drop uses a real quiz question — one correct answer island. */
@@ -48,11 +91,13 @@ const VENTURES = [
 ];
 
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
-const Q_MS = 20000;
+const Q_MS = 16000;
 const LOOT_MS = 40000;
 /** Answer + chest window; then ships home + scoreboard. */
-const REVEAL_HOLD_MS = 9000;
-const SCOREBOARD_MS = 3200;
+const REVEAL_HOLD_MS = 7000;
+const SCOREBOARD_MS = 2800;
+/** Sail-off / enter new scene beat between questions (client-driven, server hold). */
+const SCENE_TRAVEL_MS = 2400;
 const VENTURE_REVEAL_MS = 5200;
 /** Poseidon: full-screen video + gold-saved summary. */
 const WILDCARD_MS = 9000;
@@ -331,7 +376,16 @@ function advanceFromReveal(state) {
   } else if (state.phase === "scoreboard") {
     const next = state.questionIndex + 1;
     if (next >= QUESTIONS.length) startLootIntro(state);
-    else startQuestion(state, next);
+    else {
+      // Voyage to a new sea before the next question
+      state.phase = "scene_travel";
+      state.nextQuestionIndex = next;
+      state.phaseStartedAt = now();
+      state.deadlineAt = state.phaseStartedAt + SCENE_TRAVEL_MS;
+      state.reveal = null;
+    }
+  } else if (state.phase === "scene_travel") {
+    startQuestion(state, state.nextQuestionIndex != null ? state.nextQuestionIndex : state.questionIndex + 1);
   } else if (state.phase === "loot_intro") {
     startLootAlloc(state);
   } else if (state.phase === "loot_reveal") {
@@ -439,6 +493,7 @@ export function validateAction(state, playerId, action) {
         state.phase === "loot" ||
         state.phase === "q_reveal" ||
         state.phase === "scoreboard" ||
+        state.phase === "scene_travel" ||
         state.phase === "loot_intro" ||
         state.phase === "loot_reveal" ||
         state.phase === "loot_wildcard"
@@ -452,6 +507,7 @@ export function validateAction(state, playerId, action) {
       if (
         state.phase === "q_reveal" ||
         state.phase === "scoreboard" ||
+        state.phase === "scene_travel" ||
         state.phase === "loot_intro" ||
         state.phase === "loot_reveal" ||
         state.phase === "loot_wildcard"
@@ -602,6 +658,20 @@ export function viewFor(state, playerId) {
           }
         : null;
 
+  // Scene index: voyage seas 0–9 per question; special rooms for loot
+  let sceneIndex = state.questionIndex % QUESTIONS.length;
+  let sceneKind = "voyage";
+  if (state.phase === "scene_travel") {
+    sceneIndex = (state.nextQuestionIndex != null ? state.nextQuestionIndex : state.questionIndex + 1) % QUESTIONS.length;
+    sceneKind = "travel";
+  } else if (state.phase === "loot_intro" || state.phase === "loot") {
+    sceneKind = "below_deck";
+    sceneIndex = -1;
+  } else if (state.phase === "loot_reveal" || state.phase === "loot_wildcard") {
+    sceneKind = "loot_voyage";
+    sceneIndex = -2;
+  }
+
   return {
     phase: state.phase,
     players: publicPlayers(state, playerId),
@@ -614,6 +684,9 @@ export function viewFor(state, playerId) {
     reveal: publicReveal,
     ranking: state.phase === "scoreboard" ? rankOrder(state) : state.ranking,
     lootVentureIndex: state.lootVentureIndex || 0,
+    sceneIndex,
+    sceneKind,
+    sceneTravelMs: SCENE_TRAVEL_MS,
     you: {
       answered: state.answers[playerId] != null,
       answerIndex: state.answers[playerId] ? state.answers[playerId].index : null,

@@ -14,9 +14,10 @@
 
 1. **Play vs Bot** or invite 2–4 captains
 2. Lobby ready → cast off
-3. **3** polished questions (sail commit, fog rivalry, chest timer)
-4. **LOCKED Loot Drop** (correct venture returns / wrong lost) with cabin map, wheel lock, venture-by-venture reveal, Poseidon + funny sharks
-5. Winner → rematch
+3. **10** voyage questions — each on a unique sea scene; sail-off / enter between questions
+4. Bigger 16-direction ships with hull nameplates
+5. **LOCKED Loot Drop**: below-deck gold split (no ships) → loot-voyage fleet sail → Poseidon / sharks
+6. Winner → rematch
 
 ## Direction (owner 2026-07-20)
 

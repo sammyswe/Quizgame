@@ -70,3 +70,17 @@ Ships: no water under hull; 3-frame sail wind cycle. HUD: scores+timer top only.
 | chest spin sheet | 53d8030c-a6e2-48f3-bb60-77e8ebc0e01d |
 
 Sailing is clamped to the painted centre water channel of `bg-sea.jpg` (full-screen playTop/playBottom + channel X). Backdrop is aligned so image water matches that corridor; side vignette marks beaches out-of-bounds. Chest jackpot plays inside `#worldFx` (scoreboard no longer kills it); empty wrong-island chests use sad SFX.
+
+## Multi-scene voyage pack 2026-07-20g
+
+Model: `nano_banana_pro` @ 2k. Jobs in `design/scene-pack-jobs.json`.
+
+| asset | notes |
+|---|---|
+| scenes/scene-00…09.jpg | 10 unique voyage seas (9:16) |
+| scenes/below-deck.jpg | Loot Drop allocation cabin (no ships) |
+| scenes/loot-voyage.jpg | Post-lock fleet sail stage |
+| islands-pack/isl-00…15.png | 16 answer-island cutouts from 4× 2x2 sheets |
+| ship-0…3 × 16 dirs | 4×4 facing sheets → smoother turns + hull nameplates |
+
+Client: 10 questions ↔ 10 scenes; `scene_travel` sail-off/enter; bigger ships with in-hull names; Loot Drop below-deck then voyage fleet (1 ship per funded island).

@@ -410,7 +410,7 @@
 <script>
 (() => {
   const LETTERS = ["A","B","C","D"];
-  const ISLAND = ["./assets/island-a.png","./assets/island-b.png","./assets/island-c.png","./assets/island-d.png"];
+  const ISLAND_FALLBACK = ["./assets/island-a.png","./assets/island-b.png","./assets/island-c.png","./assets/island-d.png"];
   const SHIP = ["./assets/ship-0.png","./assets/ship-1.png","./assets/ship-2.png","./assets/ship-3.png"];
   const PORTRAIT = ["./assets/portrait-0.png","./assets/portrait-1.png","./assets/portrait-2.png","./assets/portrait-3.png"];
   /** Island-specific loot videos play on the quiz sea when a ship arrives. */
@@ -423,6 +423,51 @@
   const POSEIDON_VID = "./assets/video/poseidon.mp4";
   const LOOT_STILL = ["./assets/cs-plunder-1.jpg", "./assets/cs-plunder-2.jpg"];
   const POSEIDON_STILL = ["./assets/cs-poseidon-1.jpg", "./assets/cs-poseidon-2.jpg", "./assets/cs-poseidon-3.jpg"];
+
+  /**
+   * Ten unique voyage seas + loot rooms. Island layouts stay inside the centre
+   * water channel; islandSprites index into the 16-island pack (with fallbacks).
+   */
+  const SCENES = [
+    { id: "lagoon", bg: "./assets/scenes/scene-00.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [0, 1, 2, 3],
+      layout: [{ x: 0.37, y: 0.32 }, { x: 0.63, y: 0.30 }, { x: 0.38, y: 0.68 }, { x: 0.62, y: 0.70 }] },
+    { id: "volcano", bg: "./assets/scenes/scene-01.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [4, 5, 6, 7],
+      layout: [{ x: 0.40, y: 0.28 }, { x: 0.60, y: 0.36 }, { x: 0.36, y: 0.66 }, { x: 0.64, y: 0.72 }] },
+    { id: "moonlit", bg: "./assets/scenes/scene-02.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [8, 9, 10, 11],
+      layout: [{ x: 0.36, y: 0.34 }, { x: 0.64, y: 0.28 }, { x: 0.40, y: 0.72 }, { x: 0.60, y: 0.64 }] },
+    { id: "coral", bg: "./assets/scenes/scene-03.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [12, 13, 14, 15],
+      layout: [{ x: 0.38, y: 0.30 }, { x: 0.62, y: 0.34 }, { x: 0.36, y: 0.70 }, { x: 0.64, y: 0.66 }] },
+    { id: "mangrove", bg: "./assets/scenes/scene-04.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [1, 5, 9, 13],
+      layout: [{ x: 0.39, y: 0.36 }, { x: 0.61, y: 0.30 }, { x: 0.37, y: 0.64 }, { x: 0.63, y: 0.72 }] },
+    { id: "sandbar", bg: "./assets/scenes/scene-05.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [2, 6, 10, 14],
+      layout: [{ x: 0.36, y: 0.28 }, { x: 0.64, y: 0.32 }, { x: 0.40, y: 0.68 }, { x: 0.60, y: 0.70 }] },
+    { id: "stormbreak", bg: "./assets/scenes/scene-06.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [3, 7, 11, 15],
+      layout: [{ x: 0.40, y: 0.30 }, { x: 0.60, y: 0.28 }, { x: 0.38, y: 0.72 }, { x: 0.62, y: 0.66 }] },
+    { id: "crystal", bg: "./assets/scenes/scene-07.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [0, 6, 8, 14],
+      layout: [{ x: 0.37, y: 0.34 }, { x: 0.63, y: 0.36 }, { x: 0.39, y: 0.66 }, { x: 0.61, y: 0.68 }] },
+    { id: "jungle", bg: "./assets/scenes/scene-08.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [4, 1, 12, 9],
+      layout: [{ x: 0.36, y: 0.30 }, { x: 0.64, y: 0.34 }, { x: 0.40, y: 0.70 }, { x: 0.60, y: 0.64 }] },
+    { id: "lanterns", bg: "./assets/scenes/scene-09.jpg", waterTop: 0.22, waterBot: 0.50, channel: [0.34, 0.66],
+      islands: [5, 2, 11, 8],
+      layout: [{ x: 0.38, y: 0.28 }, { x: 0.62, y: 0.32 }, { x: 0.36, y: 0.68 }, { x: 0.64, y: 0.72 }] },
+  ];
+  const BELOW_DECK_BG = "./assets/scenes/below-deck.jpg";
+  const LOOT_VOYAGE_BG = "./assets/scenes/loot-voyage.jpg";
+  const DIR16 = ["e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw","n","nne","ne","ene"];
+  function islandChoiceSrc(i) {
+    const s = SCENES[activeSceneIdx] || SCENES[0];
+    const idx = s.islands && s.islands[i] != null ? s.islands[i] : i;
+    return `./assets/islands-pack/isl-${String(idx).padStart(2, "0")}.png`;
+  }
 
   const params = new URLSearchParams(location.search);
   let room = params.get("room");
@@ -523,8 +568,15 @@
     } catch (_) {}
   }
 
-  const BOT_ANSWERS = [0, 0, 1];
+  const BOT_ANSWERS = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
   const BOT_NAMES = ["Barnacle Bot", "Polly", "Salty Chip", "Deckhand Dan"];
+  /** Loaded scene backgrounds + island pack */
+  let sceneBgs = [];
+  let belowDeckBg = null;
+  let lootVoyageBg = null;
+  let islandPack = []; // 16 cutouts
+  let activeSceneIdx = 0;
+  let travelFx = null; // { t0, fromIdx, toIdx, stage: "out"|"in" }
 
   function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
   function act(a) { send({ type: "action", action: a }); }
@@ -585,7 +637,7 @@
       });
       return;
     }
-    if (["q_reveal","scoreboard","loot_intro","loot_reveal","loot_wildcard"].includes(v.phase) && v.deadlineAt) {
+    if (["q_reveal","scoreboard","scene_travel","loot_intro","loot_reveal","loot_wildcard"].includes(v.phase) && v.deadlineAt) {
       const rem = v.deadlineAt - (Date.now() + clockSkew);
       if (rem <= 250) { botBusyKey = key; botAct({ type: "timeout" }); }
     }
@@ -1084,6 +1136,37 @@
             sendFleetHome();
           }
         }
+        if (msg.view.phase === "scene_travel") {
+          const toIdx = (msg.view.sceneIndex != null ? msg.view.sceneIndex : 0) % SCENES.length;
+          travelFx = { t0: performance.now(), fromIdx: activeSceneIdx, toIdx, stage: "out" };
+          for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+        }
+        if (msg.view.phase === "question" && prev === "scene_travel") {
+          activeSceneIdx = (msg.view.sceneIndex != null ? msg.view.sceneIndex : 0) % SCENES.length;
+          travelFx = null;
+          // Enter from bottom of the new sea
+          const W = innerWidth, H = innerHeight;
+          const n = Math.max((msg.view.players || []).length, 2);
+          for (let seat = 0; seat < n; seat++) {
+            const to = fleetPos(seat, n, W, H);
+            const from = offscreenBottom(seat, n, W, H);
+            sailState[seat] = {
+              path: enterPath(from, to, W, H),
+              t: 0,
+              key: "enter",
+              heading: -Math.PI / 2,
+              outbound: null,
+            };
+          }
+        }
+        if (msg.view.phase === "question" && prev === "lobby") {
+          activeSceneIdx = (msg.view.sceneIndex != null ? msg.view.sceneIndex : 0) % SCENES.length;
+        }
+        if (msg.view.phase === "loot_intro" || msg.view.phase === "loot") {
+          travelFx = null;
+          lootFleet = [];
+          for (let i = 0; i < 4; i++) { chosenIsland[i] = null; sailState[i] = null; }
+        }
         if (msg.view.phase === "loot_reveal") {
           hitStopUntil = performance.now() + 50;
           renderLootReveal._did = false;
@@ -1162,53 +1245,80 @@
   }
   addEventListener("resize", resize); addEventListener("orientationchange", resize); resize();
 
-  /**
-   * Backdrop (bg-sea.jpg): water is a CENTER channel. Sky/clouds sit in the top
-   * ~20% of the painted image; beaches/rocks own the left/right edges. The quiz
-   * sheet covers the bottom. ALL ship motion uses these full-screen water bounds.
-   */
-  function playTop(H) { return H * 0.22; }
-  function playBottom(H) { return H * 0.50; }
-  /** Playfield floor = bottom of water corridor (above quiz sheet). */
+  function currentScene() {
+    const v = lastState && lastState.view;
+    if (v && v.sceneKind === "loot_voyage") {
+      return {
+        id: "loot-voyage",
+        waterTop: 0.20,
+        waterBot: 0.55,
+        channel: [0.28, 0.72],
+        islands: [0, 4, 8, 12],
+        layout: [
+          { x: 0.32, y: 0.28 },
+          { x: 0.68, y: 0.30 },
+          { x: 0.34, y: 0.64 },
+          { x: 0.66, y: 0.66 },
+        ],
+      };
+    }
+    return SCENES[activeSceneIdx] || SCENES[0];
+  }
+  function playTop(H) {
+    const s = currentScene();
+    return H * (s.waterTop != null ? s.waterTop : 0.22);
+  }
+  function playBottom(H) {
+    const s = currentScene();
+    return H * (s.waterBot != null ? s.waterBot : 0.50);
+  }
   function seaH(H) { return playBottom(H); }
   function clampChannelX(x, W) {
-    return Math.max(W * 0.34, Math.min(W * 0.66, x));
+    const s = currentScene();
+    const lo = W * (s.channel ? s.channel[0] : 0.34);
+    const hi = W * (s.channel ? s.channel[1] : 0.66);
+    return Math.max(lo, Math.min(hi, x));
   }
-  /** Answer islands sit ON the water channel — not on side beaches / sky. */
+  /** Answer islands from the active scene layout (centre water only). */
   function islandPos(i, W, H) {
+    const s = currentScene();
     const top = playTop(H), bot = playBottom(H);
-    const y0 = top + (bot - top) * 0.30;
-    const y1 = top + (bot - top) * 0.68;
-    const xl = W * 0.38;
-    const xr = W * 0.62;
-    return [
-      { x: xl, y: y0 },
-      { x: xr, y: y0 },
-      { x: xl, y: y1 },
-      { x: xr, y: y1 },
-    ][i];
+    const lay = (s.layout && s.layout[i]) || { x: 0.38 + (i % 2) * 0.24, y: 0.32 + Math.floor(i / 2) * 0.36 };
+    return {
+      x: clampChannelX(W * lay.x, W),
+      y: top + (bot - top) * lay.y,
+    };
   }
-  function islandSize(W) { return Math.min(78, W * 0.17); }
+  function islandSpriteIndex(i) {
+    const s = currentScene();
+    const idx = s.islands && s.islands[i] != null ? s.islands[i] : i;
+    return idx;
+  }
+  function islandSize(W) { return Math.min(86, W * 0.19); }
   function islandRadius(W) { return islandSize(W) * 0.44; }
   /** Berths toward the CHANNEL centre — never outward onto beaches. */
   function dockPos(i, W, H, seatOffset) {
     const p = islandPos(i, W, H);
     const towardCenter = (i % 2 === 0) ? 1 : -1;
-    const x = clampChannelX(p.x + towardCenter * Math.min(22, W * 0.04) + ((seatOffset || 0) - 1.5) * 5, W);
-    const y = Math.max(playTop(H) + 10, Math.min(playBottom(H) - 10, p.y + ((seatOffset || 0) - 1.5) * 8));
+    const x = clampChannelX(p.x + towardCenter * Math.min(18, W * 0.035) + ((seatOffset || 0) - 1.5) * 4, W);
+    const y = Math.max(playTop(H) + 10, Math.min(playBottom(H) - 10, p.y + ((seatOffset || 0) - 1.5) * 7));
     return { x, y };
   }
   function fleetPos(seat, n, W, H) {
     const bot = playBottom(H);
-    const spread = Math.min(W * 0.20, 26 * n);
+    const spread = Math.min(W * 0.18, 24 * n);
     const cx = W * 0.5;
     return {
       x: clampChannelX(cx - spread / 2 + (spread * (seat + 0.5) / Math.max(1, n)), W),
-      y: bot - 12,
+      y: bot - 14,
     };
   }
   function fogHoldPos(W, H) {
     return { x: W * 0.5, y: playBottom(H) - 28 };
+  }
+  function offscreenBottom(seat, n, W, H) {
+    const f = fleetPos(seat, n, W, H);
+    return { x: f.x, y: H + 40 };
   }
   function easeInOut(t) { return t * t * (3 - 2 * t); }
 
@@ -1300,21 +1410,42 @@
     if (target === -1) return "fog";
     return "i" + target;
   }
+  function exitPath(from, to, W, H) {
+    const CX = W * 0.5;
+    const bot = playBottom(H) - 10;
+    return [
+      { x: clampChannelX(from.x, W), y: Math.min(from.y, bot) },
+      { x: CX, y: bot },
+      { x: clampChannelX(to.x, W), y: H + 60 },
+    ];
+  }
+  function enterPath(from, to, W, H) {
+    const CX = W * 0.5;
+    const bot = playBottom(H) - 12;
+    return [
+      { x: clampChannelX(from.x, W), y: H + 60 },
+      { x: CX, y: bot },
+      { x: clampChannelX(to.x, W), y: to.y },
+    ];
+  }
   function ensureSail(seat, fromHome, to, key, dt, islandIdx, W, H) {
     let s = sailState[seat];
     if (!s || s.key !== key) {
       const cur = s && s.path ? polylinePoint(s.path, s.t) : fromHome;
       let path;
       if (key === "home" && s && s.outbound && s.outbound.length > 1) {
-        // Return on the SAME path, reversed
         path = reversePath(s.outbound);
+      } else if (key === "exit") {
+        path = exitPath({ x: cur.x, y: cur.y }, to, W, H);
+      } else if (key === "enter") {
+        path = enterPath(fromHome, to, W, H);
       } else {
         path = findSeaPath({ x: cur.x, y: cur.y }, to, W, H);
       }
-      const outbound = (key !== "home") ? path.slice() : (s && s.outbound) || null;
+      const outbound = (key !== "home" && key !== "exit" && key !== "enter") ? path.slice() : (s && s.outbound) || null;
       s = sailState[seat] = { path, t: 0, key, heading: 0, outbound };
     }
-    s.t = Math.min(1, s.t + dt * 0.14);
+    s.t = Math.min(1, s.t + dt * (key === "exit" || key === "enter" ? 0.22 : 0.16));
     const pos = polylinePoint(s.path, s.t);
     s.heading = pos.heading || s.heading || 0;
     return pos;
@@ -1333,18 +1464,47 @@
       };
     }
   }
-  const DIR_NAMES = ["e", "se", "s", "sw", "w", "nw", "n", "ne"];
   function headingToDir(heading) {
-    // screen atan2: 0=E, PI/2=S
-    let i = Math.round(heading / (Math.PI / 4));
-    i = ((i % 8) + 8) % 8;
-    return DIR_NAMES[i];
+    // screen atan2: 0=E, PI/2=S — 16 compass slices for smoother turns
+    let i = Math.round(heading / (Math.PI / 8));
+    i = ((i % 16) + 16) % 16;
+    return DIR16[i];
   }
   function shipSprite(seat, heading, now) {
     const dirs = shipDirs[seat % 4];
     if (!dirs) return null;
     const name = headingToDir(heading == null ? 0 : heading);
-    return dirs[name] || dirs.e || null;
+    // Prefer exact 16-dir; fall back to nearest 8-dir legacy
+    if (dirs[name]) return dirs[name];
+    const legacy = { e:1, se:1, s:1, sw:1, w:1, nw:1, n:1, ne:1 };
+    if (legacy[name]) return dirs[name];
+    const map = {
+      ese: "se", sse: "se", ssw: "sw", wsw: "sw",
+      wnw: "nw", nnw: "nw", nne: "ne", ene: "ne",
+    };
+    const alt = map[name];
+    return (alt && dirs[alt]) || dirs.e || dirs.se || null;
+  }
+  function drawHullName(x, y, sz, nick, isYou) {
+    const label = String(nick || "").slice(0, 8);
+    if (!label) return;
+    sctx.save();
+    // Nameplate painted onto the hull band
+    const bw = Math.max(36, Math.min(sz * 0.72, 70));
+    const bh = Math.max(11, sz * 0.16);
+    const by = y + sz * 0.08;
+    sctx.fillStyle = "rgba(42,28,16,.88)";
+    roundRect(sctx, x - bw / 2, by - bh / 2, bw, bh, 4);
+    sctx.fill();
+    sctx.strokeStyle = isYou ? "#ffd56a" : "rgba(201,150,58,.75)";
+    sctx.lineWidth = 1.5;
+    sctx.stroke();
+    sctx.fillStyle = "#fff6e4";
+    sctx.font = `800 ${Math.max(8, Math.round(sz * 0.13))}px Trebuchet MS,sans-serif`;
+    sctx.textAlign = "center";
+    sctx.textBaseline = "middle";
+    sctx.fillText(label, x, by + 0.5);
+    sctx.restore();
   }
   function wagerShipCount(amount, pool) {
     if (!amount || amount <= 0) return 0;
@@ -1353,7 +1513,8 @@
     return Math.max(1, Math.min(4, Math.ceil(amount / step)));
   }
   function syncLootFleet(s, v) {
-    if (!v || (v.phase !== "loot" && v.phase !== "loot_reveal")) {
+    // No ships during below-deck allocation — only on loot voyage reveal
+    if (!v || (v.phase !== "loot_reveal" && v.phase !== "loot_wildcard")) {
       lootFleet = [];
       return;
     }
@@ -1362,29 +1523,28 @@
     const W = innerWidth, H = innerHeight;
     const pool = you.lootPool || 0;
     const wanted = [];
+    // One ship per DISTINCT island the player funded (not all gold on one)
     (v.ventures || []).forEach((ven, i) => {
       const amt = (you.allocation && you.allocation[ven.id]) || 0;
       if (amt <= 0) return;
       const island = ven.island != null ? ven.island : i;
-      // During reveal, only keep ships on the correct island
       if (v.phase === "loot_reveal") {
         const vi = v.lootVentureIndex || 0;
         const active = v.ventures[vi];
         if (!active || active.island !== island) return;
       }
-      const n = wagerShipCount(amt, pool);
-      for (let k = 0; k < n; k++) wanted.push({ island, amount: amt, k, n });
+      wanted.push({ island, amount: amt, k: 0, n: 1 });
     });
-    const sig = wanted.map((w) => w.island + ":" + w.amount + ":" + w.k).join("|");
+    const sig = wanted.map((w) => w.island + ":" + w.amount).join("|") + ":" + (v.phase || "");
     if (lootFleet._sig === sig) return;
     lootFleet = [];
     lootFleet._sig = sig;
     wanted.forEach((w, idx) => {
-      const from = { x: W * (0.40 + (idx + 0.5) * (0.20 / Math.max(1, wanted.length))), y: playBottom(H) - 8 };
-      const to = dockPos(w.island, W, H, w.k);
+      const from = { x: W * (0.40 + (idx + 0.5) * (0.20 / Math.max(1, wanted.length))), y: H * 0.92 };
+      const to = dockPos(w.island, W, H, idx);
       const path = findSeaPath(from, to, W, H);
-      const size = 32 + (w.amount / Math.max(pool, 1)) * 26;
-      lootFleet.push({ path, t: 0, island: w.island, size: Math.min(58, size), seat: idx % 4, heading: 0, outbound: path.slice() });
+      const size = 48 + Math.min(22, (w.amount / Math.max(pool, 1)) * 28);
+      lootFleet.push({ path, t: 0, island: w.island, size, seat: (s.you ? (v.players || []).findIndex((p) => p.id === s.you) : 0) % 4, heading: 0, outbound: path.slice() });
     });
   }
   function tickLootFleet(dt) {
@@ -1421,29 +1581,64 @@
     sctx.scale(cam.z, cam.z);
     sctx.translate(-W / 2 - cam.x, -sh * 0.48 - cam.y);
 
-    if (bg) {
-      // Align painted water channel to playTop..playBottom (not sky / beaches).
-      const imgWaterTop = 0.24;
-      const screenTop = playTop(H);
-      const screenBot = playBottom(H);
-      const scale = (W / bg.width) * 1.08;
-      const dw = bg.width * scale;
-      const dh = bg.height * scale;
-      const bx = (W - dw) / 2 + Math.sin(t * 0.08) * 4;
-      const by = screenTop - imgWaterTop * dh + Math.cos(t * 0.06) * 3;
-      sctx.drawImage(bg, bx, by, dw, dh);
-      // Soft vignette so side beaches read as out-of-bounds
-      const vg = sctx.createLinearGradient(0, 0, W, 0);
-      vg.addColorStop(0, "rgba(4,24,32,.55)");
-      vg.addColorStop(0.28, "rgba(4,24,32,0)");
-      vg.addColorStop(0.72, "rgba(4,24,32,0)");
-      vg.addColorStop(1, "rgba(4,24,32,.55)");
-      sctx.fillStyle = vg;
-      sctx.fillRect(0, screenTop - 4, W, screenBot - screenTop + 8);
+    // Pick backdrop from scene kind (voyage / below-deck / loot voyage)
+    const kind = (v && v.sceneKind) || "voyage";
+    let drawBg = sceneBgs[activeSceneIdx] || bg;
+    if (kind === "below_deck") drawBg = belowDeckBg || drawBg;
+    if (kind === "loot_voyage") drawBg = lootVoyageBg || drawBg;
+    if (travelFx && travelFx.stage === "out" && sceneBgs[travelFx.fromIdx]) {
+      drawBg = sceneBgs[travelFx.fromIdx];
+    }
+    if (drawBg) {
+      const imgWaterTop = kind === "below_deck" ? 0 : 0.24;
+      const screenTop = kind === "below_deck" ? 0 : playTop(H);
+      const scale = Math.max(W / drawBg.width, H / drawBg.height) * (kind === "below_deck" ? 1.02 : 1.06);
+      const dw = drawBg.width * scale;
+      const dh = drawBg.height * scale;
+      const bx = (W - dw) / 2 + Math.sin(t * 0.06) * 3;
+      const by = kind === "below_deck"
+        ? (H - dh) / 2
+        : screenTop - imgWaterTop * dh + Math.cos(t * 0.05) * 2;
+      sctx.drawImage(drawBg, bx, by, dw, dh);
+      if (kind !== "below_deck") {
+        const vg = sctx.createLinearGradient(0, 0, W, 0);
+        vg.addColorStop(0, "rgba(4,24,32,.45)");
+        vg.addColorStop(0.28, "rgba(4,24,32,0)");
+        vg.addColorStop(0.72, "rgba(4,24,32,0)");
+        vg.addColorStop(1, "rgba(4,24,32,.45)");
+        sctx.fillStyle = vg;
+        sctx.fillRect(0, playTop(H) - 4, W, playBottom(H) - playTop(H) + 8);
+      } else {
+        // Warm cabin vignette
+        const vg = sctx.createRadialGradient(W * 0.5, H * 0.42, 40, W * 0.5, H * 0.45, H * 0.7);
+        vg.addColorStop(0, "rgba(0,0,0,0)");
+        vg.addColorStop(1, "rgba(10,4,0,.35)");
+        sctx.fillStyle = vg;
+        sctx.fillRect(0, 0, W, H);
+      }
     } else {
       const g = sctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
       sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
+    }
+    // Travel fade overlay
+    if (travelFx) {
+      const u = Math.min(1, (now - travelFx.t0) / 900);
+      if (travelFx.stage === "out") {
+        sctx.fillStyle = `rgba(4,18,28,${0.15 + u * 0.55})`;
+        sctx.fillRect(0, 0, W, H);
+        if (u >= 1) {
+          activeSceneIdx = travelFx.toIdx;
+          travelFx = { t0: now, fromIdx: travelFx.toIdx, toIdx: travelFx.toIdx, stage: "in" };
+          for (let seat = 0; seat < 4; seat++) {
+            sailState[seat] = null;
+          }
+        }
+      } else if (travelFx.stage === "in") {
+        sctx.fillStyle = `rgba(4,18,28,${0.55 * (1 - u)})`;
+        sctx.fillRect(0, 0, W, H);
+        if (u >= 1) travelFx = null;
+      }
     }
 
     for (const g of glitter) {
@@ -1456,11 +1651,11 @@
       sctx.fill();
     }
 
-    // Clouds stay in the SKY only — never over the sailing water
-    if (cloudsImg) {
+    // Clouds stay in the SKY only — never over cabin / sailing water
+    if (cloudsImg && kind === "voyage") {
       const cw = W * 1.3, ch = cw * (cloudsImg.height / cloudsImg.width) * 0.28;
       const cx = ((t * 5) % (cw + W)) - cw * 0.2;
-      sctx.globalAlpha = 0.55;
+      sctx.globalAlpha = 0.45;
       sctx.drawImage(cloudsImg, cx, playTop(H) - ch * 0.85, cw, ch);
       sctx.globalAlpha = 1;
     }
@@ -1484,30 +1679,33 @@
       }
     });
 
-    // Answer islands
-    for (let i = 0; i < 4; i++) {
-      const p = islandPos(i, W, H);
-      const bob = Math.sin(t * 1.05 + i) * 2.5;
-      const im = islandImgs[i];
-      const sz = islandSize(W);
-      const highlight = pathPreview === i || (islandLoot && islandLoot.island === i);
-      if (highlight) {
-        sctx.fillStyle = "rgba(255,213,106,.22)";
+    // Answer islands (hidden below deck)
+    if (kind !== "below_deck") {
+      for (let i = 0; i < 4; i++) {
+        const p = islandPos(i, W, H);
+        const bob = Math.sin(t * 1.05 + i) * 2.5;
+        const packIdx = islandSpriteIndex(i);
+        const im = islandPack[packIdx] || islandImgs[i % 4];
+        const sz = islandSize(W);
+        const highlight = pathPreview === i || (islandLoot && islandLoot.island === i);
+        if (highlight) {
+          sctx.fillStyle = "rgba(255,213,106,.22)";
+          sctx.beginPath();
+          sctx.ellipse(p.x, p.y + bob, sz * 0.48, sz * 0.36, 0, 0, Math.PI * 2);
+          sctx.fill();
+        }
+        sctx.fillStyle = "rgba(5,25,35,.32)";
         sctx.beginPath();
-        sctx.ellipse(p.x, p.y + bob, sz * 0.48, sz * 0.36, 0, 0, Math.PI * 2);
+        sctx.ellipse(p.x, p.y + sz * 0.28 + bob, sz * 0.38, sz * 0.10, 0, 0, Math.PI * 2);
         sctx.fill();
+        if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
+        sctx.fillStyle = "#0a1e28";
+        sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 12, 0, Math.PI * 2); sctx.fill();
+        sctx.fillStyle = "#ffd56a";
+        sctx.font = "900 13px Trebuchet MS,sans-serif";
+        sctx.textAlign = "center"; sctx.textBaseline = "middle";
+        sctx.fillText(LETTERS[i], p.x - sz * 0.28, p.y - sz * 0.22 + bob);
       }
-      sctx.fillStyle = "rgba(5,25,35,.32)";
-      sctx.beginPath();
-      sctx.ellipse(p.x, p.y + sz * 0.28 + bob, sz * 0.38, sz * 0.10, 0, 0, Math.PI * 2);
-      sctx.fill();
-      if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
-      sctx.fillStyle = "#0a1e28";
-      sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 12, 0, Math.PI * 2); sctx.fill();
-      sctx.fillStyle = "#ffd56a";
-      sctx.font = "900 13px Trebuchet MS,sans-serif";
-      sctx.textAlign = "center"; sctx.textBaseline = "middle";
-      sctx.fillText(LETTERS[i], p.x - sz * 0.28, p.y - sz * 0.22 + bob);
     }
 
     // Debug: water corridor outline (only with ?sailDebug=1)
@@ -1556,63 +1754,64 @@
     const players = (v && v.players) || [];
     const n = Math.max(players.length, 2);
     let focusX = W * 0.5, focusY = sh * 0.7, focusZ = 1;
-    const inLootVisual = v && (v.phase === "loot" || v.phase === "loot_reveal");
+    const belowDeck = kind === "below_deck";
+    const lootVoyage = kind === "loot_voyage";
     const goingHome = v && (v.phase === "scoreboard");
-    players.forEach((pl, seat) => {
-      if (inLootVisual) {
-        const home = fleetPos(seat, n, W, H);
-        const im = shipSprite(seat, -Math.PI / 2, now);
-        const sz = 46;
-        if (im) sctx.drawImage(im, home.x - sz / 2, home.y - sz / 2, sz, sz);
-        sctx.fillStyle = "#081820";
-        roundRect(sctx, home.x - 36, home.y + 18, 72, 14, 6); sctx.fill();
-        sctx.fillStyle = "#fff6e4";
-        sctx.font = "800 9px Trebuchet MS,sans-serif";
-        sctx.textAlign = "center";
-        sctx.fillText(pl.nick, home.x, home.y + 28);
-        return;
-      }
-      const target = goingHome ? null : chosenIsland[seat];
-      const from = fleetPos(seat, n, W, H);
-      let to = from;
-      let isl = typeof target === "number" && target >= 0 ? target : -1;
-      if (target === -1) to = fogHoldPos(W, H);
-      else if (target != null) to = dockPos(target, W, H, seat);
-      const s = sailState[seat];
-      const pos = ensureSail(seat, from, to, targetKey(target), dt, isl, W, H);
-      const x = pos.x;
-      const y = pos.y + Math.sin(t * 2.1 + seat) * 2.2;
-      const sailing = s && s.t > 0.02 && s.t < 0.98;
-      if (sailing && Math.random() < 0.45) {
-        wakeDots.push({ x: x - 3, y: y + 12, t0: now, life: 600 + Math.random() * 300, rot: 0 });
-      }
-      const heading = (s && s.heading != null) ? s.heading : (pos.heading || 0);
-      const im = shipSprite(seat, heading, now);
-      const sz = 50 + (pl.id === (lastState && lastState.you) ? 6 : 0);
-      sctx.fillStyle = "rgba(8,30,40,.22)";
-      sctx.beginPath(); sctx.ellipse(x, y + sz * 0.2, sz * 0.24, sz * 0.055, 0, 0, Math.PI * 2); sctx.fill();
-      if (target === -1 && fogImg && s && s.t > 0.45) drawImg(fogImg, x, y - 6, 80);
-      if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
-      sctx.fillStyle = "#081820";
-      roundRect(sctx, x - 36, y + 20, 72, 14, 6); sctx.fill();
-      sctx.fillStyle = "#fff6e4";
-      sctx.font = "800 9px Trebuchet MS,sans-serif";
-      sctx.textAlign = "center";
-      sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 30);
-      if (pl.id === (lastState && lastState.you) && sailing) { focusX = x; focusY = y; focusZ = 1.05; }
-    });
+    const traveling = v && v.phase === "scene_travel";
+    // No fleet on below-deck allocation screen
+    if (!belowDeck) {
+      players.forEach((pl, seat) => {
+        if (lootVoyage) return; // wager ships drawn via lootFleet only
+        let target = goingHome ? null : chosenIsland[seat];
+        const from = fleetPos(seat, n, W, H);
+        let to = from;
+        let key = targetKey(target);
+        let isl = typeof target === "number" && target >= 0 ? target : -1;
+        if (traveling) {
+          // Sail off the bottom of the screen toward the new sea
+          to = offscreenBottom(seat, n, W, H);
+          key = "exit";
+          isl = -2;
+        } else if (target === -1) to = fogHoldPos(W, H);
+        else if (target != null) to = dockPos(target, W, H, seat);
+        // Entering a new scene: start from below if travel just finished
+        let fromHome = from;
+        if (!traveling && sailState[seat] && sailState[seat].key === "exit") {
+          fromHome = offscreenBottom(seat, n, W, H);
+        }
+        const s = sailState[seat];
+        const pos = ensureSail(seat, fromHome, to, key, dt * (traveling ? 1.35 : 1), isl, W, H);
+        const x = pos.x;
+        const y = pos.y + Math.sin(t * 2.1 + seat) * 2.2;
+        const sailing = s && s.t > 0.02 && s.t < 0.98;
+        if (sailing && Math.random() < 0.5) {
+          wakeDots.push({ x: x - 3, y: y + 14, t0: now, life: 600 + Math.random() * 300, rot: 0 });
+        }
+        const heading = (s && s.heading != null) ? s.heading : (pos.heading || 0);
+        const im = shipSprite(seat, heading, now);
+        const sz = 64 + (pl.id === (lastState && lastState.you) ? 8 : 0);
+        sctx.fillStyle = "rgba(8,30,40,.22)";
+        sctx.beginPath(); sctx.ellipse(x, y + sz * 0.22, sz * 0.26, sz * 0.06, 0, 0, Math.PI * 2); sctx.fill();
+        if (target === -1 && fogImg && s && s.t > 0.45) drawImg(fogImg, x, y - 6, 80);
+        if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
+        drawHullName(x, y, sz, pl.nick, pl.id === (lastState && lastState.you));
+        if (pl.id === (lastState && lastState.you) && sailing) { focusX = x; focusY = y; focusZ = 1.05; }
+      });
+    }
 
-    tickLootFleet(dt);
-    lootFleet.forEach((ship, i) => {
-      const pos = polylinePoint(ship.path, ship.t);
-      ship.heading = pos.heading != null ? pos.heading : ship.heading;
-      const x = pos.x, y = pos.y + Math.sin(t * 2 + i) * 2;
-      const im = shipSprite(ship.seat, ship.heading || 0, now);
-      const sz = ship.size;
-      sctx.fillStyle = "rgba(8,30,40,.2)";
-      sctx.beginPath(); sctx.ellipse(x, y + sz * 0.2, sz * 0.24, sz * 0.055, 0, 0, Math.PI * 2); sctx.fill();
-      if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
-    });
+    if (lootVoyage) {
+      tickLootFleet(dt);
+      lootFleet.forEach((ship, i) => {
+        const pos = polylinePoint(ship.path, ship.t);
+        ship.heading = pos.heading != null ? pos.heading : ship.heading;
+        const x = pos.x, y = pos.y + Math.sin(t * 2 + i) * 2;
+        const im = shipSprite(ship.seat, ship.heading || 0, now);
+        const sz = ship.size;
+        sctx.fillStyle = "rgba(8,30,40,.2)";
+        sctx.beginPath(); sctx.ellipse(x, y + sz * 0.2, sz * 0.24, sz * 0.055, 0, 0, Math.PI * 2); sctx.fill();
+        if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
+      });
+    }
 
     cam.tx = (focusX - W * 0.5) * 0.18;
     cam.ty = (focusY - sh * 0.55) * 0.12;
@@ -1718,19 +1917,22 @@
   function syncShips(s, v) {
     const players = v.players || [];
     const iAnswered = !!(v.you && v.you.answered);
+    // Keep scene index in sync (except mid travel fade)
+    if (v.sceneKind === "voyage" && v.phase !== "scene_travel" && v.sceneIndex != null) {
+      if (!travelFx) activeSceneIdx = v.sceneIndex % SCENES.length;
+    }
     players.forEach((p, seat) => {
       if (v.phase === "question") {
         if (p.id === s.you) chosenIsland[seat] = v.you.answerIndex;
-        else if (iAnswered && p.answered) chosenIsland[seat] = -1; // fog only AFTER you commit
-        else chosenIsland[seat] = null; // stay in fleet — no leak
+        else if (iAnswered && p.answered) chosenIsland[seat] = -1;
+        else chosenIsland[seat] = null;
       } else if (v.phase === "q_reveal" && v.reveal && v.reveal.results) {
         const r = v.reveal.results[p.id];
         chosenIsland[seat] = r && r.index != null ? r.index : null;
-      } else if (v.phase === "loot" || v.phase === "loot_reveal") {
-        // Captains stay home; wager fleet handles Loot Drop sailing
+      } else if (v.phase === "loot" || v.phase === "loot_intro" || v.phase === "loot_reveal" || v.phase === "loot_wildcard" || v.phase === "scene_travel") {
         chosenIsland[seat] = null;
       } else if (v.phase === "scoreboard") {
-        chosenIsland[seat] = null; // sail home
+        chosenIsland[seat] = null;
       } else {
         chosenIsland[seat] = null;
       }
@@ -1790,7 +1992,7 @@
       btn.type = "button";
       btn.className = "choice" + (you.answerIndex === i ? " picked" : "");
       btn.disabled = !can;
-      btn.innerHTML = `<img src="${ISLAND[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>`;
+      btn.innerHTML = `<img src="${islandChoiceSrc(i)}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>`;
       btn.onclick = () => {
         if (!can) return;
         pathPreview = i;
@@ -1823,7 +2025,7 @@
       if (i === rev.correctIndex) btn.classList.add("correct");
       else btn.classList.add("dim");
       if (my && my.index === i && !my.correct) btn.classList.add("wrong");
-      btn.innerHTML = `<img src="${ISLAND[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>`;
+      btn.innerHTML = `<img src="${islandChoiceSrc(i)}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>`;
       root.appendChild(btn);
     });
   }
@@ -1858,20 +2060,34 @@
 
   function renderLootIntro() {
     pathPreview = null;
-    subtitleEl.textContent = "Loot Drop";
+    lootFleet = [];
+    subtitleEl.textContent = "Below deck";
     casinoEl.classList.add("on");
     setTimeout(() => casinoEl.classList.remove("on"), 900);
     mainEl.innerHTML = `<div class="banner center pop">
-      <div class="tag">Special round</div>
-      <h2 class="display">Loot Drop quiz</h2>
-      <p class="muted">Split your gold across islands — only the correct one pays.</p>
+      <div class="tag">Loot Drop</div>
+      <h2 class="display">Charts & gold</h2>
+      <p class="muted">Below deck — split your gold. Fleet sails after lock.</p>
+    </div>`;
+  }
+
+  function renderSceneTravel(s, v) {
+    syncShips(s, v);
+    pathPreview = null;
+    subtitleEl.textContent = "Underway…";
+    const next = (v.sceneIndex != null ? v.sceneIndex : 0) + 1;
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">New waters</div>
+      <h2 class="display">Sailing on…</h2>
+      <p class="muted">Sea ${next} ahead</p>
     </div>`;
   }
 
   function renderLoot(s, v) {
     pathPreview = null;
+    lootFleet = [];
     syncShips(s, v);
-    subtitleEl.textContent = `Loot Drop · ${youPoolLabel(v)}`;
+    subtitleEl.textContent = `Below deck · ${youPoolLabel(v)}`;
     const you = v.you;
     const can = s.status === "playing" && s.seats.includes(s.you) && !you.locked;
     const q = v.question;
@@ -1879,9 +2095,9 @@
     const left = you.lootLeft != null ? you.lootLeft : Math.max(0, (you.lootPool || 0) - Object.values(you.allocation || {}).reduce((a, b) => a + b, 0));
     const spent = (you.lootPool || 0) - left;
     mainEl.innerHTML = `<div class="banner pop">
-      <div class="tag">Loot Drop</div>
+      <div class="tag">Captain’s table</div>
       <h2 class="display">${esc((q && q.text) || "Split your gold")}</h2>
-      <p class="muted">${you.locked ? "Locked — waiting…" : `Left <b>${left}</b> · Staked <b>${spent}</b> · tap +/- to split`}</p>
+      <p class="muted">${you.locked ? "Locked — waiting…" : `Left <b>${left}</b> · Staked <b>${spent}</b>`}</p>
     </div>
     <div class="choices" id="choices"></div>
     <button class="big${can && spent > 0 ? " pulse" : ""}" id="lockBtn" ${can && spent > 0 ? "" : "disabled"}>
@@ -1894,7 +2110,7 @@
       const el = document.createElement("div");
       el.className = "choice" + (amt > 0 ? " picked" : "");
       el.style.cursor = "default";
-      el.innerHTML = `<img src="${ISLAND[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>
+      el.innerHTML = `<img src="${islandChoiceSrc(i)}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>
         <div class="alloc-btns">
           <button type="button" class="alloc-btn" data-d="-1" ${!can || amt <= 0 ? "disabled" : ""}>−</button>
           <div class="amt">${amt}</div>
@@ -2006,6 +2222,7 @@
     else if (v.phase === "question") renderQuestion(s, v);
     else if (v.phase === "q_reveal") renderQReveal(s, v);
     else if (v.phase === "scoreboard") renderScoreboard(s, v);
+    else if (v.phase === "scene_travel") renderSceneTravel(s, v);
     else if (v.phase === "loot_intro") renderLootIntro();
     else if (v.phase === "loot") renderLoot(s, v);
     else if (v.phase === "loot_reveal") renderLootReveal(s, v);
@@ -2019,17 +2236,33 @@
     reefImg = await loadImg("./assets/reef-rocks.png");
     fogImg = await loadImg("./assets/fog.png");
     sharkImg = await loadImg("./assets/shark.png");
-    const DIR_LOAD = ["e","ne","n","nw","w","sw","s","se"];
+    // 10 voyage scenes + loot rooms
+    sceneBgs = await Promise.all(SCENES.map((sc) => loadImg(sc.bg)));
+    belowDeckBg = await loadImg(BELOW_DECK_BG);
+    lootVoyageBg = await loadImg(LOOT_VOYAGE_BG);
+    if (!sceneBgs[0]) sceneBgs[0] = bg;
+    // 16-dir ships with 8-dir fallback
     shipDirs = await Promise.all([0,1,2,3].map(async (i) => {
       const o = {};
-      await Promise.all(DIR_LOAD.map(async (d) => {
+      await Promise.all(DIR16.map(async (d) => {
         o[d] = await loadImg(`./assets/ship-${i}-${d}.png`);
+      }));
+      const legacy = ["e","ne","n","nw","w","sw","s","se"];
+      await Promise.all(legacy.map(async (d) => {
+        if (!o[d]) o[d] = await loadImg(`./assets/ship-${i}-${d}.png`);
       }));
       if (!o.e) o.e = await loadImg(SHIP[i]);
       return o;
     }));
     birdFrames = (await Promise.all([0,1,2].map((i) => loadImg(`./assets/bird-f${i}.png`)))).filter(Boolean);
-    islandImgs = await Promise.all(ISLAND.map(loadImg));
+    islandImgs = await Promise.all(ISLAND_FALLBACK.map(loadImg));
+    islandPack = await Promise.all(
+      Array.from({ length: 16 }, (_, i) => loadImg(`./assets/islands-pack/isl-${String(i).padStart(2, "0")}.png`))
+    );
+    // Fill gaps with fallbacks so every scene island resolves
+    for (let i = 0; i < 16; i++) {
+      if (!islandPack[i]) islandPack[i] = islandImgs[i % 4];
+    }
     await loadImg("./assets/chest-closed.png");
     await loadImg("./assets/chest-spin.png");
     await loadImg("./assets/chest-crack.png");
