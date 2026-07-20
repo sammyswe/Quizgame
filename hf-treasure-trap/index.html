@@ -563,6 +563,8 @@
   let cutscene = null;
   /** On-sea tap-to-loot: { island, seat, progress, waitingForSail, active } */
   let islandLoot = null;
+  /** After chest: fleet is sailing back to mid-channel before sail-away. */
+  let fleetReturnPending = false;
   /** Loot Drop wager fleet: ships sized by gold, sail only to picked island */
   let lootFleet = [];
   let fxParticles = [];
@@ -854,13 +856,13 @@
         neonHue: Math.random() > 0.5 ? "#ff3db8" : "#3dfff0",
       });
     }
-    // Keep jackpot juice INSIDE the chest panel — do not spray the sea canvas
+    // Procedural burst only (no black-plate firework bitmaps in the chest panel)
     launchLootFlies(islandLoot.island);
     setTimeout(() => { casinoEl.classList.remove("on"); endIslandLoot(); }, 2200);
   }
   let lastTapAt = 0;
   function onTapLoot(ev) {
-    if (!islandLoot || !islandLoot.active || islandLoot.stage === "explode" || islandLoot.empty || islandLoot._exploded) return;
+    if (!islandLoot || !islandLoot.active || islandLoot.stage === "explode" || islandLoot._exploded) return;
     const nowTap = performance.now();
     if (nowTap - lastTapAt < 50) return;
     lastTapAt = nowTap;
@@ -879,7 +881,10 @@
     else if (islandLoot.progress < 0.65) fxChestEl.src = "./assets/chest-spin.png";
     else fxChestEl.src = "./assets/chest-crack.png";
     if (islandLoot.progress > 0.08) tapHintEl.classList.add("hide");
-    if (islandLoot.progress >= 1) explodeChest();
+    if (islandLoot.progress >= 1) {
+      if (islandLoot.empty) explodeEmptyChest();
+      else explodeChest();
+    }
   }
   worldFxEl.addEventListener("pointerdown", onTapLoot);
   function endIslandLoot() {
@@ -897,27 +902,30 @@
     const wasActive = !!islandLoot;
     islandLoot = null;
     if (wasActive) {
+      // Chest done → sail back to the MIDDLE before the sail-away beat
       for (let i = 0; i < 4; i++) chosenIsland[i] = null;
       sendFleetHome();
+      fleetReturnPending = true;
     }
   }
+  let fleetReturnPending = false;
   function tickIslandLoot(now) {
     if (!islandLoot) return;
     if (islandLoot.waitingForSail) {
       const s = sailState[islandLoot.seat];
-      // Don't wait forever — open chest once ship is mostly there (or 1.2s)
-      const arrived = !s || s.t >= 0.72 || (now - islandLoot.t0 > 1200);
+      // Wait until the commit sail mostly arrives (~1.1s), then show the chest
+      const arrived = !s || s.t >= 0.88 || (now - islandLoot.t0 > 1400);
       if (arrived) {
-        if (islandLoot.empty) openEmptyChest();
+        if (islandLoot.empty) beginEmptyChestSpin();
         else startIslandLootVideo(islandLoot.island);
       }
       return;
     }
-    if (islandLoot.active && islandLoot.stage !== "explode" && !islandLoot.empty && !islandLoot._exploded) {
+    if (islandLoot.active && islandLoot.stage !== "explode" && !islandLoot._exploded) {
       islandLoot.spinVel *= 0.988;
       islandLoot.spin += islandLoot.spinVel;
-      // Auto progress so the jackpot always lands even without perfect tapping
-      islandLoot.progress = Math.min(1, islandLoot.progress + 0.0045);
+      // Auto progress — empty chests a touch slower so tapping still matters
+      islandLoot.progress = Math.min(1, islandLoot.progress + (islandLoot.empty ? 0.0032 : 0.0045));
       lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
       const wobble = Math.sin(islandLoot.spin * 0.08) * Math.min(24, islandLoot.spinVel * 1.3);
       fxChestEl.style.transform = `translate(-50%, -50%) rotate(${wobble}deg) scale(${1 + Math.min(0.16, islandLoot.spinVel * 0.004)})`;
@@ -927,18 +935,21 @@
       }
       if (islandLoot.progress >= 0.3 && islandLoot.progress < 0.65) fxChestEl.src = "./assets/chest-spin.png";
       else if (islandLoot.progress >= 0.65 && islandLoot.progress < 1) fxChestEl.src = "./assets/chest-crack.png";
-      // Force jackpot after a short spin window
-      if (islandLoot.playT0 && now - islandLoot.playT0 > 2600) {
+      const forceAt = islandLoot.empty ? 3200 : 2600;
+      if (islandLoot.playT0 && now - islandLoot.playT0 > forceAt) {
         islandLoot.progress = 1;
-        explodeChest();
+        if (islandLoot.empty) explodeEmptyChest();
+        else explodeChest();
       } else if (islandLoot.progress >= 1) {
-        explodeChest();
+        if (islandLoot.empty) explodeEmptyChest();
+        else explodeChest();
       }
     }
     drawChestBurst(now);
   }
 
   function startEmptyChest(islandIdx, seat) {
+    // Same tap-to-open loop as a full chest — payoff is dust / EMPTY.
     islandLoot = {
       island: islandIdx,
       seat: seat == null ? 0 : seat,
@@ -950,36 +961,65 @@
       spinVel: 0,
       stage: "idle",
       empty: true,
+      _exploded: false,
     };
   }
-  function openEmptyChest() {
+  function beginEmptyChestSpin() {
     if (!islandLoot) return;
     islandLoot.waitingForSail = false;
     islandLoot.active = true;
-    islandLoot.stage = "empty";
-    islandLoot.progress = 1;
-    fxLabelEl.textContent = "EMPTY";
-    tapHintEl.classList.add("hide");
-    lootFillEl.style.width = "100%";
-    worldFxEl.classList.remove("spinning");
-    worldFxEl.classList.add("on", "empty");
+    islandLoot.progress = 0;
+    islandLoot.spin = 0;
+    islandLoot.spinVel = 3.5;
+    islandLoot.stage = "spin";
+    islandLoot.playT0 = performance.now();
+    islandLoot._exploded = false;
+    fxLabelEl.textContent = "SPIN!";
+    tapHintEl.classList.remove("hide");
+    tapHintEl.textContent = "TAP!";
+    lootFillEl.style.width = "0%";
+    worldFxEl.classList.remove("exploding");
+    worldFxEl.classList.add("on", "spinning", "empty");
     if (worldSpaceEl) worldSpaceEl.classList.add("loot-active");
+    fxChestEl.src = "./assets/chest-closed.png";
+    fxChestEl.style.filter = "grayscale(0.35) brightness(0.85)";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1)";
+    tickSlotReels();
+    resizeFxBurst();
+    sfxWhoosh();
+    haptic(14);
+  }
+  function explodeEmptyChest() {
+    if (!islandLoot || islandLoot._exploded) return;
+    islandLoot._exploded = true;
+    islandLoot.stage = "explode";
+    islandLoot.spinVel = 0;
+    islandLoot.progress = 1;
+    lootFillEl.style.width = "100%";
+    tapHintEl.classList.add("hide");
+    fxLabelEl.textContent = "EMPTY";
+    worldFxEl.classList.remove("spinning");
+    worldFxEl.classList.add("exploding", "empty");
     fxChestEl.src = "./assets/chest-open-gold.png";
     fxChestEl.style.filter = "grayscale(1) brightness(0.55) saturate(0)";
-    fxChestEl.style.transform = "translate(-50%, -50%) scale(0.92) rotate(-6deg)";
-    // Dust / moths instead of gold
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(0.94) rotate(-5deg)";
+    if (slotReelsEl) {
+      const spans = slotReelsEl.querySelectorAll("span");
+      spans.forEach((sp) => { sp.textContent = "·"; sp.style.color = "#8a8a8a"; });
+    }
+    resizeFxBurst();
     const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
     islandLoot.coins = [];
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 36; i++) {
       islandLoot.coins.push({
-        x: W * 0.5 + (Math.random() - 0.5) * 40,
-        y: H * 0.45,
-        vx: (Math.random() - 0.5) * 4,
-        vy: -1 - Math.random() * 3,
-        r: 3 + Math.random() * 5,
+        x: W * 0.5 + (Math.random() - 0.5) * 36,
+        y: H * 0.48,
+        vx: (Math.random() - 0.5) * 5,
+        vy: -1.2 - Math.random() * 4,
+        r: 3 + Math.random() * 6,
         rot: Math.random() * Math.PI,
-        vr: (Math.random() - 0.5) * 0.2,
-        life: 700 + Math.random() * 500,
+        vr: (Math.random() - 0.5) * 0.25,
+        life: 800 + Math.random() * 600,
         gold: false,
         dust: true,
       });
@@ -988,9 +1028,9 @@
     haptic([40, 80, 50, 100]);
     setTimeout(() => {
       fxChestEl.style.filter = "";
-      fxChestEl.style.transform = "";
+      fxChestEl.style.transform = "translate(-50%, -50%)";
       endIslandLoot();
-    }, 2200);
+    }, 2000);
   }
 
   function startCutscene(kind, animMs, meta) {
@@ -1142,15 +1182,18 @@
           }
         }
         if (msg.view.phase === "scoreboard") {
-          // Never kill an active chest — let jackpot finish, then sail home from endIslandLoot
-          if (!islandLoot) {
+          // Never kill an active chest — return-to-middle is owned by endIslandLoot
+          if (!islandLoot && !fleetReturnPending) {
             for (let i = 0; i < 4; i++) chosenIsland[i] = null;
             sendFleetHome();
+            fleetReturnPending = true;
           }
         }
         if (msg.view.phase === "scene_travel") {
           // Stay on current sea while fleet sails off the TOP — no backdrop swap yet.
           for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+          // Prefer leaving from the middle (after return-home). Exit path builder handles lag.
+          fleetReturnPending = false;
         }
         if (msg.view.phase === "question" && (prev === "scoreboard" || prev === "scene_travel" || prev === "lobby")) {
           const toIdx = (msg.view.sceneIndex != null ? msg.view.sceneIndex : 0) % SCENES.length;
@@ -1158,22 +1201,22 @@
             travelFx = { t0: performance.now(), fromIdx: activeSceneIdx, toIdx, stage: "out" };
           }
           activeSceneIdx = toIdx;
-          // Enter cleanly into the new destination fairway
+          // Start in the MIDDLE of the new sea (no bottom enter)
           const W = innerWidth, H = innerHeight;
           const n = Math.max((msg.view.players || []).length, 2);
           for (let seat = 0; seat < n; seat++) {
-            const to = fleetPos(seat, n, W, H);
-            const from = { x: to.x, y: H * 0.82 };
+            const home = fleetPos(seat, n, W, H);
             sailState[seat] = {
-              path: enterPath(from, to, W, H),
-              t: 0,
-              key: "enter",
+              path: [home, home],
+              t: 1,
+              key: "home",
               heading: -Math.PI / 2,
               outbound: null,
               squash: 1,
               commitJuiceUntil: 0,
             };
           }
+          fleetReturnPending = false;
         }
         if (msg.view.phase === "loot_intro" || msg.view.phase === "loot") {
           travelFx = null;
@@ -1454,16 +1497,22 @@
     if (target === -1) return "fog";
     return "i" + target;
   }
-  /** Sail off the TOP shrinking into distance (LOCKED). */
+  /** Sail off the TOP shrinking into distance (LOCKED). Prefer leaving from mid-channel. */
   function exitPath(from, to, W, H) {
     const sc = currentScene();
+    const home = fleetPos(0, 4, W, H);
+    const mid = { x: W * 0.5, y: (sc.home && sc.home[0] ? sc.home[0].y : 0.62) * H };
+    const nearMid = Math.hypot(from.x - mid.x, from.y - mid.y) < Math.max(36, W * 0.08);
+    const head = nearMid
+      ? [{ x: from.x, y: from.y }]
+      : [{ x: from.x, y: from.y }, { x: mid.x, y: from.y * 0.35 + mid.y * 0.65 }, { x: mid.x, y: mid.y }];
     if (sc.paths && sc.paths.exitTop && sc.paths.exitTop.length > 1) {
       const authored = normPathToPx(sc.paths.exitTop, W, H);
-      return [{ x: from.x, y: from.y }, ...authored.slice(1)];
+      return [...head, ...authored.slice(1)];
     }
     const CX = W * 0.5;
     return [
-      { x: from.x, y: from.y },
+      ...head,
       { x: CX, y: H * 0.42 },
       { x: CX, y: H * 0.18 },
       { x: CX, y: H * 0.02 },
@@ -1610,15 +1659,17 @@
   }
   function drawPlaqueLetter(x, y, letter, lit) {
     sctx.save();
-    const rw = 34, rh = 22;
-    sctx.fillStyle = lit ? "rgba(255,213,106,.92)" : "rgba(36,24,12,.82)";
-    roundRect(sctx, x - rw / 2, y - rh / 2, rw, rh, 5);
+    // Sit flush on the baked wooden plaque boards (recalibrated per-scene anchors)
+    const rw = Math.max(36, Math.min(52, innerWidth * 0.11));
+    const rh = Math.max(22, rw * 0.55);
+    sctx.fillStyle = lit ? "rgba(255,213,106,.95)" : "rgba(42,28,14,.78)";
+    roundRect(sctx, x - rw / 2, y - rh / 2, rw, rh, 6);
     sctx.fill();
-    sctx.strokeStyle = lit ? "#fff6c8" : "rgba(201,150,58,.85)";
-    sctx.lineWidth = 2;
+    sctx.strokeStyle = lit ? "#fff6c8" : "rgba(201,150,58,.9)";
+    sctx.lineWidth = 2.2;
     sctx.stroke();
     sctx.fillStyle = lit ? "#1a1008" : "#ffd56a";
-    sctx.font = "900 14px Trebuchet MS,sans-serif";
+    sctx.font = `900 ${Math.round(rh * 0.62)}px Trebuchet MS,sans-serif`;
     sctx.textAlign = "center";
     sctx.textBaseline = "middle";
     sctx.fillText(letter, x, y + 0.5);
@@ -1816,18 +1867,30 @@
           sctx.fill();
         }
         if (isCorrect) {
+          // Additive keyed sprites — never opaque black boxes
+          sctx.save();
+          sctx.globalCompositeOperation = "lighter";
           const glow = vfxGlow.length ? vfxGlow[Math.floor(t * 6) % vfxGlow.length] : imgSparkle;
           if (glow) {
-            const spark = 36 + 12 * Math.sin(t * 8);
-            sctx.globalAlpha = 0.8;
-            sctx.drawImage(glow, p.x - spark, p.y - spark - 8, spark * 2, spark * 2);
-            sctx.globalAlpha = 1;
+            const spark = 40 + 14 * Math.sin(t * 8);
+            sctx.globalAlpha = 0.85;
+            sctx.drawImage(glow, p.x - spark, p.y - spark - 6, spark * 2, spark * 2);
           }
-          const boom = vfxFire.length ? vfxFire[Math.floor(t * 5) % vfxFire.length] : imgConfetti;
+          const boom = vfxFire.length ? vfxFire[Math.floor(t * 7) % vfxFire.length] : null;
           if (boom) {
-            sctx.globalAlpha = 0.65;
-            sctx.drawImage(boom, p.x - 48, p.y - 56, 96, 84);
-            sctx.globalAlpha = 1;
+            const sz = 70 + 10 * Math.sin(t * 5 + i);
+            sctx.globalAlpha = 0.9;
+            sctx.drawImage(boom, p.x - sz / 2, p.y - sz / 2 - 18, sz, sz);
+          }
+          sctx.restore();
+          // Procedural spark pops (no bitmap plate)
+          for (let k = 0; k < 3; k++) {
+            const ang = t * 3 + k * 2.1 + i;
+            const rad = 18 + (k + 1) * 10 + Math.sin(t * 9 + k) * 4;
+            sctx.fillStyle = k % 2 ? "rgba(255,213,106,.85)" : "rgba(255,61,184,.7)";
+            sctx.beginPath();
+            sctx.arc(p.x + Math.cos(ang) * rad, p.y + Math.sin(ang) * rad - 8, 2.2, 0, Math.PI * 2);
+            sctx.fill();
           }
         }
         drawPlaqueLetter(pl.x, pl.y, L, highlight || isCorrect);
@@ -1909,7 +1972,7 @@
         let key = targetKey(target);
         let isl = typeof target === "number" && target >= 0 ? target : -1;
         if (traveling) {
-          // Sail off the TOP, shrinking into the distance (~2s)
+          // Middle → (if needed) → sail off the TOP (~2s). exitPath routes via mid-channel.
           to = offscreenTop(seat, n, W, H);
           key = "exit";
           isl = -2;
@@ -1919,17 +1982,22 @@
           isl = -2;
         } else if (target === -1) to = fogHoldPos(W, H);
         else if (target != null) to = dockPos(target, W, H, seat);
-        let fromHome = from;
-        if (!traveling && !onBoard && sailState[seat] && (sailState[seat].key === "exit" || sailState[seat].key === "exited")) {
-          // Fresh destination — enter from bottom of fairway
-          fromHome = { x: from.x, y: H * 0.78 };
-          key = key === "home" ? "enter" : key;
-          if (key === "home" || target == null) {
-            key = "enter";
-            to = from;
-          }
+        // After chest: keep returning / holding in the middle until sail-away
+        if (!traveling && !onBoard && fleetReturnPending && target == null) {
+          key = "home";
+          to = from;
+          isl = -1;
         }
+        let fromHome = from;
         const s = sailState[seat];
+        // Clear return flag once everyone is roughly home
+        if (fleetReturnPending && !traveling && s && s.key === "home" && s.t >= 0.95) {
+          const allHome = players.every((_, si) => {
+            const ss = sailState[si];
+            return !ss || ss.key === "home" || ss.t >= 0.95;
+          });
+          if (allHome) fleetReturnPending = false;
+        }
         const pos = ensureSail(seat, fromHome, to, key, dt, isl, W, H);
         if (onBoard && (!s || s.t >= 1)) return; // fully off-screen during leaderboard
         const x = pos.x;

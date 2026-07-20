@@ -93,8 +93,8 @@ const VENTURES = [
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 16000;
 const LOOT_MS = 40000;
-/** Answer + chest window; then ships exit + scoreboard. */
-const REVEAL_HOLD_MS = 6500;
+/** Answer + chest + return-to-middle window; then ships exit + scoreboard. */
+const REVEAL_HOLD_MS = 9000;
 /** Leaderboard hold after ships sail off the top (~3s). */
 const SCOREBOARD_MS = 3000;
 /** Ships sail off top shrinking into distance before leaderboard advances. */
