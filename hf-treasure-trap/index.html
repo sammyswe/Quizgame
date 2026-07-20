@@ -452,7 +452,8 @@
       islandCenters: s.islandCenters,
       biomes: s.biomes || [],
       channel: [0.30, 0.70],
-      islands: [i * 4 % 16, (i * 4 + 1) % 16, (i * 4 + 2) % 16, (i * 4 + 3) % 16],
+      // 10 biome heroes — rotate which four appear on answer cards each scene
+      islands: [i % 10, (i + 3) % 10, (i + 6) % 10, (i + 8) % 10],
       layout: ["A", "B", "C", "D"].map((L) => (s.islandCenters && s.islandCenters[L]) || { x: 0.25, y: 0.35 }),
       baked: true,
     }));
