@@ -12,11 +12,13 @@ Beauty vertical slice of Treasure Trap as a Higgsfield-hosted multiplayer browse
 
 ## Loop
 
-1. Share invite link (`?room=`)
+1. **Play vs Bot** (default practice) or invite a friend (`?room=`)
 2. Nickname → raise sail
 3. **3** pirate trivia questions — tap an island; ship sails; soft ~18s clock
 4. Mini **Loot Drop** — allocate earned points to 4 ventures, lock in, multipliers + Poseidon rescue
-5. Winner → Play again (same room)
+5. Winner → Play again (same room; bot rematches if you chose bot)
+
+Tip: `?bot=1` forces practice mode. The bot is a second WebSocket from your browser (~65% quiz accuracy).
 
 ## Layout
 

@@ -270,7 +270,8 @@
     <h2>Who’s boarding?</h2>
     <p class="muted">Cheeky nickname, ages 9+. This stays on this device tab.</p>
     <input id="nickInput" maxlength="14" placeholder="e.g. Cap’n Spark" autocomplete="off">
-    <button class="big-btn pulse" id="nickGo">RAISE SAIL</button>
+    <button class="big-btn pulse" id="nickBot" style="margin-bottom:10px">PLAY VS BOT</button>
+    <button class="ghost" id="nickGo" style="width:100%;padding:14px">INVITE A FRIEND</button>
   </div>
 </div>
 
@@ -312,6 +313,8 @@
 
   let nick = sessionStorage.getItem("tt-nick") || "";
   let playerId = sessionStorage.getItem("mp-player-id");
+  let wantBot = params.get("bot") === "1" || sessionStorage.getItem("tt-vs-bot") === "1";
+
   function setIdentity(name) {
     nick = String(name || "Pirate").trim().slice(0, 14) || "Pirate";
     sessionStorage.setItem("tt-nick", nick);
@@ -334,6 +337,7 @@
   const nickModal = document.getElementById("nickModal");
   const nickInput = document.getElementById("nickInput");
   const nickGo = document.getElementById("nickGo");
+  const nickBot = document.getElementById("nickBot");
 
   function toast(msg) {
     toastEl.textContent = msg;
@@ -342,22 +346,133 @@
     toast._t = setTimeout(() => toastEl.classList.remove("show"), 1600);
   }
 
+  function enableBotMode() {
+    wantBot = true;
+    sessionStorage.setItem("tt-vs-bot", "1");
+    if (!params.get("bot")) {
+      params.set("bot", "1");
+      history.replaceState(null, "", location.pathname + "?" + params);
+    }
+  }
+
   // --- websocket -------------------------------------------------------
   const base = location.pathname.replace(/\/+$/, "");
   const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://")
     + location.host + base + "/ws/" + room;
 
   let ws;
+  let botWs = null;
+  let botId = sessionStorage.getItem("tt-bot-id") || "";
   let lastState = null;
   let clockSkew = 0;
   let timeoutSentFor = null;
   let shakeUntil = 0;
+  let botBusyKey = "";
+  let botTimers = [];
+
+  // Practice rival: knows the slice questions but misses sometimes (~65% correct).
+  const BOT_ANSWERS = [0, 0, 1];
+  const BOT_NAMES = ["Barnacle Bot", "Polly", "Salty Chip", "Deckhand Dan"];
 
   function send(obj) {
     if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
   }
   function act(action) {
     send({ type: "action", action });
+  }
+  function botSend(obj) {
+    if (botWs && botWs.readyState === 1) botWs.send(JSON.stringify(obj));
+  }
+  function botAct(action) {
+    botSend({ type: "action", action });
+  }
+  function clearBotTimers() {
+    botTimers.forEach(clearTimeout);
+    botTimers = [];
+  }
+  function later(ms, fn) {
+    const id = setTimeout(fn, ms);
+    botTimers.push(id);
+  }
+
+  function ensureBotId() {
+    if (botId) return botId;
+    const name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+    botId = "bot-" + Math.random().toString(36).slice(2, 8) + "::" + encodeURIComponent(name);
+    sessionStorage.setItem("tt-bot-id", botId);
+    return botId;
+  }
+
+  function connectBot() {
+    if (!wantBot) return;
+    ensureBotId();
+    if (botWs && (botWs.readyState === 0 || botWs.readyState === 1)) return;
+    botWs = new WebSocket(wsUrl);
+    botWs.onopen = () => {
+      botSend({ type: "join", playerId: botId });
+    };
+    botWs.onclose = () => {
+      if (!wantBot) return;
+      later(1200, connectBot);
+    };
+    botWs.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type !== "state") return;
+      driveBot(msg);
+    };
+  }
+
+  function pickBotAnswer(qi) {
+    const correct = BOT_ANSWERS[qi] ?? 0;
+    if (Math.random() < 0.65) return correct;
+    let wrong = Math.floor(Math.random() * 4);
+    if (wrong === correct) wrong = (wrong + 1) % 4;
+    return wrong;
+  }
+
+  function driveBot(s) {
+    if (!wantBot || s.status !== "playing" || !s.view) return;
+    if (s.you !== botId) return;
+    const v = s.view;
+    const you = v.you;
+    if (!you) return;
+    const key = v.phase + ":" + v.questionIndex + ":" + v.deadlineAt + ":" + (you.answered ? 1 : 0) + ":" + (you.locked ? 1 : 0) + ":" + you.lootLeft;
+    if (key === botBusyKey) return;
+
+    if (v.phase === "question" && !you.answered) {
+      botBusyKey = key;
+      const delay = 900 + Math.floor(Math.random() * 1600);
+      later(delay, () => botAct({ type: "answer", index: pickBotAnswer(v.questionIndex) }));
+      return;
+    }
+
+    if (v.phase === "loot" && !you.locked) {
+      botBusyKey = key;
+      const pool = you.lootPool || 0;
+      later(700, () => {
+        if (pool <= 0) {
+          botAct({ type: "lock" });
+          return;
+        }
+        // Cheeky split: mostly reef + a splash of cursed
+        const reef = Math.floor(pool * 0.6 / 10) * 10;
+        const cursed = pool - reef;
+        botAct({ type: "alloc", venture: "reef", amount: reef });
+        later(350, () => {
+          if (cursed > 0) botAct({ type: "alloc", venture: "cursed", amount: cursed });
+          later(450, () => botAct({ type: "lock" }));
+        });
+      });
+      return;
+    }
+
+    if ((v.phase === "q_reveal" || v.phase === "loot_reveal") && v.deadlineAt) {
+      const rem = v.deadlineAt - (Date.now() + clockSkew);
+      if (rem <= 200) {
+        botBusyKey = key;
+        botAct({ type: "timeout" });
+      }
+    }
   }
 
   function connect() {
@@ -366,6 +481,7 @@
     ws.onopen = () => {
       errEl.textContent = "";
       send({ type: "join", playerId });
+      if (wantBot) later(400, connectBot);
     };
     ws.onclose = () => {
       subtitleEl.textContent = "Reconnecting…";
@@ -385,7 +501,14 @@
       if (msg.view && msg.view.serverNow && msg.view.deadlineAt) {
         clockSkew = msg.view.serverNow - Date.now();
       }
+      // Bot already seated? keep flag warm for rematches
+      if (wantBot && msg.seats && botId && msg.seats.includes(botId)) {
+        sessionStorage.setItem("tt-vs-bot", "1");
+      }
       render(msg);
+      if (wantBot && msg.status === "waiting" && (msg.seats || []).length < 2) {
+        connectBot();
+      }
     };
   }
 
@@ -604,34 +727,54 @@
     if (!v) { scoresEl.innerHTML = ""; return; }
     scoresEl.innerHTML = v.players.map((p) => {
       const isYou = p.id === you;
-      return `<div class="pill${isYou ? " you" : ""}"><span class="dot" style="background:${p.color}"></span>${escapeHtml(p.nick)}${isYou ? " (you)" : ""} · ${p.score}</div>`;
+      const isBot = String(p.id).startsWith("bot-");
+      const tag = isYou ? " (you)" : (isBot ? " (bot)" : "");
+      return `<div class="pill${isYou ? " you" : ""}"><span class="dot" style="background:${p.color}"></span>${escapeHtml(p.nick)}${tag} · ${p.score}</div>`;
     }).join("");
   }
 
   function renderWaiting(s) {
-    subtitleEl.textContent = "Gathering the crew…";
+    subtitleEl.textContent = wantBot ? "Calling a deckhand…" : "Gathering the crew…";
     document.getElementById("clockWrap").style.opacity = "0.35";
+    const botHint = wantBot
+      ? `<p class="muted" style="margin-top:12px">Bot boarding… hang tight.</p>`
+      : `<p class="muted" style="margin-top:12px">Connected: ${s.connected || 1} · Need 2 captains</p>
+         <button class="big-btn pulse" id="waitBotBtn" style="margin-top:14px">PLAY VS BOT INSTEAD</button>`;
     mainEl.innerHTML = `
       <div class="panel center-card reveal-pop">
         <img src="./assets/title-banner.png" alt="" style="width:min(100%,420px);height:auto;margin:0 auto 8px;display:block;filter:drop-shadow(0 10px 24px rgba(0,0,0,.35))">
         <div class="phase-tag">Waiting room</div>
-        <h2>Invite your rival pirate</h2>
-        <p class="muted">The voyage launches the moment a second captain joins. Sail to answer islands, race the soft clock, then gamble your loot on four ventures.</p>
-        <div class="invite" style="margin-top:14px">
+        <h2>${wantBot ? "Practice duel" : "Invite your rival pirate"}</h2>
+        <p class="muted">${wantBot
+          ? "A cheeky bot rival is climbing aboard. Same voyage — no second phone needed."
+          : "The voyage launches the moment a second captain joins. Or practice solo against a bot."}</p>
+        ${wantBot ? "" : `<div class="invite" style="margin-top:14px">
           <input readonly id="link" value="${escapeHtml(location.href)}">
           <button class="ghost" id="copyBtn" type="button">COPY</button>
-        </div>
-        <p class="muted" style="margin-top:12px">Connected: ${s.connected || 1} · Need 2 captains</p>
+        </div>`}
+        ${botHint}
       </div>`;
-    document.getElementById("copyBtn").onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(location.href);
-        toast("Invite copied!");
-      } catch {
-        document.getElementById("link").select();
-        toast("Copy the link!");
-      }
-    };
+    const copyBtn = document.getElementById("copyBtn");
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(location.href);
+          toast("Invite copied!");
+        } catch {
+          document.getElementById("link").select();
+          toast("Copy the link!");
+        }
+      };
+    }
+    const waitBot = document.getElementById("waitBotBtn");
+    if (waitBot) {
+      waitBot.onclick = () => {
+        enableBotMode();
+        toast("Bot incoming!");
+        connectBot();
+        renderWaiting(lastState || s);
+      };
+    }
   }
 
   function renderQuestion(s, v) {
@@ -800,10 +943,15 @@
         <div class="phase-tag">Voyage complete</div>
         <img class="trophy" src="./assets/chest.png" alt="">
         <h2>${youWin ? "You rule these waters!" : escapeHtml((win && win.nick) || "A rival") + " takes the gold"}</h2>
-        <p class="muted">Play again keeps this room — same invite link.</p>
+        <p class="muted">${wantBot ? "Rematch keeps your bot rival in this room." : "Play again keeps this room — same invite link."}</p>
         <button class="big-btn pulse" id="resetBtn" style="margin-top:14px">PLAY AGAIN</button>
       </div>`;
-    document.getElementById("resetBtn").onclick = () => send({ type: "reset" });
+    document.getElementById("resetBtn").onclick = () => {
+      botBusyKey = "";
+      clearBotTimers();
+      send({ type: "reset" });
+      if (wantBot) later(300, connectBot);
+    };
   }
 
   function render(s) {
@@ -832,22 +980,31 @@
     islandImgs = await Promise.all(ISLAND_SRC.map(loadImg));
     requestAnimationFrame(frame);
 
+    function startWithNick(vsBot) {
+      const n = nickInput.value.trim() || nick;
+      if (!n) { toast("Pick a nickname!"); return; }
+      setIdentity(n);
+      if (vsBot) enableBotMode();
+      else {
+        wantBot = false;
+        sessionStorage.removeItem("tt-vs-bot");
+        params.delete("bot");
+        history.replaceState(null, "", location.pathname + "?" + params);
+      }
+      nickModal.classList.add("hidden");
+      connect();
+    }
+
     if (nick && playerId) {
       nickModal.classList.add("hidden");
       connect();
     } else {
       nickInput.value = nick || "";
       nickInput.focus();
-      const go = () => {
-        const n = nickInput.value.trim();
-        if (!n) { toast("Pick a nickname!"); return; }
-        setIdentity(n);
-        nickModal.classList.add("hidden");
-        connect();
-      };
-      nickGo.onclick = go;
+      nickBot.onclick = () => startWithNick(true);
+      nickGo.onclick = () => startWithNick(false);
       nickInput.addEventListener("keydown", (e) => {
-        if (e.code === "Enter") go();
+        if (e.code === "Enter") startWithNick(true);
       });
     }
   }
