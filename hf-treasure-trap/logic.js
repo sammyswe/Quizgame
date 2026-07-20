@@ -50,8 +50,9 @@ const VENTURES = [
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 20000;
 const LOOT_MS = 40000;
-/** Hold long enough for sail arrival + tap-to-loot plunder on the quiz sea. */
-const REVEAL_HOLD_MS = 12000;
+/** Answer + tap-loot window; ships then return during scoreboard. */
+const REVEAL_HOLD_MS = 7000;
+const SCOREBOARD_MS = 3000;
 const VENTURE_REVEAL_MS = 5200;
 /** Poseidon: full-screen video + gold-saved summary. */
 const WILDCARD_MS = 9000;
@@ -330,6 +331,10 @@ function allReady(state) {
 
 function advanceFromReveal(state) {
   if (state.phase === "q_reveal") {
+    state.phase = "scoreboard";
+    state.phaseStartedAt = now();
+    state.deadlineAt = state.phaseStartedAt + SCOREBOARD_MS;
+  } else if (state.phase === "scoreboard") {
     const next = state.questionIndex + 1;
     if (next >= QUESTIONS.length) startLootIntro(state);
     else startQuestion(state, next);
@@ -439,6 +444,7 @@ export function validateAction(state, playerId, action) {
         state.phase === "question" ||
         state.phase === "loot" ||
         state.phase === "q_reveal" ||
+        state.phase === "scoreboard" ||
         state.phase === "loot_intro" ||
         state.phase === "loot_reveal" ||
         state.phase === "loot_wildcard"
@@ -451,6 +457,7 @@ export function validateAction(state, playerId, action) {
     case "advance": {
       if (
         state.phase === "q_reveal" ||
+        state.phase === "scoreboard" ||
         state.phase === "loot_intro" ||
         state.phase === "loot_reveal" ||
         state.phase === "loot_wildcard"
@@ -618,7 +625,7 @@ export function viewFor(state, playerId) {
     deadlineAt: state.deadlineAt,
     serverNow: now(),
     reveal: publicReveal,
-    ranking: state.ranking,
+    ranking: state.phase === "scoreboard" ? rankOrder(state) : state.ranking,
     lootVentureIndex: state.lootVentureIndex || 0,
     you: {
       answered: state.answers[playerId] != null,
@@ -634,6 +641,7 @@ export function viewFor(state, playerId) {
     },
     qMs: Q_MS,
     lootMs: LOOT_MS,
+    scoreboardMs: SCOREBOARD_MS,
     step: STEP,
   };
 }

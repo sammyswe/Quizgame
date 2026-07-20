@@ -57,3 +57,16 @@ Client: HUD chrome moved to bottom dock; island loot videos play on the quiz sea
 | ship-3 flap sheet | d9b149a6-5d8e-40ca-8e2a-bf6771c09fdb |
 
 Ships: no water under hull; 3-frame sail wind cycle. HUD: scores+timer top only. Tap-to-loot plunder with haptics. Loot Drop wager fleet (1–4) from bottom to picked island only.
+
+## Multi-angle ships + chest spin + scoreboard 2026-07-20f
+
+| asset | job id |
+|---|---|
+| ship-0 8-dir sheet | dc751fbc-e5d6-499a-b143-53a2836460a7 |
+| ship-1 8-dir sheet | 3f6e0055-b154-44ca-843f-d43c97e1d4bf |
+| ship-2 8-dir sheet | 64696f65-85b4-4eb0-92ca-7d3699f83819 |
+| ship-3 8-dir sheet | 1417fb10-8d58-4453-857c-c0aeead036c0 |
+| bird flap strip | 4524fda0-d692-4a5a-8eea-864e9e8760f4 |
+| chest spin sheet | 53d8030c-a6e2-48f3-bb60-77e8ebc0e01d |
+
+Sailing uses waypoint pathfinding that never crosses island radii. Tap-loot is Clash-style chest spin + explode with Web Audio. Scoreboard phase (3s) after each question with overtake flash.
