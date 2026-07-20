@@ -908,7 +908,6 @@
       fleetReturnPending = true;
     }
   }
-  let fleetReturnPending = false;
   function tickIslandLoot(now) {
     if (!islandLoot) return;
     if (islandLoot.waitingForSail) {
@@ -1500,7 +1499,6 @@
   /** Sail off the TOP shrinking into distance (LOCKED). Prefer leaving from mid-channel. */
   function exitPath(from, to, W, H) {
     const sc = currentScene();
-    const home = fleetPos(0, 4, W, H);
     const mid = { x: W * 0.5, y: (sc.home && sc.home[0] ? sc.home[0].y : 0.62) * H };
     const nearMid = Math.hypot(from.x - mid.x, from.y - mid.y) < Math.max(36, W * 0.08);
     const head = nearMid
