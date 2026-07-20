@@ -50,10 +50,10 @@ const VENTURES = [
 const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 const Q_MS = 18000;
 const LOOT_MS = 40000;
-const REVEAL_HOLD_MS = 5000;
-const VENTURE_REVEAL_MS = 2800;
-const WILDCARD_MS = 3200;
-const LOOT_INTRO_MS = 2800;
+const REVEAL_HOLD_MS = 5200;
+const VENTURE_REVEAL_MS = 3200;
+const WILDCARD_MS = 5200;
+const LOOT_INTRO_MS = 2600;
 const BASE_SCORE = 100;
 const SPEED_BONUS_MAX = 40;
 const STEP = 10;
@@ -92,18 +92,26 @@ function isBotId(playerId) {
   return String(playerId).startsWith("bot-");
 }
 
-function publicPlayers(state) {
-  return state.seats.map((id, i) => ({
-    id,
-    nick: nickFromId(id),
-    color: COLORS[i % COLORS.length],
-    seat: i,
-    score: state.scores[id] || 0,
-    locked: !!state.locked[id],
-    answered: state.answers[id] != null,
-    isBot: isBotId(id),
-    ready: !!state.ready[id],
-  }));
+function publicPlayers(state, viewerId) {
+  const viewerAnswered = state.answers[viewerId] != null;
+  const revealAnswers = state.phase === "q_reveal" || state.phase === "winner";
+  return state.seats.map((id, i) => {
+    const hasAnswer = state.answers[id] != null;
+    // Hide whether rivals answered / where they sailed until YOU commit (or reveal).
+    const showAnswered =
+      id === viewerId || viewerAnswered || revealAnswers ? hasAnswer : false;
+    return {
+      id,
+      nick: nickFromId(id),
+      color: COLORS[i % COLORS.length],
+      seat: i,
+      score: state.scores[id] || 0,
+      locked: !!state.locked[id],
+      answered: showAnswered,
+      isBot: isBotId(id),
+      ready: !!state.ready[id],
+    };
+  });
 }
 
 function rankOrder(state) {
@@ -584,7 +592,7 @@ export function viewFor(state, playerId) {
 
   return {
     phase: state.phase,
-    players: publicPlayers(state),
+    players: publicPlayers(state, playerId),
     questionIndex: state.questionIndex,
     questionTotal: QUESTIONS.length,
     question: showQuestion,

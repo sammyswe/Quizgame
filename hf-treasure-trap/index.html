@@ -9,25 +9,20 @@
     --sea-deep: #0a3d4d;
     --cream: #fff6e4;
     --gold: #ffd56a;
-    --brass: #c9963a;
     --ink: #1a1008;
-    --panel: rgba(8, 32, 44, 0.72);
-    --edge: rgba(201, 150, 58, 0.65);
+    --panel: rgba(8, 32, 44, 0.78);
+    --edge: rgba(201, 150, 58, 0.7);
     --ok: #6dffb0;
     --bad: #ff7a6e;
-    --chart: #0e4a5c;
     --display: "Trebuchet MS", "Segoe UI", "Avenir Next", sans-serif;
-    --body: Nunito, "Segoe UI", "Trebuchet MS", sans-serif;
+    --body: "Segoe UI", "Trebuchet MS", sans-serif;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; height: 100%; overflow: hidden;
-    background: var(--sea-deep);
-    color: var(--cream);
-    font-family: var(--body);
-    font-weight: 700;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
+    background: var(--sea-deep); color: var(--cream);
+    font-family: var(--body); font-weight: 700;
+    -webkit-tap-highlight-color: transparent; user-select: none;
   }
   h1,h2,.display { font-family: var(--display); font-weight: 800; letter-spacing: .02em; }
   #stage { position: fixed; inset: 0; }
@@ -36,131 +31,114 @@
     position: relative; z-index: 2;
     height: 100%; width: min(480px, 100%);
     margin: 0 auto;
-    padding: max(8px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 8px;
+    padding: max(6px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 6px;
     pointer-events: none;
   }
   #hud > * { pointer-events: auto; }
   .top {
-    display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
+    display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
   }
-  .brand h1 { margin: 0; font-size: 1.15rem; color: var(--gold); text-shadow: 0 2px 0 #1a0e04, 0 6px 16px rgba(0,0,0,.4); }
-  .brand p { margin: 0; font-size: .7rem; opacity: .85; }
-  .chest-timer {
-    width: 58px; height: 58px; position: relative;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,.35));
-  }
+  .brand h1 { margin: 0; font-size: 1rem; color: var(--gold); text-shadow: 0 2px 0 #1a0e04; }
+  .brand p { margin: 0; font-size: .65rem; opacity: .85; }
+  .chest-timer { width: 48px; height: 48px; position: relative; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
   .chest-timer img { width: 100%; height: 100%; object-fit: contain; }
   .chest-timer .sec {
     position: absolute; inset: 0; display: grid; place-items: center;
-    font-family: var(--display); font-size: 1.15rem;
-    color: #fff; text-shadow: 0 2px 4px #000;
+    font-family: var(--display); font-size: 1rem; color: #fff; text-shadow: 0 2px 4px #000;
   }
-  .ribbon {
-    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
-    scrollbar-width: none;
-  }
+  .ribbon { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
   .ribbon::-webkit-scrollbar { display: none; }
   .chip {
-    flex: 0 0 auto;
-    display: flex; align-items: center; gap: 6px;
-    padding: 5px 8px 5px 5px;
-    background: var(--panel); border: 2px solid var(--edge); border-radius: 999px;
-    backdrop-filter: blur(8px); font-size: .78rem; font-weight: 900;
+    flex: 0 0 auto; display: flex; align-items: center; gap: 5px;
+    padding: 3px 8px 3px 3px; background: var(--panel); border: 2px solid var(--edge);
+    border-radius: 999px; font-size: .72rem; font-weight: 900; backdrop-filter: blur(6px);
   }
-  .chip img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #123; }
-  .chip.you { box-shadow: 0 0 0 2px rgba(255,213,106,.35); border-color: var(--gold); }
-  .chip.bot { opacity: .92; }
-  .grow { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
-  .panel {
-    background: linear-gradient(180deg, rgba(14,74,92,.88), rgba(8,32,44,.9));
-    border: 2px solid var(--edge);
-    border-radius: 18px;
-    padding: 12px 14px;
-    box-shadow: 0 12px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,213,106,.15);
-    backdrop-filter: blur(10px);
+  .chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+  .chip.you { border-color: var(--gold); }
+  .world-space { flex: 1; min-height: 0; pointer-events: none; }
+  .dock {
+    display: flex; flex-direction: column; gap: 6px;
+    max-height: 42vh;
   }
-  .tag {
-    display: inline-block; margin-bottom: 6px;
-    padding: 3px 9px; border-radius: 999px;
+  .banner {
+    background: linear-gradient(180deg, rgba(14,74,92,.9), rgba(8,32,44,.88));
+    border: 2px solid var(--edge); border-radius: 14px;
+    padding: 8px 10px; box-shadow: 0 8px 20px rgba(0,0,0,.3);
+    backdrop-filter: blur(8px);
+  }
+  .banner .tag {
+    display: inline-block; margin-bottom: 3px; padding: 2px 7px; border-radius: 999px;
     background: rgba(255,213,106,.16); color: var(--gold);
-    font-size: .68rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+    font-size: .62rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase;
   }
-  .panel h2 { margin: 0 0 6px; font-size: 1.2rem; line-height: 1.2; }
-  .muted { opacity: .82; font-size: .86rem; line-height: 1.35; }
-  .islands, .ventures { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .island-btn, .venture {
-    border: 3px solid rgba(255,255,255,.16);
-    border-radius: 16px;
-    background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,.22));
-    color: var(--cream); padding: 8px; cursor: pointer;
-    display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: center;
-    text-align: left; min-height: 78px;
-    transition: transform .08s ease;
+  .banner h2 {
+    margin: 0; font-size: clamp(.95rem, 3.6vw, 1.1rem); line-height: 1.2;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .island-btn img, .venture img { width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,.35)); }
-  .island-btn strong, .venture strong { display: block; color: var(--gold); font-size: .95rem; }
-  .island-btn span, .venture small { display: block; font-size: .8rem; line-height: 1.15; margin-top: 2px; }
-  .island-btn:active:not(:disabled), .venture:active:not(:disabled) { transform: scale(.96); }
-  .island-btn:disabled, .venture:disabled { opacity: .55; }
-  .island-btn.picked, .venture.picked { border-color: var(--gold); box-shadow: inset 0 0 0 2px rgba(255,213,106,.25); }
-  .island-btn.correct { border-color: var(--ok); }
-  .island-btn.wrong { border-color: var(--bad); }
-  .island-btn.dim { opacity: .35; }
-  .venture .amt { font-family: var(--display); font-size: 1.2rem; text-align: right; }
+  .banner .muted { margin: 3px 0 0; opacity: .8; font-size: .75rem; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .choice {
+    border: 2px solid rgba(255,255,255,.18); border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(0,0,0,.25));
+    color: var(--cream); padding: 6px 8px; cursor: pointer; text-align: left;
+    display: grid; grid-template-columns: 36px 1fr auto; gap: 6px; align-items: center;
+    min-height: 48px; transition: transform .08s ease;
+  }
+  .choice img { width: 36px; height: 36px; object-fit: contain; }
+  .choice strong { display: block; color: var(--gold); font-size: .85rem; }
+  .choice span { display: block; font-size: .72rem; line-height: 1.1; opacity: .95; }
+  .choice .amt { font-family: var(--display); font-size: 1rem; }
+  .choice:active:not(:disabled) { transform: scale(.97); }
+  .choice:disabled { opacity: .55; }
+  .choice.picked { border-color: var(--gold); box-shadow: inset 0 0 0 1px rgba(255,213,106,.3); }
+  .choice.correct { border-color: var(--ok); }
+  .choice.wrong { border-color: var(--bad); }
+  .choice.dim { opacity: .35; }
   .big {
-    width: 100%; border: 0; cursor: pointer;
-    padding: 15px 16px; border-radius: 16px;
-    font-family: var(--display); font-size: 1.25rem; letter-spacing: .04em;
-    color: var(--ink);
+    width: 100%; border: 0; cursor: pointer; padding: 12px 14px; border-radius: 14px;
+    font-family: var(--display); font-size: 1.1rem; color: var(--ink);
     background: linear-gradient(180deg, #ffe08a, #e8a820);
-    box-shadow: 0 6px 0 #9a6a10, 0 12px 24px rgba(0,0,0,.35);
+    box-shadow: 0 5px 0 #9a6a10, 0 10px 18px rgba(0,0,0,.3);
   }
-  .big:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #9a6a10, 0 8px 16px rgba(0,0,0,.3); }
+  .big:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #9a6a10; }
   .big:disabled { filter: grayscale(.4) brightness(.85); }
   .big.pulse { animation: pulse 1.15s ease-in-out infinite; }
   @keyframes pulse { 50% { filter: brightness(1.12); } }
   .ghost {
     border: 2px solid var(--edge); background: rgba(255,255,255,.08);
-    color: var(--cream); border-radius: 14px; padding: 12px 14px;
+    color: var(--cream); border-radius: 12px; padding: 10px 12px;
     font: inherit; font-weight: 900; cursor: pointer; width: 100%;
   }
   .invite { display: flex; gap: 6px; }
   .invite input {
-    flex: 1; min-width: 0; border-radius: 12px; border: 2px solid var(--edge);
-    background: rgba(0,0,0,.35); color: var(--cream); padding: 10px; font-size: .75rem;
+    flex: 1; min-width: 0; border-radius: 10px; border: 2px solid var(--edge);
+    background: rgba(0,0,0,.35); color: var(--cream); padding: 8px; font-size: .72rem;
   }
-  .loot-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .loot-left { display: flex; align-items: center; gap: 6px; font-weight: 900; }
-  .loot-left img { width: 26px; height: 26px; }
+  .loot-bar { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; margin: 4px 0 6px; }
+  .loot-bar img { width: 22px; height: 22px; vertical-align: middle; }
   #toast {
-    position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom));
+    position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
     transform: translateX(-50%) translateY(140%); z-index: 30;
     background: rgba(20,10,5,.94); border: 2px solid var(--bad);
-    color: #fff; padding: 11px 16px; border-radius: 14px; font-weight: 900;
+    color: #fff; padding: 10px 14px; border-radius: 12px; font-weight: 900;
     transition: transform .22s ease; pointer-events: none;
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #err { min-height: 1em; color: var(--bad); font-size: .85rem; font-weight: 900; }
+  #err { min-height: .9em; color: var(--bad); font-size: .78rem; font-weight: 900; }
   .center { text-align: center; }
-  .hero-art { width: min(220px, 70%); height: auto; margin: 6px auto; display: block; filter: drop-shadow(0 10px 20px rgba(0,0,0,.4)); }
+  .hero-art { width: min(180px, 55%); height: auto; margin: 4px auto; display: block; filter: drop-shadow(0 8px 16px rgba(0,0,0,.4)); }
   .nick-modal {
     position: fixed; inset: 0; z-index: 40; display: grid; place-items: end center;
     background: radial-gradient(circle at 50% 18%, rgba(40,110,130,.5), rgba(5,18,28,.94));
-    padding: 16px;
+    padding: 14px;
   }
   .nick-modal.hidden { display: none; }
-  .nick-modal .panel { width: min(420px, 100%); margin-bottom: 8vh; }
+  .nick-modal .banner { width: min(420px, 100%); margin-bottom: 8vh; }
   .nick-modal input {
-    width: 100%; margin: 10px 0 12px; border-radius: 14px; border: 2px solid var(--edge);
-    background: rgba(0,0,0,.35); color: var(--cream); padding: 14px; font: inherit; font-size: 1.05rem; text-align: center;
+    width: 100%; margin: 8px 0 10px; border-radius: 12px; border: 2px solid var(--edge);
+    background: rgba(0,0,0,.35); color: var(--cream); padding: 12px; font: inherit; text-align: center;
   }
-  .hand {
-    position: absolute; right: 18%; bottom: 28%; width: 64px; height: 64px;
-    border-radius: 50%; background: rgba(255,213,106,.25); border: 2px solid var(--gold);
-    animation: hand 1.2s ease-in-out infinite; pointer-events: none; z-index: 5;
-  }
-  @keyframes hand { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-10px,-14px) scale(1.08); } }
   .casino-flash {
     position: fixed; inset: 0; pointer-events: none; z-index: 15;
     background: radial-gradient(circle at 50% 40%, rgba(255,0,200,.18), transparent 55%),
@@ -168,37 +146,47 @@
     opacity: 0; transition: opacity .3s ease;
   }
   .casino-flash.on { opacity: 1; }
-  .pop { animation: pop .34s cubic-bezier(.2,1.4,.4,1); }
-  @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .hidden { display: none !important; }
+  .cutscene-veil {
+    position: fixed; inset: 0; z-index: 12; pointer-events: none;
+    background: radial-gradient(circle at 50% 45%, rgba(0,20,40,.15), rgba(0,10,20,.55));
+    opacity: 0; transition: opacity .25s ease;
+  }
+  .cutscene-veil.on { opacity: 1; }
+  .pop { animation: pop .3s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .hand {
+    position: absolute; right: 16%; bottom: 34%; width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(255,213,106,.22); border: 2px solid var(--gold);
+    animation: hand 1.2s ease-in-out infinite; pointer-events: none; z-index: 5;
+  }
+  @keyframes hand { 50% { transform: translate(-8px,-12px) scale(1.08); } }
 </style>
 </head>
 <body>
 <div id="stage">
   <canvas id="sea"></canvas>
   <div class="casino-flash" id="casino"></div>
+  <div class="cutscene-veil" id="veil"></div>
   <div id="hud">
     <div class="top">
-      <div class="brand">
-        <h1>TREASURE TRAP</h1>
-        <p id="subtitle">Voyage</p>
-      </div>
-      <div class="chest-timer" id="chestWrap" title="Timer">
+      <div class="brand"><h1>TREASURE TRAP</h1><p id="subtitle">Voyage</p></div>
+      <div class="chest-timer" id="chestWrap">
         <img id="chestImg" src="./assets/chest-full.png" alt="">
         <div class="sec" id="chestSec">–</div>
       </div>
     </div>
     <div class="ribbon" id="ribbon"></div>
-    <div class="grow" id="main"></div>
+    <div class="world-space" id="worldSpace"></div>
+    <div class="dock" id="main"></div>
     <div id="err"></div>
   </div>
 </div>
 <div id="toast"></div>
 <div class="nick-modal" id="nickModal">
-  <div class="panel center">
-    <div class="tag">Path B · Mobile voyage</div>
+  <div class="banner center">
+    <div class="tag">Mobile voyage</div>
     <h2 class="display">Name your pirate</h2>
-    <p class="muted">Comedy-led adventure. Play vs bot or invite friends.</p>
+    <p class="muted">Play vs bot or invite friends.</p>
     <input id="nickInput" maxlength="14" placeholder="Cap’n Spark" autocomplete="nickname">
     <button class="big pulse" id="nickBot">PLAY VS BOT</button>
     <button class="ghost" id="nickGo" style="margin-top:8px">INVITE FRIENDS</button>
@@ -210,6 +198,13 @@
   const ISLAND = ["./assets/island-a.png","./assets/island-b.png","./assets/island-c.png","./assets/island-d.png"];
   const SHIP = ["./assets/ship-0.png","./assets/ship-1.png","./assets/ship-2.png","./assets/ship-3.png"];
   const PORTRAIT = ["./assets/portrait-0.png","./assets/portrait-1.png","./assets/portrait-2.png","./assets/portrait-3.png"];
+  const POSEIDON_FRAMES = [
+    "./assets/poseidon-rise.png",
+    "./assets/poseidon-wave.png",
+    "./assets/poseidon-lift.png",
+    "./assets/poseidon-reach.png",
+    "./assets/poseidon-splash.png",
+  ];
 
   const params = new URLSearchParams(location.search);
   let room = params.get("room");
@@ -230,7 +225,7 @@
     playerId = "p-" + Math.random().toString(36).slice(2, 10) + "::" + encodeURIComponent(nick);
     sessionStorage.setItem("mp-player-id", playerId);
   }
-  if (playerId && nick && !playerId.includes("::")) {
+  if (playerId && nick && !String(playerId).includes("::")) {
     playerId = playerId + "::" + encodeURIComponent(nick);
     sessionStorage.setItem("mp-player-id", playerId);
   }
@@ -243,14 +238,16 @@
   const nickModal = document.getElementById("nickModal");
   const nickInput = document.getElementById("nickInput");
   const casinoEl = document.getElementById("casino");
+  const veilEl = document.getElementById("veil");
   const chestImg = document.getElementById("chestImg");
   const chestSec = document.getElementById("chestSec");
+  const chestWrap = document.getElementById("chestWrap");
 
   function toast(msg) {
     toastEl.textContent = msg;
     toastEl.classList.add("show");
     clearTimeout(toast._t);
-    toast._t = setTimeout(() => toastEl.classList.remove("show"), 1500);
+    toast._t = setTimeout(() => toastEl.classList.remove("show"), 1400);
   }
   function enableBotMode() {
     wantBot = true;
@@ -269,7 +266,8 @@
   let sailProgress = [0, 0, 0, 0];
   let pathPreview = null;
   let hitStopUntil = 0;
-  let fxPoseidon = 0, fxShark = 0, fxBurst = 0;
+  let cutscene = null; // { kind, t0, dur, meta }
+  let fxParticles = [];
 
   const BOT_ANSWERS = [0, 0, 1];
   const BOT_NAMES = ["Barnacle Bot", "Polly", "Salty Chip", "Deckhand Dan"];
@@ -288,7 +286,6 @@
     sessionStorage.setItem("tt-bot-id", botId);
     return botId;
   }
-
   function connectBot() {
     if (!wantBot) return;
     ensureBotId();
@@ -301,46 +298,60 @@
       if (msg.type === "state") driveBot(msg);
     };
   }
-
   function pickBotAnswer(qi) {
     const c = BOT_ANSWERS[qi] ?? 0;
     if (Math.random() < 0.65) return c;
     let w = Math.floor(Math.random() * 4);
     return w === c ? (w + 1) % 4 : w;
   }
-
   function driveBot(s) {
-    if (!wantBot || !s.view || s.you !== botId) return;
+    if (!wantBot || !s.view || s.you !== botId || s.status !== "playing") return;
     const v = s.view, you = v.you;
-    if (s.status !== "playing") return;
     const key = [v.phase, v.questionIndex, v.deadlineAt, you.answered, you.locked, you.ready, you.lootLeft, v.lootVentureIndex].join(":");
     if (key === botBusyKey) return;
-
-    if (v.phase === "lobby" && !you.ready) {
-      botBusyKey = key;
-      later(400, () => botAct({ type: "ready" }));
-      return;
-    }
+    if (v.phase === "lobby" && !you.ready) { botBusyKey = key; later(400, () => botAct({ type: "ready" })); return; }
     if (v.phase === "question" && !you.answered) {
       botBusyKey = key;
-      later(800 + Math.random() * 1400, () => botAct({ type: "answer", index: pickBotAnswer(v.questionIndex) }));
+      later(900 + Math.random() * 1200, () => botAct({ type: "answer", index: pickBotAnswer(v.questionIndex) }));
       return;
     }
     if (v.phase === "loot" && !you.locked) {
       botBusyKey = key;
       const pool = you.lootPool || 0;
-      later(600, () => {
-        // Bot often picks wrong for Poseidon drama, sometimes correct
+      later(700, () => {
         const pick = Math.random() < 0.45 ? "v2" : "v0";
         const amt = Math.floor(pool / 10) * 10;
         if (amt > 0) botAct({ type: "alloc", venture: pick, amount: amt });
-        later(500, () => botAct({ type: "lock" }));
+        later(450, () => botAct({ type: "lock" }));
       });
       return;
     }
     if (["q_reveal","loot_intro","loot_reveal","loot_wildcard"].includes(v.phase) && v.deadlineAt) {
       const rem = v.deadlineAt - (Date.now() + clockSkew);
       if (rem <= 250) { botBusyKey = key; botAct({ type: "timeout" }); }
+    }
+  }
+
+  function startCutscene(kind, dur, meta) {
+    cutscene = { kind, t0: performance.now(), dur, meta: meta || {} };
+    veilEl.classList.add("on");
+    if (kind === "poseidon") casinoEl.classList.add("on");
+  }
+  function endCutscene() {
+    cutscene = null;
+    veilEl.classList.remove("on");
+    casinoEl.classList.remove("on");
+  }
+  function spawnBurst(x, y, n) {
+    for (let i = 0; i < n; i++) {
+      fxParticles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 4.5,
+        vy: -1.5 - Math.random() * 3.5,
+        life: 700 + Math.random() * 500,
+        t0: performance.now(),
+        kind: Math.random() < 0.5 ? "coin" : "spark",
+      });
     }
   }
 
@@ -358,23 +369,42 @@
       if (msg.type === "error") {
         errEl.textContent = msg.error || "Rejected";
         toast(msg.error || "Nope!");
-        shakeUntil = performance.now() + 420;
+        shakeUntil = performance.now() + 400;
         return;
       }
       if (msg.type !== "state") return;
       errEl.textContent = "";
       const prev = lastState && lastState.view && lastState.view.phase;
+      const prevVi = lastState && lastState.view && lastState.view.lootVentureIndex;
       lastState = msg;
       if (msg.view && msg.view.serverNow) clockSkew = msg.view.serverNow - Date.now();
-      if (msg.view && prev && prev !== msg.view.phase) {
-        if (msg.view.phase === "q_reveal" || msg.view.phase === "loot_reveal") hitStopUntil = performance.now() + 70;
-        if (msg.view.phase === "loot_wildcard" && msg.view.reveal) {
-          if (msg.view.reveal.poseidon) fxPoseidon = performance.now() + 2600;
-          if (msg.view.reveal.shark) fxShark = performance.now() + 2200;
-          casinoEl.classList.add("on");
-          setTimeout(() => casinoEl.classList.remove("on"), 1800);
+      if (msg.view && prev !== msg.view.phase) {
+        if (msg.view.phase === "q_reveal") {
+          hitStopUntil = performance.now() + 60;
+          const mine = msg.view.reveal && msg.view.reveal.results && msg.view.reveal.results[msg.you];
+          if (mine && mine.correct) {
+            startCutscene("plunder", 2200, { island: msg.view.reveal.correctIndex });
+          }
         }
-        if (msg.view.phase === "winner") fxBurst = performance.now() + 2000;
+        if (msg.view.phase === "loot_reveal") {
+          hitStopUntil = performance.now() + 50;
+        }
+        if (msg.view.phase === "loot_wildcard") {
+          if (msg.view.reveal && msg.view.reveal.poseidon) {
+            startCutscene("poseidon", 4800, msg.view.reveal.poseidon);
+          } else if (msg.view.reveal && msg.view.reveal.shark) {
+            startCutscene("shark", 2400, msg.view.reveal.shark);
+          }
+        }
+      }
+      // Plunder / crash when venture flips during loot reveal
+      if (msg.view && msg.view.phase === "loot_reveal" && prev === "loot_reveal" && prevVi !== msg.view.lootVentureIndex) {
+        const vi = msg.view.lootVentureIndex;
+        const ven = msg.view.ventures[vi];
+        const cell = msg.view.reveal && msg.view.reveal.outcomes && msg.view.reveal.outcomes[msg.you]
+          && msg.view.reveal.outcomes[msg.you].byVenture[ven.id];
+        if (cell && cell.ok) startCutscene("plunder", 2000, { island: ven.island });
+        else if (cell && cell.put) startCutscene("crash", 1600, { island: ven.island });
       }
       render(msg);
       if (wantBot && msg.status === "waiting") connectBot();
@@ -386,36 +416,30 @@
     if (!v || !v.deadlineAt) return null;
     return v.deadlineAt - serverNowApprox();
   }
-
   function tickClock(v) {
     const rem = remainingMs(v);
-    if (rem == null) {
-      chestSec.textContent = "∞";
-      chestImg.src = "./assets/chest-full.png";
-      return;
-    }
+    if (rem == null) { chestSec.textContent = "∞"; chestImg.src = "./assets/chest-full.png"; return; }
     const sec = Math.max(0, Math.ceil(rem / 1000));
     chestSec.textContent = String(sec);
     const total = v.phase === "loot" ? v.lootMs : (v.phase === "question" ? v.qMs : 3000);
     const t = Math.max(0, Math.min(1, rem / total));
     chestImg.src = t < 0.35 ? "./assets/chest-low.png" : "./assets/chest-full.png";
     chestWrap.style.filter = (v.phase === "question" || v.phase === "loot") && t < 0.28
-      ? "drop-shadow(0 0 10px #ff7a6e)" : "drop-shadow(0 4px 10px rgba(0,0,0,.35))";
+      ? "drop-shadow(0 0 10px #ff7a6e)" : "drop-shadow(0 3px 8px rgba(0,0,0,.35))";
     if (rem <= 0 && lastState && lastState.status === "playing") {
       const key = String(v.deadlineAt) + ":" + v.phase + ":" + (v.lootVentureIndex || 0);
-      if (timeoutSentFor !== key) {
-        timeoutSentFor = key;
-        act({ type: "timeout" });
-      }
+      if (timeoutSentFor !== key) { timeoutSentFor = key; act({ type: "timeout" }); }
     }
   }
-  const chestWrap = document.getElementById("chestWrap");
 
-  // --- canvas diorama ---
+  // --- canvas ---
   const sea = document.getElementById("sea");
   const sctx = sea.getContext("2d");
   let bg = null, cabin = null, fogImg = null;
-  let shipImgs = [], islandImgs = [], poseidonImg = null, sharkImg = null;
+  let shipImgs = [], islandImgs = [], poseidonFrames = [];
+  let imgCoinBurst = null, imgChestOpen = null, imgSparkle = null, imgImpact = null;
+  let imgSplash = null, imgWake = null, imgCrash = null, imgConfetti = null;
+  let imgCheer = null, imgPlunderCrew = null, sharkImg = null;
   const t0 = performance.now();
 
   function loadImg(src) {
@@ -430,18 +454,36 @@
   addEventListener("resize", resize); addEventListener("orientationchange", resize); resize();
 
   function islandPos(i, W, H) {
-    const slots = [
-      { x: W * 0.22, y: H * 0.30 },
-      { x: W * 0.78, y: H * 0.30 },
-      { x: W * 0.20, y: H * 0.48 },
-      { x: W * 0.80, y: H * 0.48 },
-    ];
-    return slots[i];
+    // Keep islands in upper mid band so HUD dock at bottom doesn't cover ships
+    return [
+      { x: W * 0.24, y: H * 0.34 },
+      { x: W * 0.76, y: H * 0.34 },
+      { x: W * 0.24, y: H * 0.52 },
+      { x: W * 0.76, y: H * 0.52 },
+    ][i];
+  }
+  /** Ship berth BESIDE island (sea side), never on top of land. */
+  function dockPos(i, W, H, seatOffset) {
+    const p = islandPos(i, W, H);
+    const outward = (i % 2 === 0) ? 1 : -1; // left islands → berth to the right (inward/sea)
+    const ox = outward * Math.min(58, W * 0.12);
+    const oy = Math.min(48, H * 0.055) + (seatOffset || 0) * 14;
+    return { x: p.x + ox, y: p.y + oy };
   }
   function fleetPos(seat, n, W, H) {
-    const spread = Math.min(0.56, 0.16 * n);
+    const spread = Math.min(0.5, 0.14 * n);
     const start = 0.5 - spread / 2;
-    return { x: W * (start + (spread * (seat + 0.5) / n)), y: H * 0.72 };
+    return { x: W * (start + (spread * (seat + 0.5) / n)), y: H * 0.70 };
+  }
+  function fogHoldPos(W, H) {
+    return { x: W * 0.5, y: H * 0.58 };
+  }
+
+  function drawImg(im, x, y, sz, alpha) {
+    if (!im) return;
+    sctx.globalAlpha = alpha == null ? 1 : alpha;
+    sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
+    sctx.globalAlpha = 1;
   }
 
   function drawSea(now) {
@@ -452,14 +494,12 @@
     sctx.translate(shake, 0);
 
     const v = lastState && lastState.view;
-    const useCabin = v && (v.phase === "loot" || v.phase === "loot_intro");
+    const useCabin = v && v.phase === "loot";
     const plate = useCabin && cabin ? cabin : bg;
     if (plate) {
       const scale = Math.max(W / plate.width, H / plate.height);
       const dw = plate.width * scale, dh = plate.height * scale;
-      // parallax drift
-      const t = (now - t0) / 1000;
-      const ox = Math.sin(t * 0.15) * 8;
+      const ox = Math.sin((now - t0) / 1000 * 0.15) * 6;
       sctx.drawImage(plate, (W - dw) / 2 + ox, (H - dh) / 2, dw, dh);
     } else {
       const g = sctx.createLinearGradient(0, 0, 0, H);
@@ -469,90 +509,132 @@
 
     const t = (now - t0) / 1000;
     if (!useCabin) {
-      sctx.globalAlpha = 0.2;
+      // soft wave lines
+      sctx.globalAlpha = 0.18;
       for (let i = 0; i < 5; i++) {
-        const y = H * 0.28 + i * H * 0.08;
+        const y = H * 0.30 + i * H * 0.07;
         sctx.beginPath();
         for (let x = 0; x <= W; x += 14) {
-          const yy = y + Math.sin(x * 0.014 + t * 1.5 + i) * 5;
+          const yy = y + Math.sin(x * 0.014 + t * 1.5 + i) * 4;
           if (x === 0) sctx.moveTo(x, yy); else sctx.lineTo(x, yy);
         }
         sctx.strokeStyle = "#d8f4ff"; sctx.lineWidth = 2; sctx.stroke();
       }
       sctx.globalAlpha = 1;
 
+      // islands with soft contact shadow (composites onto sea)
       for (let i = 0; i < 4; i++) {
         const p = islandPos(i, W, H);
-        const bob = Math.sin(t * 1.1 + i) * 3;
+        const bob = Math.sin(t * 1.05 + i) * 2.5;
         const im = islandImgs[i];
-        const sz = Math.min(120, W * 0.28);
+        const sz = Math.min(108, W * 0.26);
+        sctx.fillStyle = "rgba(5,25,35,.28)";
+        sctx.beginPath();
+        sctx.ellipse(p.x, p.y + sz * 0.28 + bob, sz * 0.38, sz * 0.10, 0, 0, Math.PI * 2);
+        sctx.fill();
         if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
-        // marker plaque
-        sctx.fillStyle = "rgba(10,30,40,.7)";
-        sctx.beginPath(); sctx.arc(p.x - sz * 0.32, p.y - sz * 0.28 + bob, 13, 0, Math.PI * 2); sctx.fill();
+        sctx.fillStyle = "rgba(10,30,40,.75)";
+        sctx.beginPath(); sctx.arc(p.x - sz * 0.28, p.y - sz * 0.22 + bob, 11, 0, Math.PI * 2); sctx.fill();
         sctx.fillStyle = "#ffd56a";
-        sctx.font = "900 13px Trebuchet MS,sans-serif";
+        sctx.font = "900 12px Trebuchet MS,sans-serif";
         sctx.textAlign = "center"; sctx.textBaseline = "middle";
-        sctx.fillText(LETTERS[i], p.x - sz * 0.32, p.y - sz * 0.28 + bob);
+        sctx.fillText(LETTERS[i], p.x - sz * 0.28, p.y - sz * 0.22 + bob);
       }
 
-      // path preview
       if (pathPreview != null) {
         const mySeat = (v && v.players || []).findIndex((p) => p.id === (lastState && lastState.you));
         if (mySeat >= 0) {
           const from = fleetPos(mySeat, Math.max(2, (v.players || []).length), W, H);
-          const to = islandPos(pathPreview, W, H);
+          const to = dockPos(pathPreview, W, H, 0);
           sctx.strokeStyle = "rgba(255,213,106,.55)";
-          sctx.setLineDash([8, 8]);
-          sctx.lineWidth = 3;
-          sctx.beginPath(); sctx.moveTo(from.x, from.y - 10); sctx.lineTo(to.x, to.y + 10); sctx.stroke();
+          sctx.setLineDash([7, 7]); sctx.lineWidth = 3;
+          sctx.beginPath(); sctx.moveTo(from.x, from.y); sctx.lineTo(to.x, to.y); sctx.stroke();
           sctx.setLineDash([]);
+          if (imgWake) drawImg(imgWake, (from.x + to.x) / 2, (from.y + to.y) / 2, 48, 0.55);
         }
       }
 
       const players = (v && v.players) || [];
       const n = Math.max(players.length, 2);
+      const iAnswered = v && v.you && v.you.answered;
       players.forEach((pl, seat) => {
         const target = chosenIsland[seat];
         const from = fleetPos(seat, n, W, H);
-        const to = target == null ? from : (target === -1 ? { x: W * 0.5, y: H * 0.38 } : islandPos(target, W, H));
+        let to = from;
+        if (target === -1) to = fogHoldPos(W, H);
+        else if (target != null) to = dockPos(target, W, H, seat);
         const p = sailProgress[seat];
         const x = from.x + (to.x - from.x) * p;
-        const y = from.y + (to.y - from.y) * p + Math.sin(t * 2.1 + seat) * 4;
+        const y = from.y + (to.y - from.y) * p + Math.sin(t * 2.1 + seat) * 3;
         const im = shipImgs[seat % 4];
-        const sz = 78 + (pl.id === (lastState && lastState.you) ? 8 : 0);
-        if (target === -1 && fogImg && p > 0.55) {
-          sctx.globalAlpha = 0.85;
-          sctx.drawImage(fogImg, x - 50, y - 40, 100, 80);
-          sctx.globalAlpha = 1;
-        }
+        const sz = 70 + (pl.id === (lastState && lastState.you) ? 8 : 0);
+        // soft water contact ellipse under hull
+        sctx.fillStyle = "rgba(8,40,50,.25)";
+        sctx.beginPath(); sctx.ellipse(x, y + sz * 0.28, sz * 0.32, sz * 0.08, 0, 0, Math.PI * 2); sctx.fill();
+        if (target === -1 && fogImg && p > 0.45) drawImg(fogImg, x, y - 6, 96, 0.8);
         if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
-        // nameplate
-        sctx.fillStyle = "rgba(8,24,32,.75)";
-        roundRect(sctx, x - 42, y + 30, 84, 18, 8); sctx.fill();
+        sctx.fillStyle = "rgba(8,24,32,.78)";
+        roundRect(sctx, x - 40, y + 28, 80, 16, 7); sctx.fill();
         sctx.fillStyle = "#fff6e4";
-        sctx.font = "800 11px Trebuchet MS,sans-serif";
+        sctx.font = "800 10px Trebuchet MS,sans-serif";
         sctx.textAlign = "center";
-        sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 42);
+        sctx.fillText((pl.isBot ? "🤖 " : "") + pl.nick, x, y + 39);
       });
+      void iAnswered;
     }
 
-    if (now < fxPoseidon && poseidonImg) {
-      const a = Math.min(1, (fxPoseidon - now) / 600);
-      sctx.globalAlpha = a;
-      const sz = Math.min(280, W * 0.7);
-      sctx.drawImage(poseidonImg, W / 2 - sz / 2, H * 0.22, sz, sz);
-      sctx.globalAlpha = 1;
-    }
-    if (now < fxShark && sharkImg) {
-      const a = Math.min(1, (fxShark - now) / 500);
-      const x = W * (0.2 + 0.6 * (1 - (fxShark - now) / 2200));
-      sctx.globalAlpha = a;
-      sctx.drawImage(sharkImg, x, H * 0.55, 110, 110);
-      sctx.globalAlpha = 1;
+    // particles
+    fxParticles = fxParticles.filter((p) => {
+      const age = now - p.t0;
+      if (age > p.life) return false;
+      p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+      const a = 1 - age / p.life;
+      const im = p.kind === "coin" ? imgCoinBurst : imgSparkle;
+      drawImg(im, p.x, p.y, 28 + 20 * a, a);
+      return true;
+    });
+
+    // cutscenes
+    if (cutscene) {
+      const u = (now - cutscene.t0) / cutscene.dur;
+      if (u >= 1) endCutscene();
+      else drawCutscene(now, u, W, H);
     }
 
     sctx.restore();
+  }
+
+  function drawCutscene(now, u, W, H) {
+    if (cutscene.kind === "poseidon") {
+      const frames = poseidonFrames.filter(Boolean);
+      const fi = Math.min(frames.length - 1, Math.floor(u * frames.length));
+      const im = frames[fi] || frames[0];
+      const pulse = 1 + Math.sin(u * Math.PI) * 0.08;
+      const sz = Math.min(300, W * 0.72) * pulse;
+      const y = H * (0.38 - Math.sin(Math.min(1, u * 1.4) * Math.PI) * 0.06);
+      drawImg(im, W / 2, y, sz, Math.min(1, u * 4) * Math.min(1, (1 - u) * 5));
+      if (u > 0.35 && u < 0.85 && Math.random() < 0.35) spawnBurst(W / 2, y + 40, 2);
+      if (imgSplash && u > 0.2) drawImg(imgSplash, W / 2, H * 0.62, 160, 0.55 * (1 - Math.abs(u - 0.5)));
+    } else if (cutscene.kind === "plunder") {
+      const isl = cutscene.meta.island ?? 0;
+      const p = islandPos(isl, W, H);
+      const pop = Math.sin(Math.min(1, u * 1.6) * Math.PI);
+      drawImg(imgChestOpen, p.x, p.y - 10, 90 + 40 * pop, 0.95);
+      drawImg(imgCoinBurst, p.x, p.y - 20, 120 + 50 * pop, 0.85);
+      drawImg(imgConfetti, p.x, p.y - 50, 140 * pop, 0.7);
+      drawImg(imgPlunderCrew, p.x, p.y + 30, 70, 0.9);
+      if (u < 0.6 && Math.random() < 0.4) spawnBurst(p.x, p.y, 3);
+    } else if (cutscene.kind === "crash") {
+      const isl = cutscene.meta.island ?? 0;
+      const p = islandPos(isl, W, H);
+      drawImg(imgCrash, p.x + 30, p.y + 20, 110, 0.95);
+      drawImg(imgImpact, p.x + 30, p.y + 10, 90, 0.8 * (1 - u));
+      shakeUntil = now + 80;
+    } else if (cutscene.kind === "shark") {
+      const x = W * (0.1 + 0.8 * u);
+      drawImg(sharkImg, x, H * 0.55, 120, 0.95);
+      drawImg(imgSplash, x, H * 0.6, 90, 0.6);
+    }
   }
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -569,7 +651,7 @@
     requestAnimationFrame(frame);
     for (let i = 0; i < 4; i++) {
       const want = chosenIsland[i] == null ? 0 : 1;
-      sailProgress[i] += (want - sailProgress[i]) * 0.07;
+      sailProgress[i] += (want - sailProgress[i]) * 0.075;
     }
     drawSea(now);
     if (lastState && lastState.view) tickClock(lastState.view);
@@ -584,17 +666,18 @@
     if (!v) { ribbonEl.innerHTML = ""; return; }
     ribbonEl.innerHTML = v.players.map((p, i) => {
       const isYou = p.id === you;
-      return `<div class="chip${isYou ? " you" : ""}${p.isBot ? " bot" : ""}"><img src="${PORTRAIT[i % 4]}" alt=""><span>${esc(p.nick)} · ${p.score}</span></div>`;
+      return `<div class="chip${isYou ? " you" : ""}"><img src="${PORTRAIT[i % 4]}" alt=""><span>${esc(p.nick)} · ${p.score}</span></div>`;
     }).join("");
   }
 
   function syncShips(s, v) {
     const players = v.players || [];
+    const iAnswered = !!(v.you && v.you.answered);
     players.forEach((p, seat) => {
       if (v.phase === "question") {
         if (p.id === s.you) chosenIsland[seat] = v.you.answerIndex;
-        else if (p.answered) chosenIsland[seat] = -1; // fog hide
-        else chosenIsland[seat] = null;
+        else if (iAnswered && p.answered) chosenIsland[seat] = -1; // fog only AFTER you commit
+        else chosenIsland[seat] = null; // stay in fleet — no leak
       } else if (v.phase === "q_reveal" && v.reveal && v.reveal.results) {
         const r = v.reveal.results[p.id];
         chosenIsland[seat] = r && r.index != null ? r.index : null;
@@ -609,13 +692,12 @@
   function renderWaiting(s) {
     pathPreview = null;
     subtitleEl.textContent = wantBot ? "Calling deckhand…" : "Gathering crew…";
-    mainEl.innerHTML = `<div class="panel center pop">
+    mainEl.innerHTML = `<div class="banner center pop">
       <div class="tag">Waiting room</div>
       <h2 class="display">${wantBot ? "Practice duel" : "Invite rivals"}</h2>
-      <p class="muted">${wantBot ? "Bot boarding for a rivalry warm-up." : "Share the link — voyage needs at least 2 captains (up to 4)."}</p>
-      ${wantBot ? "" : `<div class="invite" style="margin-top:10px"><input readonly id="link" value="${esc(location.href)}"><button class="ghost" id="copyBtn" style="width:auto">COPY</button></div>`}
-      <p class="muted" style="margin-top:10px">Connected: ${s.connected || 1}</p>
-      ${wantBot ? "" : `<button class="big pulse" id="waitBot" style="margin-top:10px">PLAY VS BOT</button>`}
+      <p class="muted">${wantBot ? "Bot boarding…" : "Share link — 2–4 captains."}</p>
+      ${wantBot ? "" : `<div class="invite" style="margin-top:8px"><input readonly id="link" value="${esc(location.href)}"><button class="ghost" id="copyBtn" style="width:auto">COPY</button></div>`}
+      ${wantBot ? "" : `<button class="big pulse" id="waitBot" style="margin-top:8px">PLAY VS BOT</button>`}
     </div>`;
     const c = document.getElementById("copyBtn");
     if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(location.href); toast("Copied!"); } catch { toast("Copy link"); } };
@@ -628,12 +710,12 @@
     subtitleEl.textContent = "Lobby";
     const you = v.you;
     const readyCount = v.players.filter((p) => p.ready).length;
-    mainEl.innerHTML = `<div class="panel center pop">
+    mainEl.innerHTML = `<div class="banner center pop">
       <div class="tag">Cast off</div>
       <h2 class="display">Crew of ${v.players.length}</h2>
-      <p class="muted">${readyCount}/${v.players.length} ready. Host starts the voyage.</p>
+      <p class="muted">${readyCount}/${v.players.length} ready</p>
       <button class="big${!you.ready ? " pulse" : ""}" id="readyBtn">${you.ready ? "READY!" : "READY UP"}</button>
-      ${you.isHost ? `<button class="big pulse" id="startBtn" style="margin-top:8px" ${readyCount < v.players.length ? "disabled" : ""}>CAST OFF</button>` : `<p class="muted" style="margin-top:8px">Waiting on host…</p>`}
+      ${you.isHost ? `<button class="big pulse" id="startBtn" style="margin-top:6px" ${readyCount < v.players.length ? "disabled" : ""}>CAST OFF</button>` : `<p class="muted">Waiting on host…</p>`}
     </div>`;
     document.getElementById("readyBtn").onclick = () => act({ type: "ready" });
     const st = document.getElementById("startBtn");
@@ -646,28 +728,27 @@
     subtitleEl.textContent = `Q ${v.questionIndex + 1}/${v.questionTotal}`;
     syncShips(s, v);
     pathPreview = you.answerIndex;
-    mainEl.innerHTML = `<div class="panel pop">
+    mainEl.innerHTML = `<div class="banner pop">
       <div class="tag">Sail banner</div>
       <h2 class="display">${esc(q.text)}</h2>
-      <p class="muted">${you.answered ? "Sailed — rivals may hide in fog…" : "Preview a path, then commit."}</p>
+      <p class="muted">${you.answered ? "Waiting for rivals…" : "Pick an island — ships dock beside it."}</p>
     </div>
-    <div class="islands" id="islands"></div>
-    ${!seenOnboard && can ? '<div class="hand" id="ghostHand"></div>' : ""}`;
-    const root = document.getElementById("islands");
+    <div class="choices" id="choices"></div>
+    ${!seenOnboard && can ? '<div class="hand"></div>' : ""}`;
+    const root = document.getElementById("choices");
     q.answers.forEach((label, i) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "island-btn" + (you.answerIndex === i ? " picked" : "");
+      btn.className = "choice" + (you.answerIndex === i ? " picked" : "");
       btn.disabled = !can;
       btn.innerHTML = `<img src="${ISLAND[i]}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>`;
       btn.onclick = () => {
         if (!can) return;
         pathPreview = i;
         seenOnboard = true; sessionStorage.setItem("tt-onboard", "1");
-        const hand = document.getElementById("ghostHand"); if (hand) hand.remove();
         const my = v.players.findIndex((p) => p.id === s.you);
         if (my >= 0) chosenIsland[my] = i;
-        hitStopUntil = performance.now() + 50;
+        hitStopUntil = performance.now() + 45;
         act({ type: "answer", index: i });
       };
       root.appendChild(btn);
@@ -680,16 +761,16 @@
     const q = v.question, rev = v.reveal;
     const my = rev && rev.results ? rev.results[s.you] : null;
     subtitleEl.textContent = "Reveal!";
-    mainEl.innerHTML = `<div class="panel pop">
+    mainEl.innerHTML = `<div class="banner pop">
       <div class="tag">Answer reveal</div>
       <h2 class="display">${my && my.correct ? `Spot on! +${my.delta}` : "Missed the mark"}</h2>
-      <p class="muted">${esc(q.text)}</p>
-    </div><div class="islands" id="islands"></div>`;
-    const root = document.getElementById("islands");
+    </div>
+    <div class="choices" id="choices"></div>`;
+    const root = document.getElementById("choices");
     q.answers.forEach((label, i) => {
       const btn = document.createElement("button");
       btn.type = "button"; btn.disabled = true;
-      btn.className = "island-btn";
+      btn.className = "choice";
       if (i === rev.correctIndex) btn.classList.add("correct");
       else btn.classList.add("dim");
       if (my && my.index === i && !my.correct) btn.classList.add("wrong");
@@ -698,57 +779,59 @@
     });
   }
 
-  function renderLootIntro(s, v) {
+  function renderLootIntro() {
     pathPreview = null;
     subtitleEl.textContent = "Loot Drop";
     casinoEl.classList.add("on");
-    setTimeout(() => casinoEl.classList.remove("on"), 1200);
-    mainEl.innerHTML = `<div class="panel center pop">
+    setTimeout(() => casinoEl.classList.remove("on"), 1000);
+    mainEl.innerHTML = `<div class="banner center pop">
       <div class="tag">Special round</div>
-      <img class="hero-art" src="./assets/chest-full.png" alt="">
-      <h2 class="display">The sea changes…</h2>
-      <p class="muted">Event on the horizon — captain’s map next. Send crews to ventures. Only the true island returns your loot.</p>
+      <h2 class="display">Quiz the treasure map</h2>
+      <p class="muted">Same as a question — send crews to the island you think is right. Wrong reefs crash. Correct returns your gold.</p>
     </div>`;
   }
 
   function renderLoot(s, v) {
     pathPreview = null;
-    subtitleEl.textContent = "Allocate crews";
+    subtitleEl.textContent = "Loot Drop quiz";
     const you = v.you;
     const can = s.status === "playing" && s.seats.includes(s.you) && !you.locked;
-    mainEl.innerHTML = `<div class="panel pop">
-      <div class="tag">Captain’s map</div>
+    const q = v.question;
+    mainEl.innerHTML = `<div class="banner pop">
+      <div class="tag">Loot Drop · quiz</div>
+      <h2 class="display">${esc((q && q.text) || "Where’s the treasure?")}</h2>
       <div class="loot-bar">
-        <div class="loot-left"><img src="./assets/crew-token.png" alt=""><span>${you.lootLeft}</span> crew gold</div>
-        <div class="muted">${you.locked ? "LOCKED" : "Tap ventures · private"}</div>
+        <span><img src="./assets/crew-token.png" alt=""> ${you.lootLeft} gold left</span>
+        <span class="muted">${you.locked ? "LOCKED" : "Tap islands to stake"}</span>
       </div>
-      <p class="muted" style="margin-bottom:8px">${esc((v.question && v.question.text) || "Where’s the treasure?")}</p>
-      <div class="ventures" id="ventures"></div>
     </div>
+    <div class="choices" id="choices"></div>
     <button class="big${can ? " pulse" : ""}" id="lockBtn" ${can ? "" : "disabled"}>
-      <img src="./assets/wheel.png" alt="" style="width:28px;height:28px;vertical-align:middle;margin-right:8px"> ${you.locked ? "LOCKED!" : "TURN THE WHEEL"}
+      <img src="./assets/wheel.png" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:6px">${you.locked ? "LOCKED!" : "TURN THE WHEEL"}
     </button>`;
-    const root = document.getElementById("ventures");
+    const root = document.getElementById("choices");
     v.ventures.forEach((ven, i) => {
       const amt = you.allocation[ven.id] || 0;
+      const label = (q && q.answers && q.answers[i]) || ven.name;
       const el = document.createElement("button");
-      el.type = "button"; el.className = "venture" + (amt > 0 ? " picked" : "");
+      el.type = "button";
+      el.className = "choice" + (amt > 0 ? " picked" : "");
       el.disabled = !can;
-      el.innerHTML = `<img src="${ISLAND[ven.island]}" alt=""><div><strong>${esc(ven.name)}</strong><small>Crew tokens</small></div><div class="amt">${amt}</div>`;
+      el.innerHTML = `<img src="${ISLAND[ven.island]}" alt=""><div><strong>${LETTERS[i]} · ${esc(ven.name)}</strong><span>${esc(label)}</span></div><div class="amt">${amt}</div>`;
       el.onclick = () => {
         if (!can) return;
-        if (you.lootLeft <= 0) { toast("NO LOOT LEFT!"); shakeUntil = performance.now() + 400; return; }
+        if (you.lootLeft <= 0) { toast("NO LOOT LEFT!"); shakeUntil = performance.now() + 350; return; }
         const step = v.step || 10;
-        const add = you.lootLeft >= step * 2 ? step * 2 : step;
-        act({ type: "alloc", venture: ven.id, amount: amt + Math.min(add, you.lootLeft) });
+        const add = Math.min(you.lootLeft >= step * 2 ? step * 2 : step, you.lootLeft);
+        act({ type: "alloc", venture: ven.id, amount: amt + add });
       };
       root.appendChild(el);
     });
     document.getElementById("lockBtn").onclick = () => {
       if (!can) return;
-      hitStopUntil = performance.now() + 80;
+      hitStopUntil = performance.now() + 70;
       casinoEl.classList.add("on");
-      setTimeout(() => casinoEl.classList.remove("on"), 700);
+      setTimeout(() => casinoEl.classList.remove("on"), 600);
       act({ type: "lock" });
     };
   }
@@ -762,33 +845,25 @@
     const cell = mine && mine.byVenture ? mine.byVenture[ven.id] : null;
     const ok = cell && cell.ok;
     subtitleEl.textContent = `Venture ${vi + 1}/4`;
-    mainEl.innerHTML = `<div class="panel center pop">
-      <div class="tag">${ok ? "Safe return" : "Reef crash"}</div>
-      <img class="hero-art" src="${ISLAND[ven.island]}" alt="">
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">${ok ? "Plunder!" : "Reef crash"}</div>
       <h2 class="display">${esc(ven.name)}</h2>
-      <p class="muted">${cell ? (ok ? `Your crews return with ${cell.got} gold!` : (cell.put ? "Comic crash — loot lost on the reef." : "You sent nobody here.")) : "Revealing…"}</p>
+      <p class="muted">${cell ? (ok ? `Crews return with ${cell.got} gold!` : (cell.put ? "Comic crash — loot lost." : "No crews here.")) : "…"}</p>
     </div>`;
-    if (ok === false && cell && cell.put) shakeUntil = performance.now() + 380;
-    if (ok) fxBurst = performance.now() + 900;
   }
 
   function renderWildcard(s, v) {
     const rev = v.reveal || {};
     subtitleEl.textContent = "Wild seas";
-    let body = `<p class="muted">Ventures resolved.</p>`;
+    let body = `<h2 class="display">Seas settle</h2>`;
     if (rev.poseidon) {
       const who = (v.players.find((p) => p.id === rev.poseidon.playerId) || {}).nick || "A pirate";
-      body = `<img class="hero-art" src="./assets/poseidon.png" alt="">
-        <h2 class="display">Poseidon rises!</h2>
-        <p class="muted">${esc(who)} is rescued — majestic… then a comedic splash. +${rev.poseidon.amount}</p>`;
+      body = `<h2 class="display">Poseidon’s Rescue!</h2>
+        <p class="muted">${esc(who)} saved — +${rev.poseidon.amount}. Watch the seas.</p>`;
     } else if (rev.shark) {
-      body = `<img class="hero-art" src="./assets/shark.png" alt="">
-        <h2 class="display">Funny sharks!</h2>
-        <p class="muted">Success first — then a cheeky bite of the haul.</p>`;
-    } else {
-      body = `<h2 class="display">Seas settle</h2><p class="muted">No wildcards this voyage.</p>`;
+      body = `<h2 class="display">Funny sharks!</h2><p class="muted">Success first… then a cheeky bite.</p>`;
     }
-    mainEl.innerHTML = `<div class="panel center pop"><div class="tag">Wildcard</div>${body}</div>`;
+    mainEl.innerHTML = `<div class="banner center pop"><div class="tag">Wildcard</div>${body}</div>`;
   }
 
   function renderWinner(s, v) {
@@ -797,15 +872,14 @@
     const winnerId = s.result && s.result.winner;
     const win = (v.players || []).find((p) => p.id === winnerId);
     const youWin = winnerId === s.you;
-    mainEl.innerHTML = `<div class="panel center pop">
+    mainEl.innerHTML = `<div class="banner center pop">
       <div class="tag">Voyage complete</div>
       <img class="hero-art" src="./assets/chest-full.png" alt="">
-      <h2 class="display">${youWin ? "You rule these waters!" : esc((win && win.nick) || "Rival") + " takes the gold"}</h2>
-      <p class="muted">${wantBot ? "Rematch keeps your bot rival." : "Same room — play again."}</p>
-      <button class="big pulse" id="resetBtn" style="margin-top:10px">PLAY AGAIN</button>
+      <h2 class="display">${youWin ? "You rule these waters!" : esc((win && win.nick) || "Rival") + " wins"}</h2>
+      <button class="big pulse" id="resetBtn" style="margin-top:8px">PLAY AGAIN</button>
     </div>`;
     document.getElementById("resetBtn").onclick = () => {
-      botBusyKey = ""; clearBotTimers();
+      botBusyKey = ""; clearBotTimers(); endCutscene();
       send({ type: "reset" });
       if (wantBot) later(300, connectBot);
     };
@@ -819,7 +893,7 @@
     if (v.phase === "lobby") renderLobby(s, v);
     else if (v.phase === "question") renderQuestion(s, v);
     else if (v.phase === "q_reveal") renderQReveal(s, v);
-    else if (v.phase === "loot_intro") renderLootIntro(s, v);
+    else if (v.phase === "loot_intro") renderLootIntro();
     else if (v.phase === "loot") renderLoot(s, v);
     else if (v.phase === "loot_reveal") renderLootReveal(s, v);
     else if (v.phase === "loot_wildcard") renderWildcard(s, v);
@@ -830,10 +904,21 @@
     bg = await loadImg("./assets/bg-sea.jpg");
     cabin = await loadImg("./assets/map-cabin.jpg");
     fogImg = await loadImg("./assets/fog.png");
-    poseidonImg = await loadImg("./assets/poseidon.png");
     sharkImg = await loadImg("./assets/shark.png");
     shipImgs = await Promise.all(SHIP.map(loadImg));
     islandImgs = await Promise.all(ISLAND.map(loadImg));
+    poseidonFrames = await Promise.all(POSEIDON_FRAMES.map(loadImg));
+    imgCoinBurst = await loadImg("./assets/vfx-coin-burst.png");
+    imgChestOpen = await loadImg("./assets/vfx-chest-open.png");
+    imgSparkle = await loadImg("./assets/vfx-sparkle.png");
+    imgImpact = await loadImg("./assets/vfx-impact.png");
+    imgSplash = await loadImg("./assets/vfx-splash.png");
+    imgWake = await loadImg("./assets/vfx-wake.png");
+    imgCrash = await loadImg("./assets/vfx-reef-crash.png");
+    imgConfetti = await loadImg("./assets/vfx-confetti.png");
+    imgCheer = await loadImg("./assets/ship-cheer.png");
+    imgPlunderCrew = await loadImg("./assets/plunder-crew.png");
+    void imgCheer;
     requestAnimationFrame(frame);
 
     function start(vsBot) {

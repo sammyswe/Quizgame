@@ -30,3 +30,12 @@ Model: `nano_banana_pro` @ 2k. STYLE FORMULA from `STYLE_FORMULA.txt`.
 | portrait-3 | a18176eb-c8d6-4203-914c-dde079f3f192 |
 
 Raw downloads in `raw/`; cutouts in `assets/`.
+
+## Polish pack 2026-07-20b (dock / cutscenes / land islands)
+
+| asset | notes |
+|---|---|
+| island-land-* | land-only biomes replacing water-disc islands |
+| poseidon-rise/lift/splash/wave/reach | Poseidon rescue cutscene frames |
+| vfx-* | plunder, crash, splash, wake, confetti |
+| plunder-crew, ship-cheer, flag-buoy | celebration / berth props |
