@@ -52,7 +52,7 @@
   }
   /* Sea band = exclusive voyage viewport. Q&A never paints over this. */
   .sea-band {
-    flex: 1 1 58%;
+    flex: 1 1 68%;
     min-height: 0;
     position: relative;
     overflow: hidden;
@@ -147,8 +147,8 @@
   @keyframes tapPulse { 50% { transform: scale(1.06); filter: brightness(1.15); } }
   @keyframes fxIn { from { transform: translate(-50%, -50%) scale(.72); } to { transform: translate(-50%, -50%) scale(1); } }
   .quiz-sheet {
-    flex: 0 0 38%;
-    max-height: 38vh;
+    flex: 0 0 30%;
+    max-height: 30vh;
     min-height: 0;
     z-index: 5;
     background: linear-gradient(180deg, #164556 0%, var(--sheet-2) 100%);
@@ -1595,7 +1595,8 @@
   }
   function playBottom(H) {
     const s = currentScene();
-    const bot = Math.min(s.waterBot != null ? s.waterBot : 0.58, PLATE_Y_SPAN - 0.01);
+    const c = plateCrop(s);
+    const bot = Math.min(s.waterBot != null ? s.waterBot : c.y1 - 0.04, c.y1 - 0.02);
     return mapY(bot, H);
   }
   function seaH(H) { return playBottom(H); }
@@ -1606,15 +1607,48 @@
     return Math.max(lo, Math.min(hi, x));
   }
   /**
-   * Sea band shows the UPPER plate of each 9:16 baked sea (where all 4 islands live).
-   * Authored lane Y is in full-plate space; map into the sea-band viewport.
+   * Sea band shows a crop of each 9:16 baked sea that fully contains all 4 islands.
+   * Authored lane Y is in full-plate space; map into the sea-band viewport with margin
+   * so island art never clips against the Q&A divider.
    */
-  const PLATE_Y_SPAN = 0.62;
+  function plateCrop(scene) {
+    const s = scene || currentScene();
+    let y0 = 0.04;
+    let y1 = 0.55;
+    const boxes = s.islandBoxes;
+    if (boxes) {
+      LETTERS.forEach((L) => {
+        const b = boxes[L];
+        if (!b) return;
+        y0 = Math.min(y0, b.y);
+        y1 = Math.max(y1, b.y + b.h);
+      });
+    } else if (s.islandCenters) {
+      LETTERS.forEach((L) => {
+        const c = s.islandCenters[L];
+        if (!c) return;
+        y0 = Math.min(y0, c.y - 0.16);
+        y1 = Math.max(y1, c.y + 0.18);
+      });
+    }
+    // Baked island silhouettes extend past authored boxes — pad hard below C/D
+    y0 = Math.max(0, y0 - 0.05);
+    y1 = Math.min(0.92, y1 + 0.16);
+    if (y1 - y0 < 0.5) y1 = Math.min(0.92, y0 + 0.55);
+    return { y0, y1, span: Math.max(0.4, y1 - y0) };
+  }
   function safeY(normY) {
-    return Math.min(normY == null ? 0.5 : normY, PLATE_Y_SPAN - 0.02);
+    const c = plateCrop();
+    return Math.min(normY == null ? (c.y0 + c.y1) * 0.5 : normY, c.y1 - 0.02);
   }
   function mapX(nx, W) { return nx * W; }
-  function mapY(ny, H) { return (safeY(ny) / PLATE_Y_SPAN) * H; }
+  /** Map plate-normalized Y into sea-band pixels, with inset so islands stay fully on-screen. */
+  function mapY(ny, H) {
+    const c = plateCrop();
+    const inset = 0.04; // keep island toes above the quiz divider
+    const usable = H * (1 - inset * 2);
+    return H * inset + ((safeY(ny) - c.y0) / c.span) * usable;
+  }
   function islandBox(i) {
     const s = currentScene();
     const L = LETTERS[i];
@@ -1712,12 +1746,19 @@
   function normPathToPx(pts, W, H) {
     return (pts || []).map((p) => ({ x: mapX(p.x, W), y: mapY(p.y, H) }));
   }
-  /** Draw the upper island plate into the sea band (Q&A is a separate section below). */
+  /** Draw the island crop into the sea band so all 4 islands are fully on-screen. */
   function drawVoyagePlate(img, W, H, bobY) {
     if (!img) return false;
+    const c = plateCrop();
     const sw = img.width;
-    const sh = Math.max(1, img.height * PLATE_Y_SPAN);
-    sctx.drawImage(img, 0, 0, sw, sh, 0, bobY || 0, W, H);
+    const sy = img.height * c.y0;
+    const sh = Math.max(1, img.height * c.span);
+    const inset = 0.04;
+    const dx = 0;
+    const dy = (bobY || 0) + H * inset;
+    const dw = W;
+    const dh = H * (1 - inset * 2);
+    sctx.drawImage(img, 0, sy, sw, sh, dx, dy, dw, dh);
     return true;
   }
   /**
@@ -2067,10 +2108,14 @@
       && revealClipEl.readyState >= 2 && !revealClipEl.paused;
     const bobY = (kind === "voyage" || kind === "travel") ? Math.cos(t * 0.04) * 1.2 : 0;
     if (useRevealVid) {
-      // Same upper-plate crop as the static sea so the swap stays seamless
+      // Same island crop as the static sea so the swap stays seamless
+      const c = plateCrop();
       const vw = revealClipEl.videoWidth || 720;
-      const vh = Math.max(1, (revealClipEl.videoHeight || 1280) * PLATE_Y_SPAN);
-      sctx.drawImage(revealClipEl, 0, 0, vw, vh, 0, bobY, W, H);
+      const fullH = revealClipEl.videoHeight || 1280;
+      const sy = fullH * c.y0;
+      const sh = Math.max(1, fullH * c.span);
+      const inset = 0.04;
+      sctx.drawImage(revealClipEl, 0, sy, vw, sh, 0, bobY + H * inset, W, H * (1 - inset * 2));
     } else if (kind === "voyage" || kind === "travel") {
       if (!drawVoyagePlate(drawBg, W, H, bobY)) {
         const g = sctx.createLinearGradient(0, 0, 0, H);
@@ -2101,8 +2146,13 @@
       for (let i = 0; i < 4; i++) {
         if (i === islandCelebrate.correctIndex) continue;
         const b = islandBox(i);
+        const c = plateCrop();
+        const bx = mapX(b.x, W);
+        const by = mapY(b.y, H);
+        const bw = b.w * W;
+        const bh = (b.h / c.span) * H * 0.92;
         sctx.fillStyle = `rgba(12,20,28,${0.32 + 0.14 * u})`;
-        sctx.fillRect(b.x * W, b.y * H, b.w * W, b.h * H);
+        sctx.fillRect(bx, by, bw, bh);
       }
     }
     // Soft scene crossfade when entering a new destination after scoreboard
