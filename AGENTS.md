@@ -1,4 +1,4 @@
-# AGENTS.md — Treasure Trap Design Spec
+# AGENTS.md — IQ Party Design Spec
 
 Instructions for AI agents working from this **design-only** repository.
 
