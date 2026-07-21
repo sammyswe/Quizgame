@@ -1,0 +1,23 @@
+---
+description: Visual quality bar — it must feel like a 2D mobile game, not a website
+alwaysApply: true
+---
+
+- Banned in gameplay: static answer cards, plain buttons, numeric input
+  boxes, emoji-as-art, motionless panels, instant state swaps.
+- Required: full-screen animated cartoon pirate excursion with constant ambient motion (waves,
+  wake, sails, clouds, bobbing ships), chunky outlined shapes and warm storybook sea colours.
+- Reserve cyan/magenta neon, slot ticks and casino lighting primarily for loot-box/jackpot
+  ceremonies and brief high-stakes reveal peaks. Contrast makes rewards exciting.
+- Text uses the fonts wired in the active client: Lilita One for display and Nunito 700/900
+  for readable body/answers, unless an explicit typography migration changes both docs/code.
+- Placeholder art must look intentional: thick outlines, gloss highlights,
+  consistent palette — never developer-grey boxes.
+- Answer text must stay readable at a glance on every island; if art fights
+  readability, readability wins (scrims, plaques, strokes).
+- Any React overlay that appears during gameplay must be styled like game HUD
+  (chunky, glowing, on-palette), not like a settings form. The debug panel is
+  the only exception.
+- Gameplay actions should read as pirate-world cause/effect: a ship sails, cannon fires, flag
+  rises or creature attacks. A generic card animation is not enough.
+- Follow `docs/context/VISUAL_DIRECTION.md`.

@@ -1,0 +1,17 @@
+---
+description: Scope guard — Loot Drop is the only polished special round this phase
+alwaysApply: true
+---
+
+- All special-round polish effort goes into Loot Drop. Do not start another special round
+  before its mechanic, multiplayer loop, wildcards and audiovisual gate pass playtesting.
+- Do not polish menus/lobby beyond functional-and-on-theme while the core
+  scene still has open weaknesses (tracked in `docs/VISUAL_SELF_REVIEW.md`).
+- Required loop: create -> join -> start -> 10 regular questions -> wager prior-block loot ->
+  allocate to four ventures -> lock -> synced staged reveal -> scores -> next block.
+- The fixed 100-gold live allocator is a PILOT. Confirmed direction wagers points earned in the
+  preceding 10 regular questions; implement a server-owned block ledger before claiming parity.
+- The base fantasy is sending pirate crews/ships on island ventures. Casino intensity may peak
+  at lock/reveal, but the scene remains part of the cartoon excursion.
+- Poseidon's Rescue and Shark Attack are the first confirmed Loot Drop wildcards.
+- Canonical spec and gate: `docs/context/SPECIAL_ROUNDS.md`.

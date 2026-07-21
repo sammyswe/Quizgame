@@ -1,0 +1,26 @@
+---
+description: Game-feel contract — every action gets feedback
+globs: ["client/**", "shared/**"]
+alwaysApply: false
+---
+
+# Game-feel rules
+
+- Every player action gets **instant local feedback** (scale punch, stamp, burst, sound)
+  — never wait for the server round-trip to acknowledge a tap.
+- Every score change reaches the screen only through the reveal system: `RevealEvent`s
+  played sequentially, AnimatedNumber rollups, and HUD floating deltas. No silent jumps.
+- Reveal events carry `animation` and `intensity` hints (shared types). Server-side code
+  gets sensible defaults from `inferAnimation()` in `shared/src/game/reveal.ts`; override
+  at the call site when the moment deserves more/less drama.
+- Player state is broadcast through `PirateAvatar` moods (answered, nervous, attacked,
+  protected, cursed, accused, winner) — extend the mood table rather than inventing
+  one-off status indicators.
+- Rarity presentation comes exclusively from `client/src/lib/rarityStyles.ts`. All items
+  must feel distinct; legendary must feel outrageous.
+- The chest ceremony (slam → chains → shake → slot spin → burst → card) is a core product
+  moment. Do not shorten it below ~4s or remove stages without explicit instruction.
+- Fun copy is part of game feel: "Set Sail", "Fire!", "MUTINY!", "You have been
+  absolutely robbed." Keep it cheeky and 9+ friendly.
+- Multiplayer stays authoritative: clients animate received state/events and never
+  simulate outcomes locally before the server confirms them.

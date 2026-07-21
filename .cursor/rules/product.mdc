@@ -1,0 +1,36 @@
+---
+description: Treasure Trap product vision and non-negotiable principles
+alwaysApply: true
+---
+
+# Product vision
+
+Treasure Trap is a cartoon pirate excursion party quiz where friends sail as a fleet, answer
+trivia at four islands, bluff, mutiny, use pirate power-ups and survive special rounds.
+Casino spectacle is concentrated in loot-box/jackpot rewards and selected high-stakes peaks;
+it is not the global visual skin.
+
+Target: Gen Z / party players, suitable for ages 9+. Tone: cheeky, fast, dramatic, funny.
+
+Granular product direction also lives in the Obsidian vault (`obsidian/`). Agents read both
+`obsidian/` and `docs/context/` — see `obsidian-vault` rule.
+
+## Non-negotiables
+
+- Always preserve the product vision above. Never turn this into a plain quiz app.
+- Never remove multiplayer without explicit instruction. The room/join flow is the core product.
+- Knowledge should usually win: the most knowledgeable player should win ~75% of games.
+  Items and chaos are comeback tools and drama generators, not the primary win condition.
+- Discussion must matter: mechanics should give players reasons to talk, persuade, lie,
+  accuse, form pacts, and betray. Never make "ignore everyone" the always-optimal strategy.
+- Easy to learn, deep to master: the UI teaches the game (short labels, icons, animated
+  sequencing). No long rules screens.
+- Both helping AND betrayal must be viable strategies.
+- The confirmed structure is 10 regular questions followed by a special round. Match length
+  counts regular questions; Loot Drop is the first and only current special-round polish target.
+- Mutiny/marooning start after question 5. Mutiny choices remain secret until reveal.
+- Item acquisition is position/score-gap aware; every attack is bounded and documents counterplay.
+- Use LOCKED/PILOT/IDEA/REJECTED from `docs/context/STATUS.md`; existing code does not by itself
+  make a mechanic confirmed.
+- No accounts, no payments, no databases, no auth for the prototype.
+- Scores never go below zero. Attacks must never destroy an entire player's game.

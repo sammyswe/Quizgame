@@ -1,0 +1,22 @@
+---
+description: Multiplayer must keep working; server stays authoritative
+alwaysApply: true
+---
+
+- Never break: room create/join/rejoin, 4-character codes, host migration/start, nicknames,
+  answers, secret mutiny, private item state, special allocation/lock, reveal or disconnect.
+  Two browsers/laptops must complete the active block/event loop.
+- The server (`server/src/engine.ts`) is the single source of truth: it owns
+  phases, timers, allocations, scores and the correct answer. Clients render
+  state and send intents; they never compute outcomes locally.
+- The socket contract lives in `shared/src/types/index.ts`
+  (`ClientEvents` / `ServerEvents`). Any protocol change
+  updates that file first and both sides together.
+- Validate all client input server-side (`allocationsValid`, phase checks,
+  lock checks). Exact loot splits stay private until reveal; only totals,
+  lock status and confidence flags are public.
+- Client effects tolerate out-of-order/late state: cancel running timelines on phase/question
+  changes and rehydrate from Zustand/socket state after reconnect.
+- After protocol/flow changes, run the available root multiplayer smoke/e2e path with dev
+  servers up. If no script covers the changed path, add coverage rather than invoking the
+  archived experiment's smoke test.

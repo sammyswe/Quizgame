@@ -1,0 +1,33 @@
+---
+description: Animation standards for Treasure Trap client work
+globs: ["client/**"]
+alwaysApply: false
+---
+
+# Animation rules
+
+- Read `docs/context/VISUAL_DIRECTION.md` and
+  `docs/context/ANIMATION_AND_ASSETS.md` before changing animations.
+- Use the shared presets in `client/src/lib/animationPresets.ts` (SLAM, POP, SETTLE,
+  SCREEN, STAGGER) — do not invent new spring constants inline without reason.
+- Animations must clarify game events, not hide them. Every effect answers
+  "what just happened?". Decorative-only animation belongs in ambient layers.
+- Reuse the game-feel toolkit before building new effects: ImpactFlash,
+  FloatingText, Shaker, CannonBlast, LockStamp, SceneBackdrop, PirateAvatar,
+  ItemCard, ItemUseOverlay (see docs/GAME_FEEL.md for the full table).
+- All particle counts go through `particleCount(base, intensity)` and all screen shake
+  through `shakeAllowed(intensity)` from `client/src/lib/gameFeel.ts`. Never bypass the
+  intensity system.
+- Ambient scene layers are `pointer-events-none`, sit behind content (z-index ≤ 1),
+  and must gate on `ambientAllowed(intensity)`.
+- Prefer Framer Motion for stateful transitions, CSS keyframes for infinite idle loops.
+- Do not add heavy animation libraries (PixiJS, Lottie, GSAP) without explicit approval;
+  if ever added, isolate behind a component boundary.
+- Big sequences (chest, reveals) need a skip affordance after ~1s but should be built
+  to be watched.
+- Sounds: fire named events via `playSound()` from `client/src/lib/soundEvents.ts`,
+  not raw `sfx.*` calls, in new code.
+- Higgsfield is the preferred authored asset source. Record exact prompt/model/job/path and
+  provide a runtime fallback; do not claim generation that did not complete.
+- Keep `prefers-reduced-motion` working: the global CSS collapse must not be removed,
+  and critical information must never be motion-only.

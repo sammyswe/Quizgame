@@ -1,0 +1,28 @@
+---
+description: Higgsfield asset workflow and documentation requirements
+alwaysApply: true
+---
+
+- When generating game art, check for the Higgsfield MCP connection first and
+  prefer it. Current status: it WAS available and used for this slice
+  (model `nano_banana_pro`); see `docs/HIGGSFIELD_PROMPTS.md`.
+- Every prompt includes the full game context, mechanic trigger, player meaning, source/target,
+  shot/framing, mobile readability and either the excursion or casino-reward suffix from
+  `docs/context/ANIMATION_AND_ASSETS.md`.
+- Default art direction is a warm cartoon pirate excursion. Use neon Coin Master/slot-machine
+  energy for loot-box/jackpot rewards and specifically approved high-stakes peaks only.
+- Ask for a "plain solid dark background for easy cutout" (models cannot emit
+  alpha), then run `python3 scripts/chroma_key.py <file>` to produce the
+  transparent `-cut` version. Keep raw generations in
+  `client/src/assets/higgsfield/loot-drop/raw/`.
+- Register each used file in the active React asset map/component and the appropriate
+  `client/src/assets/higgsfield/**/asset-manifest.json`, with job ID, exact prompt, model,
+  source/runtime paths, usage/reason and fallback. Do not add production registrations only to
+  archived `experiments/loot-drop/` manifests.
+- Never pretend Higgsfield was used when it wasn't. If it is unavailable or
+  fails, proceed with procedural art and add exact ready-to-run prompts to
+  `docs/HIGGSFIELD_ASSET_TODO.md`.
+- Higgsfield-authored sprites/keyframes are preferred over baked video when game state, target,
+  colour or timing is dynamic. Baked video must never contain secret/variable game data.
+- Higgsfield art never replaces the fallback system — the game must still boot when optional
+  binary assets fail.
