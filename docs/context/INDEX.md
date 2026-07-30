@@ -7,10 +7,6 @@ the game, then load only the documents listed for the task.
 INDEX/HANDOFF/roadmap checklists for Cursor; Obsidian holds granular one-note-per-mechanic
 ideas, MOCs, and meeting Inbox. Agents use both — see `.cursor/rules/obsidian-vault.mdc`.
 
-**Engineering restart (2026-07-21):** implementation lives in a separate greenfield repo.
-Follow `../../AGENT_LOOP_ROADMAP.md` and `../../RESTART.md`. Do not treat archived Phaser or
-Path B prototypes as visual or architectural truth.
-
 Historical documents may describe an older seven-round prototype or an archived Phaser
 experiment; they are not current product truth (`obsidian/Archive/` mirrors that warning).
 
@@ -25,10 +21,11 @@ See [STATUS.md](STATUS.md). In short:
 
 ## Current product in 12 lines
 
-1. Treasure Trap is a 2–8 player, live multiplayer pirate party quiz (beauty milestone targets 2–4 on phones).
+1. Treasure Trap is a 2–8 player, live multiplayer pirate party quiz.
 2. The main fantasy is a **cartoon pirate excursion with a moving fleet**, not a casino reskin.
-3. Casino energy is concentrated in rewards: loot boxes, rarity reveals, jackpots and selected high-stakes special-event moments.
-4. A full game contains blocks of 10 quiz questions; a special round follows each block.
+3. Casino energy is concentrated in rewards: loot boxes, rarity reveals, jackpots and selected
+   high-stakes special-event moments.
+4. A game contains blocks of 10 quiz questions; a special round follows each block.
 5. Match length is selected before play and determines the number of blocks/special rounds.
 6. The first special round is Million Pound Drop / Loot Drop; polish it before adding another.
 7. Regular questions use four answer islands and a visibly dwindling reward.
@@ -36,21 +33,22 @@ See [STATUS.md](STATUS.md). In short:
 9. Items are Mario Kart-style comeback and drama tools; knowledge should still usually win.
 10. The server is authoritative. Clients send intents and never decide outcomes.
 11. Every meaningful event needs readable motion, sound and an authored visual payoff.
-12. **Primary goal now is a greenfield rebuild** that matches LOCKED voyage visuals; see `docs/decisions/voyage/` and `AGENT_LOOP_ROADMAP.md`.
+12. Higgsfield is the preferred source for authored game art/animation, with documented
+    provenance and a runtime fallback.
 
 ## Task router
 
-| Task | Read first | Notes |
+| Task | Read first | Code truth |
 | --- | --- | --- |
-| Starting any agent | [HANDOFF.md](HANDOFF.md), `../../RESTART.md`, `../../AGENT_LOOP_ROADMAP.md` | Design bank only |
-| Product or mechanic work | [VISION.md](VISION.md), [MECHANICS.md](MECHANICS.md) | Status ≠ code |
-| Special rounds | [SPECIAL_ROUNDS.md](SPECIAL_ROUNDS.md) | Loot Drop first |
-| Items or loot boxes | [ITEMS.md](ITEMS.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | |
-| Voyage visual / reveal / layout | `../decisions/voyage/VOYAGE_VISUAL_DIRECTION.md`, `REVEAL_CUTSCENE.md`, [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md) | Owner LOCKED 2026-07-20+ |
-| UI, animation, sound or art | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md), [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | |
-| Multiplayer or protocol | [ARCHITECTURE.md](ARCHITECTURE.md) | Authority principles |
-| Planning | `../../AGENT_LOOP_ROADMAP.md`, [ROADMAP.md](ROADMAP.md) | Prefer agent-loop gates |
-| Brainstorming | [IDEA_BANK.md](IDEA_BANK.md), `obsidian/00-Inbox/` | Do not ship IDEA |
+| Product or mechanic work | [VISION.md](VISION.md), [MECHANICS.md](MECHANICS.md) | `shared/src/config/*`, `shared/src/game/*` |
+| Special rounds | [SPECIAL_ROUNDS.md](SPECIAL_ROUNDS.md) | `shared/src/config/arcade.ts`, `server/src/engine.ts` |
+| Items or loot boxes | [ITEMS.md](ITEMS.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | `shared/src/config/powerups.ts` |
+| UI, animation, sound or art | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md), [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md), [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | `client/src/` |
+| Visual quality / stack / Higgsfield handoff | [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | `design/assets.csv`, `design/concept/` |
+| Multiplayer or protocol | [ARCHITECTURE.md](ARCHITECTURE.md) | `server/src/engine.ts`, `shared/src/types/index.ts` |
+| Planning or deployment | [ROADMAP.md](ROADMAP.md) | CI and hosting configuration |
+| Brainstorming | [IDEA_BANK.md](IDEA_BANK.md), `obsidian/00-Inbox/`, area MOCs | none until promoted |
+| Starting a new agent | this file, [HANDOFF.md](HANDOFF.md), `obsidian/_MOCs/Home.md` | current branch and tests |
 
 ## Canonical registry
 
@@ -59,18 +57,29 @@ See [STATUS.md](STATUS.md). In short:
 | CTX-001 | LOCKED | Status vocabulary and promotion rules | [STATUS.md](STATUS.md) |
 | PROD-001 | LOCKED | Audience, pillars and product boundaries | [VISION.md](VISION.md) |
 | MECH-001 | LOCKED/PILOT | Confirmed loop and exact mechanic state | [MECHANICS.md](MECHANICS.md) |
-| MECH-002 | LOCKED/IDEA | Item catalogue and item principles | [ITEMS.md](ITEMS.md) |
+| MECH-002 | LOCKED/IDEA | Item catalogue, timing questions and item principles | [ITEMS.md](ITEMS.md) |
 | MECH-003 | LOCKED/IDEA | Special-round framework and Loot Drop | [SPECIAL_ROUNDS.md](SPECIAL_ROUNDS.md) |
 | VIS-001 | LOCKED | Excursion-first art direction and casino boundary | [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md) |
-| VIS-002 | LOCKED/PILOT | Animation, sound and art production contract | [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) |
+| VIS-002 | LOCKED/PILOT | Animation, sound and Higgsfield production contract | [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) |
 | VIS-003 | LOCKED | Screen-by-screen UI and animation decisions | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md) |
-| VIS-006 | LOCKED | Voyage visual direction (Coin Master stack) | `../decisions/voyage/VOYAGE_VISUAL_DIRECTION.md` |
-| VIS-007 | LOCKED | Reveal cutscene + island boxes + layout | `../decisions/voyage/REVEAL_CUTSCENE.md` |
-| ARCH-001 | LOCKED | Authority boundaries (re-implement in greenfield) | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| PLAN-001 | SUPERSEDED | Older playtest roadmap — prefer agent-loop doc | [ROADMAP.md](ROADMAP.md) |
-| PLAN-002 | LOCKED | Greenfield agent loop phases + gates | `../../AGENT_LOOP_ROADMAP.md` |
-| IDEA-001 | IDEA | Unconfirmed mechanics | [IDEA_BANK.md](IDEA_BANK.md) |
-| HAND-001 | LOCKED | Restart handoff | [HANDOFF.md](HANDOFF.md) |
+| VIS-004 | PILOT | Owner questions for the next visual iteration | [UI_REVIEW_QUESTIONS.md](UI_REVIEW_QUESTIONS.md) |
+| VIS-005 | PILOT | Pro polish diagnosis, stack verdict, concept-art pipeline | [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) |
+| ARCH-001 | LOCKED | Active runtime and authority boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| PLAN-001 | PILOT/IDEA | Playtest-to-public-web roadmap | [ROADMAP.md](ROADMAP.md) |
+| IDEA-001 | IDEA | Unconfirmed mechanics preserved without polluting scope | [IDEA_BANK.md](IDEA_BANK.md) |
+| HAND-001 | PILOT | Current state and immediate next work | [HANDOFF.md](HANDOFF.md) |
+
+## Known historical material
+
+- `experiments/loot-drop/` is an archived Phaser vertical slice. It is reference material,
+  not the app launched by root `pnpm dev`.
+- The root app uses React for lobby/shell HUD and Phaser 3 for in-round gameplay, with
+  Socket.IO networking. Framer Motion may appear in shell transitions only.
+- Older `docs/PRD.md`, `docs/GAME_DESIGN.md`, `docs/ARCHITECTURE.md` and related reviews contain
+  useful history but may describe the superseded seven-round prototype. The context files
+  above take precedence.
+- Numeric values in prose are design intent. When prose and shipped numbers disagree, record
+  the mismatch in `MECHANICS.md`; do not quietly rewrite either side.
 
 ## Context maintenance contract
 
@@ -79,5 +88,17 @@ When a decision changes:
 1. Update the relevant canonical context document and its `updated` date.
 2. Mark the old decision as superseded or rejected with a reason; do not erase history.
 3. Update `.cursor/rules/` if the decision is a non-negotiable.
-4. Update atomic Obsidian notes when both apply.
-5. Keep this index compact.
+4. Update the relevant `.cursor/skills/` procedure.
+5. Update code and tests when the decision affects shipped behaviour.
+6. Add the evidence or unresolved question to `HANDOFF.md`.
+
+Keep this index compact. Put detail in the routed document, not here.
+
+## Greenfield restart pack
+
+| Doc | Role |
+| --- | --- |
+| [`RESTART.md`](../../RESTART.md) | What to keep / discard |
+| [`AGENT_LOOP_ROADMAP.md`](../../AGENT_LOOP_ROADMAP.md) | Phased rebuild + exit gates |
+| [`docs/decisions/voyage/`](../decisions/voyage/) | LOCKED voyage visual / reveal / layout |
+
