@@ -1,0 +1,14 @@
+---
+description: Greenfield rebuild discipline for Treasure Trap engineering agents
+alwaysApply: true
+---
+
+# Greenfield rebuild
+
+- This design repo is decision truth. Implement only in the engineering repo.
+- Follow `AGENT_LOOP_ROADMAP.md` phases and **exit gates**. Do not skip Phase 2 owner visual review.
+- Do not port Path B HTML/Phaser presentation as the new architecture.
+- Sea band and Q&A are separate sections; all four islands must stay fully on-screen.
+- Reveal cutscenes must not be covered by gold sparkle overlays.
+- Loot Drop is the only special-round polish target until its gate passes.
+- Preserve LOCKED/PILOT/IDEA/REJECTED; never ship IDEA without promotion.
