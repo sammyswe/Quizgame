@@ -79,3 +79,33 @@ and use the 🧪 playtest panel (dev only) to add bots, skip timers, and force c
 - Mobile-first, portrait-friendly UI. Big buttons. Readable text.
 - Default art is a lively cartoon pirate voyage. Reserve neon slot-machine intensity for earned
   treasure/reward peaks so it keeps its impact.
+
+## Agent skills
+
+Installed from [mattpocock/skills](https://github.com/mattpocock/skills) under `.agents/skills/`
+(symlinked into `.cursor/skills/` for Cursor). Treasure Trap–specific skills remain under
+`.cursor/skills/` only.
+
+### Issue tracker
+
+GitHub Issues on `sammyswe/Quizgame` via `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`.
+See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` + `docs/adr/`, routed into existing `docs/context/` + Obsidian.
+See `docs/agents/domain.md`.
+
+### Useful invocations
+
+- `/ask-matt` — which skill/flow fits
+- `/grill-me` or `/grill-with-docs` — align before a change
+- `/tdd` — red-green-refactor for shared/server logic
+- `/diagnosing-bugs` — hard bugs / perf
+- `/to-spec` → `/to-tickets` → `/implement` — plan then ship
+- `/handoff` — compact for the next agent session
+- `/code-review` — standards + spec check before merge
