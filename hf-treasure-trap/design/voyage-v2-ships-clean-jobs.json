@@ -1,0 +1,26 @@
+[
+  {
+    "key": "ship-clean-0",
+    "out": "raw/voyage-v2/ship-clean-0.png",
+    "prompt": "STRICT 4x4 sprite sheet with thick dark cell separators. Exactly ONE cartoon pirate ship per cell. Row-major clockwise facings from RIGHT (east): e,ese,se,sse,s,ssw,sw,wsw,w,wnw,nw,nnw,n,nne,ne,ene. EACH CELL A DIFFERENT FACING. RED sails #e74c3c. Blank wooden hull name plaque. Ship ONLY — NO ocean, NO wake, NO shadow plate, NO black box. Plain SOLID neon green #00FF00 filling ALL empty pixels edge to edge. Coin Master gloss, thick outlines. Ages 9+. Warm flat vector cartoon with soft gradients and glossy Coin Master-style specular highlights.\nChunky Brawl Stars proportions with Disney-TV warmth and moderate dark-brown comic outlines.\nEnvironment in bright saturated tropical teal seas and sunlit gold sand with coral accents;\nhero ships pop via vivid sail and flag colours against the sea; treasure and rewards marked\nwith warm amber-gold glow. Playful comedy-led pirate adventure under golden-hour daylight.\nHigh contrast readable silhouettes at phone size, consistent three-quarter diorama voyage\nperspective across all assets. Jewel-bright casual-mobile gloss — candy-clear shapes, no muddy\ndesaturated browns, no photorealism, no UI text in environment art.",
+    "id": "272089fe-cf14-42f0-9db8-e240e5a92181"
+  },
+  {
+    "key": "ship-clean-1",
+    "out": "raw/voyage-v2/ship-clean-1.png",
+    "prompt": "STRICT 4x4 sprite sheet with thick dark cell separators. Exactly ONE cartoon pirate ship per cell. Row-major clockwise facings from RIGHT (east): e,ese,se,sse,s,ssw,sw,wsw,w,wnw,nw,nnw,n,nne,ne,ene. EACH CELL A DIFFERENT FACING. BLUE sails #3498db. Blank wooden hull name plaque. Ship ONLY — NO ocean, NO wake, NO shadow plate, NO black box. Plain SOLID neon green #00FF00 filling ALL empty pixels edge to edge. Coin Master gloss, thick outlines. Ages 9+. Warm flat vector cartoon with soft gradients and glossy Coin Master-style specular highlights.\nChunky Brawl Stars proportions with Disney-TV warmth and moderate dark-brown comic outlines.\nEnvironment in bright saturated tropical teal seas and sunlit gold sand with coral accents;\nhero ships pop via vivid sail and flag colours against the sea; treasure and rewards marked\nwith warm amber-gold glow. Playful comedy-led pirate adventure under golden-hour daylight.\nHigh contrast readable silhouettes at phone size, consistent three-quarter diorama voyage\nperspective across all assets. Jewel-bright casual-mobile gloss — candy-clear shapes, no muddy\ndesaturated browns, no photorealism, no UI text in environment art.",
+    "id": "fe9ce829-cd7d-4dd9-8439-9515d76420a1"
+  },
+  {
+    "key": "ship-clean-2",
+    "out": "raw/voyage-v2/ship-clean-2.png",
+    "prompt": "STRICT 4x4 sprite sheet with thick dark cell separators. Exactly ONE cartoon pirate ship per cell. Row-major clockwise facings from RIGHT (east): e,ese,se,sse,s,ssw,sw,wsw,w,wnw,nw,nnw,n,nne,ne,ene. EACH CELL A DIFFERENT FACING. GREEN sails #2ecc71. Blank wooden hull name plaque. Ship ONLY — NO ocean, NO wake, NO shadow plate, NO black box. Plain SOLID neon green #00FF00 filling ALL empty pixels edge to edge. Coin Master gloss, thick outlines. Ages 9+. Warm flat vector cartoon with soft gradients and glossy Coin Master-style specular highlights.\nChunky Brawl Stars proportions with Disney-TV warmth and moderate dark-brown comic outlines.\nEnvironment in bright saturated tropical teal seas and sunlit gold sand with coral accents;\nhero ships pop via vivid sail and flag colours against the sea; treasure and rewards marked\nwith warm amber-gold glow. Playful comedy-led pirate adventure under golden-hour daylight.\nHigh contrast readable silhouettes at phone size, consistent three-quarter diorama voyage\nperspective across all assets. Jewel-bright casual-mobile gloss — candy-clear shapes, no muddy\ndesaturated browns, no photorealism, no UI text in environment art.",
+    "id": "815ee438-1907-4ee9-beee-92da5d533d67"
+  },
+  {
+    "key": "ship-clean-3",
+    "out": "raw/voyage-v2/ship-clean-3.png",
+    "prompt": "STRICT 4x4 sprite sheet with thick dark cell separators. Exactly ONE cartoon pirate ship per cell. Row-major clockwise facings from RIGHT (east): e,ese,se,sse,s,ssw,sw,wsw,w,wnw,nw,nnw,n,nne,ne,ene. EACH CELL A DIFFERENT FACING. GOLD sails #f1c40f. Blank wooden hull name plaque. Ship ONLY — NO ocean, NO wake, NO shadow plate, NO black box. Plain SOLID neon green #00FF00 filling ALL empty pixels edge to edge. Coin Master gloss, thick outlines. Ages 9+. Warm flat vector cartoon with soft gradients and glossy Coin Master-style specular highlights.\nChunky Brawl Stars proportions with Disney-TV warmth and moderate dark-brown comic outlines.\nEnvironment in bright saturated tropical teal seas and sunlit gold sand with coral accents;\nhero ships pop via vivid sail and flag colours against the sea; treasure and rewards marked\nwith warm amber-gold glow. Playful comedy-led pirate adventure under golden-hour daylight.\nHigh contrast readable silhouettes at phone size, consistent three-quarter diorama voyage\nperspective across all assets. Jewel-bright casual-mobile gloss — candy-clear shapes, no muddy\ndesaturated browns, no photorealism, no UI text in environment art.",
+    "id": "40ba7d80-aaba-4465-9ea8-9a7acf9bf1e1"
+  }
+]

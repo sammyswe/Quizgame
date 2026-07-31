@@ -21,11 +21,12 @@ See [STATUS.md](STATUS.md). In short:
 
 ## Current product in 12 lines
 
-1. Treasure Trap is a 2–8 player, live multiplayer pirate party quiz.
+1. Treasure Trap is a 2–8 player, live multiplayer pirate party quiz (**Path B beauty
+   milestone targets 2–4 on phones**).
 2. The main fantasy is a **cartoon pirate excursion with a moving fleet**, not a casino reskin.
 3. Casino energy is concentrated in rewards: loot boxes, rarity reveals, jackpots and selected
    high-stakes special-event moments.
-4. A game contains blocks of 10 quiz questions; a special round follows each block.
+4. A full game contains blocks of 10 quiz questions; a special round follows each block.
 5. Match length is selected before play and determines the number of blocks/special rounds.
 6. The first special round is Million Pound Drop / Loot Drop; polish it before adding another.
 7. Regular questions use four answer islands and a visibly dwindling reward.
@@ -33,8 +34,9 @@ See [STATUS.md](STATUS.md). In short:
 9. Items are Mario Kart-style comeback and drama tools; knowledge should still usually win.
 10. The server is authoritative. Clients send intents and never decide outcomes.
 11. Every meaningful event needs readable motion, sound and an authored visual payoff.
-12. Higgsfield is the preferred source for authored game art/animation, with documented
-    provenance and a runtime fallback.
+12. **Primary build target is the Higgsfield Game Generator** (`hf-treasure-trap/`). Phaser
+    root app is legacy reference, not the forward architecture. Higgsfield is the preferred
+    art/animation pipeline with documented provenance and runtime fallback.
 
 ## Task router
 
@@ -43,7 +45,7 @@ See [STATUS.md](STATUS.md). In short:
 | Product or mechanic work | [VISION.md](VISION.md), [MECHANICS.md](MECHANICS.md) | `shared/src/config/*`, `shared/src/game/*` |
 | Special rounds | [SPECIAL_ROUNDS.md](SPECIAL_ROUNDS.md) | `shared/src/config/arcade.ts`, `server/src/engine.ts` |
 | Items or loot boxes | [ITEMS.md](ITEMS.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md) | `shared/src/config/powerups.ts` |
-| UI, animation, sound or art | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md), [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md), [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | `client/src/` |
+| UI, animation, sound or art | [UI_IMPLEMENTATION_SPEC.md](UI_IMPLEMENTATION_SPEC.md), [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md), [ANIMATION_AND_ASSETS.md](ANIMATION_AND_ASSETS.md), [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md), `hf-treasure-trap/design/ART_BIBLE.md` | `hf-treasure-trap/` (Path B), legacy `client/src/` |
 | Visual quality / stack / Higgsfield handoff | [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md) | `design/assets.csv`, `design/concept/` |
 | Multiplayer or protocol | [ARCHITECTURE.md](ARCHITECTURE.md) | `server/src/engine.ts`, `shared/src/types/index.ts` |
 | Planning or deployment | [ROADMAP.md](ROADMAP.md) | CI and hosting configuration |

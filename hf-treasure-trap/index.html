@@ -1,0 +1,2978 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Treasure Trap: Voyage</title>
+<style>
+  :root {
+    --sea-deep: #0a3d4d;
+    --cream: #fff6e4;
+    --gold: #ffd56a;
+    --ink: #1a1008;
+    --sheet: #123a4a;
+    --sheet-2: #0d2e3c;
+    --choice: #1a4d5e;
+    --choice-hi: #245f73;
+    --edge: #c9963a;
+    --ok: #3dcc8a;
+    --bad: #e85a4f;
+    --display: "Trebuchet MS", "Segoe UI", "Avenir Next", sans-serif;
+    --body: "Segoe UI", "Trebuchet MS", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--sea-deep); color: var(--cream);
+    font-family: var(--body); font-weight: 700;
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  h1,h2,.display { font-family: var(--display); font-weight: 800; letter-spacing: .02em; }
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    background: var(--sea-deep);
+  }
+  #hud {
+    position: relative; z-index: 2;
+    flex: 1; min-height: 0;
+    width: min(480px, 100%);
+    margin: 0 auto;
+    display: flex; flex-direction: column;
+    pointer-events: none;
+  }
+  #hud > * { pointer-events: auto; }
+  /* Compact top: player scores + chest timer only */
+  .top-chrome {
+    flex: 0 0 auto;
+    z-index: 4;
+    padding: max(6px, env(safe-area-inset-top)) 8px 4px;
+    display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
+    background: linear-gradient(180deg, rgba(4,20,28,.72) 0%, rgba(4,20,28,0) 100%);
+  }
+  /* Sea band = exclusive voyage viewport. Q&A never paints over this. */
+  .sea-band {
+    flex: 1 1 68%;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    background: #0a3d4d;
+  }
+  canvas#sea {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+  .world-space {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 2;
+  }
+  .world-space.loot-active { pointer-events: auto; }
+  /* Hidden decode source — frames are painted onto #sea under live ships */
+  #revealClip { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  /* Tap-to-loot panel on the quiz sea */
+  #worldFx {
+    position: absolute; left: 50%; top: 42%;
+    transform: translate(-50%, -50%);
+    width: min(86vw, 380px); aspect-ratio: 1;
+    z-index: 20; display: none; pointer-events: none;
+    border: 5px solid #ffd56a;
+    border-radius: 20px; overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(255,61,184,.35), transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(61,255,240,.25), transparent 45%),
+      linear-gradient(160deg, #1a0840, #041018 60%, #0a2a20);
+    box-shadow:
+      0 12px 28px rgba(0,0,0,.55),
+      0 0 0 3px #ff3db8,
+      0 0 0 7px #3dfff0,
+      0 0 56px rgba(255,0,180,.55),
+      inset 0 0 40px rgba(255,213,106,.12);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #worldFx.on { display: block; pointer-events: auto; animation: fxIn .35s cubic-bezier(.2,1.3,.4,1) both; }
+  #worldFx.spinning {
+    box-shadow:
+      0 12px 28px rgba(0,0,0,.55),
+      0 0 0 3px #3dfff0,
+      0 0 0 7px #ff3db8,
+      0 0 64px rgba(61,255,240,.65),
+      inset 0 0 40px rgba(255,213,106,.18);
+  }
+  #worldFx .fx-chest {
+    position: absolute; left: 50%; top: 46%; width: 58%; height: auto;
+    transform: translate(-50%, -50%);
+    pointer-events: none; filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+    z-index: 1;
+  }
+  #worldFx .slot-reels {
+    position: absolute; left: 10%; right: 10%; top: 8%; height: 18%;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+    z-index: 2; pointer-events: none;
+  }
+  #worldFx .slot-reels span {
+    display: grid; place-items: center;
+    border: 2px solid #ffd56a; border-radius: 10px;
+    background: linear-gradient(180deg, #2a1040, #0a1820);
+    font-family: var(--display); font-size: 1.15rem; color: #ffd56a;
+    box-shadow: inset 0 0 12px rgba(255,61,184,.35);
+  }
+  #worldFx.empty .slot-reels { display: none; }
+  #worldFx .fx-burst {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 2;
+  }
+  #worldFx.exploding .fx-chest { animation: chestPop .45s cubic-bezier(.2,1.5,.4,1) both; }
+  @keyframes chestPop { 0% { transform: translate(-50%,-50%) scale(1) rotate(0); } 40% { transform: translate(-50%,-50%) scale(1.25) rotate(-8deg); } 100% { transform: translate(-50%,-50%) scale(1.05) rotate(0); } }
+  #worldFx .fx-label { display: none !important; } /* no EMPTY / JACKPOT badges */
+  #worldFx .tap-hint {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-family: var(--display); font-size: clamp(1.4rem, 6vw, 2rem);
+    color: var(--gold); text-shadow: 0 3px 0 #1a0e04, 0 0 18px rgba(255,0,200,.55);
+    z-index: 2; pointer-events: none; animation: tapPulse 0.7s ease-in-out infinite;
+  }
+  #worldFx .tap-hint.hide { display: none; }
+  #worldFx .loot-meter {
+    position: absolute; left: 12px; right: 12px; bottom: 12px; height: 14px;
+    border: 2px solid var(--edge); border-radius: 999px; background: #0a1820; z-index: 2;
+    overflow: hidden;
+  }
+  #worldFx .loot-meter .fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #ffd56a, #ff3db8 55%, #3dfff0);
+    box-shadow: 0 0 12px rgba(255,61,184,.6);
+    transition: width .08s linear;
+  }
+  @keyframes tapPulse { 50% { transform: scale(1.06); filter: brightness(1.15); } }
+  @keyframes fxIn { from { transform: translate(-50%, -50%) scale(.72); } to { transform: translate(-50%, -50%) scale(1); } }
+  .quiz-sheet {
+    flex: 0 0 30%;
+    max-height: 30vh;
+    min-height: 0;
+    z-index: 5;
+    background: linear-gradient(180deg, #164556 0%, var(--sheet-2) 100%);
+    border-top: 3px solid var(--edge);
+    box-shadow: 0 -10px 24px rgba(0,0,0,.45);
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 6px;
+    overflow: hidden; /* separate section — never overlays the sea band */
+  }
+  /* Full-screen leaderboard between rounds */
+  body.phase-scoreboard .sea-band { display: none; }
+  body.phase-scoreboard .top-chrome { opacity: 0.35; }
+  body.phase-scoreboard .quiz-sheet {
+    flex: 1 1 auto;
+    max-height: none; height: 100%; width: 100%;
+    border-top: none;
+    padding: max(16px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255,213,106,.18), transparent 45%),
+      linear-gradient(180deg, #0c3040 0%, #0a1e28 55%, #071418 100%);
+    box-shadow: none;
+    justify-content: center;
+    overflow: auto;
+  }
+  body.phase-scoreboard .quiz-sheet .banner {
+    max-width: 520px; width: 100%; margin: 0 auto 10px;
+  }
+  body.phase-scoreboard .scoreboard {
+    max-width: 520px; width: 100%; margin: 0 auto;
+    gap: 10px;
+  }
+  body.phase-scoreboard .score-row {
+    padding: 12px 14px;
+    font-size: 1.05rem;
+  }
+  #main { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  .chest-timer { width: 46px; height: 46px; position: relative; filter: drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
+  .chest-timer img { width: 100%; height: 100%; object-fit: contain; }
+  .chest-timer .sec {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-family: var(--display); font-size: .95rem; color: #fff; text-shadow: 0 2px 4px #000;
+  }
+  .ribbon { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+  .ribbon::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 5px;
+    padding: 3px 8px 3px 3px; background: #123a4a; border: 2px solid var(--edge);
+    border-radius: 999px; font-size: .72rem; font-weight: 900;
+  }
+  .chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+  .chip.you { border-color: var(--gold); }
+  #subtitle { display: none; }
+  .banner {
+    background: linear-gradient(180deg, #18485a 0%, #0f3342 100%);
+    border: 2px solid var(--edge);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .banner .tag, .quiz-sheet > .tag {
+    display: inline-block; margin-bottom: 3px; padding: 2px 7px; border-radius: 999px;
+    background: #3a2a10; color: var(--gold);
+    font-size: .62rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase;
+  }
+  .banner h2 {
+    margin: 0; font-size: clamp(.98rem, 3.8vw, 1.15rem); line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .banner .muted { margin: 4px 0 0; opacity: .88; font-size: .76rem; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .choice {
+    border: 3px solid #2f7a8e; border-radius: 14px;
+    background: linear-gradient(180deg, #226274 0%, var(--choice) 100%);
+    color: var(--cream); padding: 9px; cursor: pointer; text-align: left;
+    display: grid; grid-template-columns: 44px 1fr auto; gap: 7px; align-items: center;
+    min-height: 58px; transition: transform .08s ease, background .12s ease, border-color .12s ease;
+    box-shadow: 0 4px 0 #0a2a34;
+  }
+  .choice img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+  .choice strong { display: block; color: var(--gold); font-size: .88rem; }
+  .choice span { display: block; font-size: .74rem; line-height: 1.15; }
+  .choice .amt { font-family: var(--display); font-size: 1rem; color: var(--gold); text-align: center; min-width: 28px; }
+  .alloc-btns { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .alloc-btn {
+    width: 32px; height: 28px; border-radius: 8px; border: 2px solid var(--edge);
+    background: linear-gradient(180deg, #ffe08a, #e8a820); color: #1a1008;
+    font-family: var(--display); font-size: 1.1rem; font-weight: 900; cursor: pointer;
+    box-shadow: 0 2px 0 #9a6a10;
+  }
+  .alloc-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 #9a6a10; }
+  .alloc-btn:disabled { filter: grayscale(.5); opacity: .55; }
+  .choice:active:not(:disabled) { transform: scale(.97); background: var(--choice-hi); }
+  .choice:disabled { filter: none; opacity: 1; }
+  .choice.picked { border-color: var(--gold); background: #2a5f4a; }
+  .choice.correct { border-color: var(--ok); background: #1f5a40; }
+  .choice.wrong { border-color: var(--bad); background: #5a2a28; }
+  .choice.dim { opacity: .45; }
+  .big {
+    width: 100%; border: 0; cursor: pointer; padding: 12px 14px; border-radius: 14px;
+    font-family: var(--display); font-size: 1.1rem; color: var(--ink);
+    background: linear-gradient(180deg, #ffe08a, #e8a820);
+    box-shadow: 0 5px 0 #9a6a10, 0 10px 18px rgba(0,0,0,.3);
+  }
+  .big:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #9a6a10; }
+  .big:disabled { filter: grayscale(.4) brightness(.85); }
+  .big.pulse { animation: pulse 1.15s ease-in-out infinite; }
+  @keyframes pulse { 50% { filter: brightness(1.12); } }
+  .ghost {
+    border: 2px solid var(--edge); background: rgba(255,255,255,.08);
+    color: var(--cream); border-radius: 12px; padding: 10px 12px;
+    font: inherit; font-weight: 900; cursor: pointer; width: 100%;
+  }
+  .invite { display: flex; gap: 6px; }
+  .invite input {
+    flex: 1; min-width: 0; border-radius: 10px; border: 2px solid var(--edge);
+    background: rgba(0,0,0,.35); color: var(--cream); padding: 8px; font-size: .72rem;
+  }
+  .loot-bar { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; margin: 4px 0 6px; }
+  .loot-bar img { width: 22px; height: 22px; vertical-align: middle; }
+  #toast {
+    position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(140%); z-index: 30;
+    background: rgba(20,10,5,.94); border: 2px solid var(--bad);
+    color: #fff; padding: 10px 14px; border-radius: 12px; font-weight: 900;
+    transition: transform .22s ease; pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #err { min-height: .9em; color: var(--bad); font-size: .78rem; font-weight: 900; }
+  .center { text-align: center; }
+  .hero-art { width: min(180px, 55%); height: auto; margin: 4px auto; display: block; filter: drop-shadow(0 8px 16px rgba(0,0,0,.4)); }
+  .nick-modal {
+    position: fixed; inset: 0; z-index: 40; display: grid; place-items: end center;
+    background: radial-gradient(circle at 50% 18%, rgba(40,110,130,.5), rgba(5,18,28,.94));
+    padding: 14px;
+  }
+  .nick-modal.hidden { display: none; }
+  .nick-modal .banner, .nick-modal .quiz-sheet {
+    width: min(420px, 100%); margin-bottom: 6vh;
+    max-height: none; border-radius: 16px; border: 2px solid var(--edge);
+  }
+  .nick-modal input {
+    width: 100%; margin: 8px 0 10px; border-radius: 12px; border: 2px solid var(--edge);
+    background: rgba(0,0,0,.35); color: var(--cream); padding: 12px; font: inherit; text-align: center;
+  }
+  .casino-flash {
+    position: fixed; inset: 0; pointer-events: none; z-index: 15;
+    background: radial-gradient(circle at 50% 40%, rgba(255,0,200,.18), transparent 55%),
+                radial-gradient(circle at 30% 70%, rgba(0,255,255,.12), transparent 45%);
+    opacity: 0; transition: opacity .3s ease;
+  }
+  .casino-flash.on { opacity: 1; }
+  /* Full-screen opaque Poseidon VIDEO — never a ghost overlay on the sea */
+  #spectacle {
+    position: fixed; inset: 0; z-index: 50; display: none;
+    background: #041018; flex-direction: column;
+  }
+  #spectacle.on { display: flex; }
+  #spectacle .cs-frame,
+  #spectacle video.cs-video {
+    flex: 1; min-height: 0; width: 100%; object-fit: cover;
+    background: #041018; display: block;
+  }
+  #spectacle .cs-summary {
+    display: none; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(255,61,184,.35), transparent 45%),
+      radial-gradient(circle at 20% 70%, rgba(61,255,240,.28), transparent 40%),
+      radial-gradient(circle at 80% 60%, rgba(255,213,106,.3), transparent 40%),
+      linear-gradient(180deg, #1a0840 0%, #041018 100%);
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px 18px max(24px, env(safe-area-inset-bottom));
+    text-align: center; gap: 8px;
+    overflow: hidden;
+  }
+  #spectacle .cs-summary.on { display: flex; animation: sumPop .4s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes sumPop { from { transform: scale(.9); filter: brightness(1.4); } to { transform: scale(1); } }
+  #spectacle .cs-summary .coin-rain {
+    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  }
+  #spectacle .cs-summary .coin-rain i {
+    position: absolute; top: -10%; font-style: normal;
+    color: #ffd56a; font-size: 1.2rem;
+    animation: coinFall linear forwards;
+    text-shadow: 0 0 8px #ff3db8;
+  }
+  @keyframes coinFall {
+    to { transform: translateY(120vh) rotate(420deg); opacity: 0.2; }
+  }
+  #spectacle .cs-summary .tag {
+    display: inline-block; padding: 4px 10px; border-radius: 999px;
+    background: #3a2a10; color: var(--gold);
+    font-size: .7rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+  }
+  #spectacle .cs-summary h2 {
+    margin: 0; font-size: clamp(1.4rem, 6vw, 2rem); color: var(--gold);
+    text-shadow: 0 3px 0 #1a0e04;
+  }
+  #spectacle .cs-summary .gold-line {
+    font-family: var(--display); font-size: clamp(2.4rem, 12vw, 4rem);
+    color: #fff6e4; margin: 6px 0;
+    text-shadow: 0 0 24px #ff3db8, 0 4px 0 #1a0e04;
+    animation: goldPulse 0.7s ease-in-out infinite;
+  }
+  #spectacle .cs-summary .gold-line b { color: var(--gold); }
+  @keyframes goldPulse { 50% { transform: scale(1.06); filter: brightness(1.2); } }
+  #spectacle .cs-summary .spent-line {
+    font-family: var(--display); font-size: clamp(1rem, 4.5vw, 1.35rem);
+    color: #3dfff0; margin: 0;
+    text-shadow: 0 0 12px rgba(61,255,240,.55);
+  }
+  #spectacle .cs-summary p { margin: 0; opacity: .9; font-size: .95rem; max-width: 28rem; }
+  #spectacle .cs-summary .score-fly {
+    position: absolute; font-family: var(--display); font-size: 1.4rem;
+    color: #ffd56a; pointer-events: none; z-index: 2;
+    text-shadow: 0 0 10px #ff3db8; animation: scoreFly 1.1s ease-out forwards;
+  }
+  @keyframes scoreFly {
+    0% { transform: translate(-50%, 0) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -120px) scale(.7); opacity: 0; }
+  }
+  .pop { animation: pop .3s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes pop { from { transform: scale(.94); } to { transform: scale(1); } }
+  .scoreboard {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .score-row {
+    display: grid; grid-template-columns: 36px 40px 1fr auto; gap: 8px; align-items: center;
+    padding: 8px 10px; border-radius: 14px; border: 3px solid #2f7a8e;
+    background: linear-gradient(180deg, #226274, #1a4d5e);
+    box-shadow: 0 4px 0 #0a2a34;
+    transform: translateX(0);
+  }
+  .score-row.you { border-color: var(--gold); background: linear-gradient(180deg, #2a6a4a, #1f4a38); }
+  .score-row.overtake { animation: overtakeFlash .9s ease; border-color: #ff3db8; }
+  .score-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+  .score-row .rank {
+    font-family: var(--display); font-size: 1.1rem; color: var(--gold); text-align: center;
+  }
+  .score-row .delta { color: var(--ok); font-weight: 900; font-size: .85rem; }
+  .score-row .delta.neg { color: var(--bad); }
+  .score-row .pts { font-family: var(--display); font-size: 1.15rem; color: var(--gold); }
+  @keyframes overtakeFlash {
+    0% { transform: translateY(18px) scale(.96); filter: brightness(1.4); }
+    35% { transform: translateY(-6px) scale(1.04); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  .hand {
+    position: absolute; right: 16%; bottom: 34%; width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(255,213,106,.22); border: 2px solid var(--gold);
+    animation: hand 1.2s ease-in-out infinite; pointer-events: none; z-index: 5;
+  }
+  @keyframes hand { 50% { transform: translate(-8px,-12px) scale(1.08); } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="revealClip" playsinline muted preload="auto"></video>
+  <div class="casino-flash" id="casino"></div>
+  <div id="spectacle" aria-live="polite">
+    <video class="cs-video" id="csVideo" playsinline muted></video>
+    <div class="cs-summary" id="csSummary">
+      <div class="tag" id="csTag">Wildcard</div>
+      <h2 class="display" id="csTitle">Poseidon’s Rescue!</h2>
+      <div class="gold-line" id="csGold"></div>
+      <p id="csBody"></p>
+    </div>
+  </div>
+  <div id="hud">
+    <div class="top-chrome">
+      <div class="ribbon" id="ribbon"></div>
+      <div class="chest-timer" id="chestWrap">
+        <img id="chestImg" src="./assets/chest-full.png" alt="">
+        <div class="sec" id="chestSec">–</div>
+      </div>
+    </div>
+    <div class="sea-band" id="seaBand">
+      <canvas id="sea"></canvas>
+      <div class="world-space" id="worldSpace">
+        <div id="worldFx">
+          <div class="fx-label" id="fxLabel">Tap to spin</div>
+          <div class="slot-reels" id="slotReels" aria-hidden="true">
+            <span>7</span><span>★</span><span>$</span>
+          </div>
+          <img id="fxChest" class="fx-chest" src="./assets/chest-closed.png" alt="">
+          <canvas id="fxBurst" class="fx-burst"></canvas>
+          <div class="tap-hint" id="tapHint">TAP!</div>
+          <div class="loot-meter"><div class="fill" id="lootFill"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="quiz-sheet">
+      <div id="main"></div>
+    </div>
+    <p id="subtitle"></p>
+    <div id="err" style="position:absolute;left:8px;right:8px;bottom:48%;pointer-events:none"></div>
+  </div>
+</div>
+<div id="toast"></div>
+<div class="nick-modal" id="nickModal">
+  <div class="quiz-sheet center" style="border-radius:16px;border:2px solid var(--edge)">
+    <div class="tag" style="align-self:center">Mobile voyage</div>
+    <h2 class="display">Name your pirate</h2>
+    <p class="muted">Play vs bot or invite friends.</p>
+    <input id="nickInput" maxlength="12" placeholder="Cap’n Spark" autocomplete="nickname">
+    <button class="big pulse" id="nickBot">PLAY VS BOT</button>
+    <button class="ghost" id="nickGo" style="margin-top:8px">INVITE FRIENDS</button>
+  </div>
+</div>
+<script src="./assets/voyage-v2/lanes.js"></script>
+<script>
+(() => {
+  const LETTERS = ["A","B","C","D"];
+  const ISLAND_FALLBACK = ["./assets/island-a.png","./assets/island-b.png","./assets/island-c.png","./assets/island-d.png"];
+  const SHIP = ["./assets/ship-0.png","./assets/ship-1.png","./assets/ship-2.png","./assets/ship-3.png"];
+  const PORTRAIT = ["./assets/portrait-0.png","./assets/portrait-1.png","./assets/portrait-2.png","./assets/portrait-3.png"];
+  /** Island-specific loot videos play on the quiz sea when a ship arrives. */
+  const LOOT_VID = [
+    "./assets/video/loot-a.mp4",
+    "./assets/video/loot-b.mp4",
+    "./assets/video/loot-c.mp4",
+    "./assets/video/loot-d.mp4",
+  ];
+  const POSEIDON_VID = "./assets/video/poseidon.mp4";
+  const LOOT_STILL = ["./assets/cs-plunder-1.jpg", "./assets/cs-plunder-2.jpg"];
+  const POSEIDON_STILL = ["./assets/cs-poseidon-1.jpg", "./assets/cs-poseidon-2.jpg", "./assets/cs-poseidon-3.jpg"];
+
+  /**
+   * Voyage v2 (LOCKED): 10 unique baked-island seas + authored water lanes.
+   * Islands live in the backdrop — never muddy cutout composites on the voyage.
+   * Ships follow VOYAGE_LANES polylines only (Coin Master clarity / Clash Royale arcs).
+   */
+  const COMMIT_TRAVEL_S = 1.1;
+  const EXIT_TRAVEL_S = 2.0;
+  const ENTER_TRAVEL_S = 1.0;
+  const SHIP_SCREEN_FRAC = 0.09; // 8–10% screen width
+  const NAME_MAX = 12;
+
+  function buildScenesFromLanes(lanes) {
+    return (lanes || []).map((s, i) => ({
+      id: s.id || ("S" + String(i).padStart(2, "0")),
+      bg: s.bg || (`./assets/voyage-v2/bg-S${String(i).padStart(2, "0")}.jpg`),
+      waterTop: s.waterTop != null ? s.waterTop : 0.08,
+      waterBot: s.waterBot != null ? s.waterBot : 0.70,
+      skyFrac: s.skyFrac != null ? s.skyFrac : 0.10,
+      shipScale: s.shipScale || SHIP_SCREEN_FRAC,
+      home: s.home,
+      docks: s.docks,
+      plaques: s.plaques,
+      paths: s.paths,
+      islandCenters: s.islandCenters,
+      islandBoxes: s.islandBoxes || null,
+      biomes: s.biomes || [],
+      channel: [0.30, 0.70],
+      // 10 biome heroes — rotate which four appear on answer cards each scene
+      islands: [i % 10, (i + 3) % 10, (i + 6) % 10, (i + 8) % 10],
+      layout: ["A", "B", "C", "D"].map((L) => (s.islandCenters && s.islandCenters[L]) || { x: 0.25, y: 0.35 }),
+      baked: true,
+    }));
+  }
+  const SCENES = buildScenesFromLanes(window.VOYAGE_LANES);
+  if (!SCENES.length) {
+    for (let i = 0; i < 10; i++) {
+      SCENES.push({
+        id: "S" + String(i).padStart(2, "0"),
+        bg: `./assets/voyage-v2/bg-S${String(i).padStart(2, "0")}.jpg`,
+        waterTop: 0.08, waterBot: 0.70, skyFrac: 0.10, shipScale: SHIP_SCREEN_FRAC,
+        channel: [0.30, 0.70], islands: [0,1,2,3], baked: true,
+        layout: [{x:0.22,y:0.28},{x:0.78,y:0.26},{x:0.24,y:0.52},{x:0.76,y:0.54}],
+      });
+    }
+  }
+  const BELOW_DECK_BG = "./assets/scenes/below-deck.jpg";
+  const LOOT_VOYAGE_BG = "./assets/scenes/loot-voyage.jpg";
+  const DIR16 = ["e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw","n","nne","ne","ene"];
+  function islandChoiceSrc(i) {
+    // Bottom-sheet cards only — voyage seas use baked islands.
+    // Map answer slot → biome hero from the scene's island set (mod 10 heroes).
+    const s = SCENES[activeSceneIdx] || SCENES[0];
+    const idx = s && s.islands && s.islands[i] != null ? s.islands[i] : i;
+    return `./assets/voyage-v2/islands/hero-${String(idx % 10).padStart(2, "0")}.png`;
+  }
+
+  const params = new URLSearchParams(location.search);
+  let room = params.get("room");
+  if (!room) {
+    room = Math.random().toString(36).slice(2, 8);
+    params.set("room", room);
+    history.replaceState(null, "", location.pathname + "?" + params);
+  }
+
+  let nick = sessionStorage.getItem("tt-nick") || "";
+  let playerId = sessionStorage.getItem("mp-player-id");
+  let wantBot = params.get("bot") === "1" || sessionStorage.getItem("tt-vs-bot") === "1";
+  let seenOnboard = sessionStorage.getItem("tt-onboard") === "1";
+
+  function setIdentity(name) {
+    nick = String(name || "Pirate").trim().slice(0, 12) || "Pirate";
+    sessionStorage.setItem("tt-nick", nick);
+    playerId = "p-" + Math.random().toString(36).slice(2, 10) + "::" + encodeURIComponent(nick);
+    sessionStorage.setItem("mp-player-id", playerId);
+  }
+  if (playerId && nick && !String(playerId).includes("::")) {
+    playerId = playerId + "::" + encodeURIComponent(nick);
+    sessionStorage.setItem("mp-player-id", playerId);
+  }
+
+  const mainEl = document.getElementById("main");
+  const ribbonEl = document.getElementById("ribbon");
+  const errEl = document.getElementById("err");
+  const toastEl = document.getElementById("toast");
+  const subtitleEl = document.getElementById("subtitle");
+  const nickModal = document.getElementById("nickModal");
+  const nickInput = document.getElementById("nickInput");
+  const casinoEl = document.getElementById("casino");
+  const spectacleEl = document.getElementById("spectacle");
+  const csVideoEl = document.getElementById("csVideo");
+  const csSummaryEl = document.getElementById("csSummary");
+  const csTagEl = document.getElementById("csTag");
+  const csTitleEl = document.getElementById("csTitle");
+  const csGoldEl = document.getElementById("csGold");
+  const csBodyEl = document.getElementById("csBody");
+  const worldSpaceEl = document.getElementById("worldSpace");
+  const worldFxEl = document.getElementById("worldFx");
+  const fxChestEl = document.getElementById("fxChest");
+  const fxBurstEl = document.getElementById("fxBurst");
+  const fxBurstCtx = fxBurstEl ? fxBurstEl.getContext("2d") : null;
+  const fxLabelEl = document.getElementById("fxLabel");
+  const tapHintEl = document.getElementById("tapHint");
+  const lootFillEl = document.getElementById("lootFill");
+  const slotReelsEl = document.getElementById("slotReels");
+  const SLOT_GLYPHS = ["7", "★", "$", "⚓", "◆", "金"];
+  let prevRankOrder = [];
+  const chestImg = document.getElementById("chestImg");
+  const chestSec = document.getElementById("chestSec");
+  const chestWrap = document.getElementById("chestWrap");
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toastEl.classList.remove("show"), 1400);
+  }
+  function enableBotMode() {
+    wantBot = true;
+    sessionStorage.setItem("tt-vs-bot", "1");
+    params.set("bot", "1");
+    history.replaceState(null, "", location.pathname + "?" + params);
+  }
+
+  const base = location.pathname.replace(/\/+$/, "");
+  const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + base + "/ws/" + room;
+
+  let ws, botWs = null, botId = sessionStorage.getItem("tt-bot-id") || "";
+  let lastState = null, clockSkew = 0, timeoutSentFor = null, shakeUntil = 0;
+  let botBusyKey = "", botTimers = [];
+  let chosenIsland = [null, null, null, null];
+  /** Per-seat curved sail: { from, to, t, curve, key } */
+  let sailState = [null, null, null, null];
+  let pathPreview = null;
+  let hitStopUntil = 0;
+  /** Full-screen Poseidon video spectacle */
+  let cutscene = null;
+  /** On-sea tap-to-loot: { island, seat, progress, waitingForSail, active } */
+  let islandLoot = null;
+  /** After reveal cutscene: fleet sails back to mid-channel before sail-away. */
+  let fleetReturnPending = false;
+  /**
+   * Synced correct-island celebration (LOCKED — REVEAL_CUTSCENE.md).
+   * { sceneId, correctIndex, t0, animMs, stage: "wait"|"play"|"done", videoOk }
+   * Chest path archived — quiz reveal no longer opens worldFx.
+   */
+  let islandCelebrate = null;
+  const revealClipEl = document.getElementById("revealClip");
+  const BIOME_SFX = {
+    palm: "./assets/voyage-v2/sfx/win-palm.mp3",
+    volcano: "./assets/voyage-v2/sfx/win-volcano.mp3",
+    temple: "./assets/voyage-v2/sfx/win-temple.mp3",
+    lighthouse: "./assets/voyage-v2/sfx/win-lighthouse.mp3",
+    skull: "./assets/voyage-v2/sfx/win-skull.mp3",
+    shipwreck: "./assets/voyage-v2/sfx/win-shipwreck.mp3",
+    mangrove: "./assets/voyage-v2/sfx/win-mangrove.mp3",
+    crystal: "./assets/voyage-v2/sfx/win-crystal.mp3",
+    iceberg: "./assets/voyage-v2/sfx/win-iceberg.mp3",
+  };
+  const biomeAudioCache = {};
+  /** Loot Drop wager fleet: ships sized by gold, sail only to picked island */
+  let lootFleet = [];
+  let fxParticles = [];
+  let wakeDots = [];
+  let cam = { x: 0, y: 0, z: 1, tx: 0, ty: 0, tz: 1 };
+  let lastFrameAt = performance.now();
+  let glitter = [];
+  for (let i = 0; i < 28; i++) {
+    glitter.push({ x: Math.random(), y: 0.02 + Math.random() * 0.18, s: 1 + Math.random() * 2, ph: Math.random() * Math.PI * 2 });
+  }
+
+  function haptic(ms) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    } catch (_) {}
+  }
+
+  const BOT_ANSWERS = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
+  const BOT_NAMES = ["Barnacle Bot", "Polly", "Salty Chip", "Deckhand Dan"];
+  /** Loaded scene backgrounds + island pack */
+  let sceneBgs = [];
+  let belowDeckBg = null;
+  let lootVoyageBg = null;
+  let islandPack = []; // 16 cutouts
+  let activeSceneIdx = 0;
+  let travelFx = null; // { t0, fromIdx, toIdx, stage: "out"|"in" }
+
+  function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+  function act(a) { send({ type: "action", action: a }); }
+  function botSend(o) { if (botWs && botWs.readyState === 1) botWs.send(JSON.stringify(o)); }
+  function botAct(a) { botSend({ type: "action", action: a }); }
+  function later(ms, fn) { const id = setTimeout(fn, ms); botTimers.push(id); }
+  function clearBotTimers() { botTimers.forEach(clearTimeout); botTimers = []; }
+
+  function ensureBotId() {
+    if (botId) return botId;
+    const name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+    botId = "bot-" + Math.random().toString(36).slice(2, 8) + "::" + encodeURIComponent(name);
+    sessionStorage.setItem("tt-bot-id", botId);
+    return botId;
+  }
+  function connectBot() {
+    if (!wantBot) return;
+    ensureBotId();
+    if (botWs && (botWs.readyState === 0 || botWs.readyState === 1)) return;
+    botWs = new WebSocket(wsUrl);
+    botWs.onopen = () => botSend({ type: "join", playerId: botId });
+    botWs.onclose = () => { if (wantBot) later(1200, connectBot); };
+    botWs.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "state") driveBot(msg);
+    };
+  }
+  function pickBotAnswer(qi) {
+    const c = BOT_ANSWERS[qi] ?? 0;
+    if (Math.random() < 0.65) return c;
+    let w = Math.floor(Math.random() * 4);
+    return w === c ? (w + 1) % 4 : w;
+  }
+  function driveBot(s) {
+    if (!wantBot || !s.view || s.you !== botId || s.status !== "playing") return;
+    const v = s.view, you = v.you;
+    const key = [v.phase, v.questionIndex, v.deadlineAt, you.answered, you.locked, you.ready, you.lootLeft, v.lootVentureIndex].join(":");
+    if (key === botBusyKey) return;
+    if (v.phase === "lobby" && !you.ready) { botBusyKey = key; later(400, () => botAct({ type: "ready" })); return; }
+    if (v.phase === "question" && !you.answered) {
+      botBusyKey = key;
+      later(900 + Math.random() * 1200, () => botAct({ type: "answer", index: pickBotAnswer(v.questionIndex) }));
+      return;
+    }
+    if (v.phase === "loot" && !you.locked) {
+      botBusyKey = key;
+      const pool = you.lootPool || 0;
+      const step = v.step || 10;
+      later(600, () => {
+        // Split: some on correct-ish v2, rest on another
+        const a = Math.floor(pool * 0.6 / step) * step;
+        const b = Math.max(0, pool - a);
+        botAct({ type: "alloc", venture: "v2", amount: a });
+        later(200, () => {
+          botAct({ type: "alloc", venture: "v0", amount: b });
+          later(400, () => botAct({ type: "lock" }));
+        });
+      });
+      return;
+    }
+    if (["q_reveal","scoreboard","scene_travel","loot_intro","loot_reveal","loot_wildcard"].includes(v.phase) && v.deadlineAt) {
+      const rem = v.deadlineAt - (Date.now() + clockSkew);
+      if (rem <= 250) { botBusyKey = key; botAct({ type: "timeout" }); }
+    }
+  }
+
+  function stopVideo(el) {
+    if (!el) return;
+    try { el.pause(); el.removeAttribute("src"); el.load(); } catch (_) {}
+  }
+  function playPoseidonVideo(meta) {
+    cutscene = {
+      kind: "poseidon",
+      t0: performance.now(),
+      animMs: 4200,
+      summaryMs: 3200,
+      meta: meta || {},
+      stage: "anim",
+    };
+    csSummaryEl.classList.remove("on");
+    csVideoEl.style.display = "block";
+    stopVideo(csVideoEl);
+    csVideoEl.src = POSEIDON_VID;
+    csVideoEl.onended = () => { if (cutscene && cutscene.stage === "anim") showCutsceneSummary(); };
+    csVideoEl.onerror = () => {
+      // Still fallback: brief still then summary
+      csVideoEl.style.display = "none";
+      const img = document.createElement("img");
+      img.className = "cs-frame";
+      img.src = POSEIDON_STILL[1] || POSEIDON_STILL[0];
+      img.id = "csStillFallback";
+      spectacleEl.insertBefore(img, csSummaryEl);
+      setTimeout(() => showCutsceneSummary(), 1800);
+    };
+    const p = csVideoEl.play();
+    if (p && p.catch) p.catch(() => {});
+    spectacleEl.classList.add("on");
+    casinoEl.classList.add("on");
+  }
+  // --- casino audio (Web Audio, no external files) ---
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function beep(freq, dur, type, gain) {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = type || "square"; o.frequency.value = freq;
+    g.gain.value = gain == null ? 0.05 : gain;
+    o.connect(g); g.connect(ctx.destination);
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t); o.stop(t + dur);
+  }
+  function sfxTick() { beep(420 + Math.random() * 180, 0.05, "square", 0.04); }
+  function sfxWhoosh() { beep(180, 0.12, "sawtooth", 0.03); beep(90, 0.18, "triangle", 0.04); }
+  function sfxJackpot() {
+    [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.18, "square", 0.06), i * 70));
+  }
+  function sfxSad() {
+    // Comical sad trombone-ish descent
+    [392, 349, 311, 262, 220, 196].forEach((f, i) => setTimeout(() => beep(f, 0.28, "triangle", 0.055), i * 160));
+    setTimeout(() => beep(110, 0.45, "sawtooth", 0.03), 980);
+  }
+  function sfxSlot() {
+    beep(880 + Math.random() * 220, 0.04, "square", 0.035);
+  }
+  /** Procedural happy stings — unique contour per biome if MP3 missing. */
+  function sfxBiomeWinSynth(biome) {
+    const charts = {
+      palm: [523, 659, 784, 988],
+      volcano: [196, 392, 523, 784, 1046],
+      temple: [440, 554, 659, 880, 1108],
+      lighthouse: [330, 440, 554, 740],
+      skull: [294, 370, 440, 587, 740],
+      shipwreck: [349, 440, 523, 698, 880],
+      mangrove: [262, 330, 392, 523, 659],
+      crystal: [880, 1108, 1318, 1760],
+      iceberg: [740, 880, 988, 1174, 1480],
+    };
+    const notes = charts[biome] || charts.palm;
+    notes.forEach((f, i) => setTimeout(() => beep(f, 0.16 + (i % 2) * 0.04, i % 2 ? "triangle" : "square", 0.055), i * 85));
+  }
+  /** Happy biome-unique win sting for the correct island. */
+  function sfxBiomeWin(biome) {
+    const src = BIOME_SFX[biome] || BIOME_SFX.palm;
+    try {
+      let a = biomeAudioCache[biome];
+      if (!a) {
+        a = new Audio(src);
+        a.preload = "auto";
+        biomeAudioCache[biome] = a;
+      }
+      a.currentTime = 0;
+      a.volume = 0.85;
+      const p = a.play();
+      if (p && p.catch) p.catch(() => sfxBiomeWinSynth(biome));
+    } catch (_) {
+      sfxBiomeWinSynth(biome);
+    }
+  }
+  function revealClipPath(sceneId, letter) {
+    return `./assets/voyage-v2/reveal/${sceneId}-${letter}.mp4`;
+  }
+  function tickSlotReels() {
+    if (!slotReelsEl) return;
+    const spans = slotReelsEl.querySelectorAll("span");
+    spans.forEach((sp) => {
+      sp.textContent = SLOT_GLYPHS[Math.floor(Math.random() * SLOT_GLYPHS.length)];
+    });
+  }
+
+  function queueIslandLoot(islandIdx, seat) {
+    islandLoot = {
+      island: islandIdx,
+      seat: seat == null ? 0 : seat,
+      t0: performance.now(),
+      waitingForSail: true,
+      active: false,
+      progress: 0,
+      spin: 0,
+      spinVel: 0,
+      stage: "idle",
+    };
+  }
+  function resizeFxBurst() {
+    if (!fxBurstEl) return;
+    const r = worldFxEl.getBoundingClientRect();
+    fxBurstEl.width = Math.max(1, Math.floor(r.width));
+    fxBurstEl.height = Math.max(1, Math.floor(r.height));
+  }
+  function startIslandLootVideo(islandIdx) {
+    if (!islandLoot) islandLoot = { island: islandIdx, seat: 0, t0: performance.now(), waitingForSail: false, active: true, progress: 0, spin: 0, spinVel: 2, stage: "spin" };
+    islandLoot.waitingForSail = false;
+    islandLoot.active = true;
+    islandLoot.progress = 0;
+    islandLoot.spin = 0;
+    islandLoot.spinVel = 4.5;
+    islandLoot.stage = "spin";
+    islandLoot.playT0 = performance.now();
+    islandLoot._exploded = false;
+    if (fxLabelEl) fxLabelEl.textContent = "";
+    tapHintEl.classList.remove("hide");
+    tapHintEl.textContent = "TAP!";
+    lootFillEl.style.width = "0%";
+    worldFxEl.classList.remove("exploding", "empty");
+    worldFxEl.classList.add("on", "spinning");
+    if (worldSpaceEl) worldSpaceEl.classList.add("loot-active");
+    casinoEl.classList.add("on");
+    setTimeout(() => casinoEl.classList.remove("on"), 500);
+    // Identical closed chest for full + empty — no filters that spoil the surprise
+    fxChestEl.src = "./assets/chest-closed.png";
+    fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1)";
+    tickSlotReels();
+    resizeFxBurst();
+    sfxWhoosh();
+    haptic(18);
+  }
+  function drawChestBurst(now) {
+    if (!fxBurstCtx || !fxBurstEl || !islandLoot || !islandLoot.coins) return;
+    const W = fxBurstEl.width, H = fxBurstEl.height;
+    fxBurstCtx.clearRect(0, 0, W, H);
+    // Soft flash behind coins during explode
+    if (islandLoot.stage === "explode") {
+      const pulse = 0.25 + 0.2 * Math.sin(now / 60);
+      const g = fxBurstCtx.createRadialGradient(W * 0.5, H * 0.45, 10, W * 0.5, H * 0.45, W * 0.55);
+      g.addColorStop(0, `rgba(255,213,106,${0.45 + pulse})`);
+      g.addColorStop(0.45, `rgba(255,61,184,${0.2 + pulse * 0.4})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      fxBurstCtx.fillStyle = g;
+      fxBurstCtx.fillRect(0, 0, W, H);
+    }
+    islandLoot.coins = islandLoot.coins.filter((c) => {
+      c.vy += c.dust ? 0.08 : 0.28; c.x += c.vx; c.y += c.vy; c.life -= 16;
+      c.vx *= 0.995;
+      if (c.life <= 0) return false;
+      fxBurstCtx.save();
+      fxBurstCtx.translate(c.x, c.y);
+      fxBurstCtx.rotate(c.rot);
+      if (c.dust) fxBurstCtx.fillStyle = "rgba(180,180,170,.7)";
+      else if (c.neon) fxBurstCtx.fillStyle = c.neonHue || "#ff3db8";
+      else fxBurstCtx.fillStyle = c.gold ? "#ffd56a" : "#fff6e4";
+      fxBurstCtx.beginPath();
+      fxBurstCtx.ellipse(0, 0, c.r, c.r * 0.72, 0, 0, Math.PI * 2);
+      fxBurstCtx.fill();
+      if (!c.dust) {
+        fxBurstCtx.fillStyle = "rgba(255,255,255,.55)";
+        fxBurstCtx.beginPath();
+        fxBurstCtx.ellipse(-c.r * 0.25, -c.r * 0.25, c.r * 0.28, c.r * 0.18, 0, 0, Math.PI * 2);
+        fxBurstCtx.fill();
+      }
+      fxBurstCtx.restore();
+      c.rot += c.vr;
+      return true;
+    });
+  }
+  function explodeChest() {
+    if (!islandLoot || islandLoot._exploded) return;
+    islandLoot._exploded = true;
+    islandLoot.stage = "explode";
+    islandLoot.spinVel = 0;
+    islandLoot.progress = 1;
+    lootFillEl.style.width = "100%";
+    tapHintEl.classList.add("hide");
+    if (fxLabelEl) fxLabelEl.textContent = "";
+    worldFxEl.classList.remove("spinning");
+    worldFxEl.classList.add("exploding");
+    fxChestEl.src = "./assets/chest-open-gold.png";
+    fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1.18)";
+    if (slotReelsEl) {
+      const spans = slotReelsEl.querySelectorAll("span");
+      spans.forEach((sp) => { sp.textContent = "7"; sp.style.color = "#ff3db8"; });
+    }
+    haptic([20, 40, 30, 50, 40, 60, 40]);
+    sfxJackpot();
+    casinoEl.classList.add("on");
+    resizeFxBurst();
+    const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
+    islandLoot.coins = [];
+    for (let i = 0; i < 140; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 4 + Math.random() * 16;
+      islandLoot.coins.push({
+        x: W * 0.5 + (Math.random() - 0.5) * 20,
+        y: H * 0.48,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd * 0.55 - 8 - Math.random() * 14,
+        r: 6 + Math.random() * 14,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.8,
+        life: 1200 + Math.random() * 1000,
+        gold: Math.random() > 0.22,
+        neon: Math.random() > 0.4,
+        neonHue: Math.random() > 0.5 ? "#ff3db8" : "#3dfff0",
+      });
+    }
+    // Procedural burst only (no black-plate firework bitmaps in the chest panel)
+    launchLootFlies(islandLoot.island);
+    setTimeout(() => { casinoEl.classList.remove("on"); endIslandLoot(); }, 2200);
+  }
+  let lastTapAt = 0;
+  function onTapLoot(ev) {
+    if (!islandLoot || !islandLoot.active || islandLoot.stage === "explode" || islandLoot._exploded) return;
+    const nowTap = performance.now();
+    if (nowTap - lastTapAt < 50) return;
+    lastTapAt = nowTap;
+    if (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+    ensureAudio();
+    islandLoot.spinVel = Math.min(36, islandLoot.spinVel + 6 + Math.random() * 3);
+    islandLoot.progress = Math.min(1, islandLoot.progress + 0.12 + Math.random() * 0.06);
+    lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
+    haptic(islandLoot.progress > 0.8 ? [16, 24, 20] : 12);
+    sfxSlot();
+    tickSlotReels();
+    if (islandLoot.progress < 0.3) fxChestEl.src = "./assets/chest-closed.png";
+    else if (islandLoot.progress < 0.65) fxChestEl.src = "./assets/chest-spin.png";
+    else fxChestEl.src = "./assets/chest-crack.png";
+    if (islandLoot.progress > 0.08) tapHintEl.classList.add("hide");
+    if (islandLoot.progress >= 1) {
+      if (islandLoot.empty) explodeEmptyChest();
+      else explodeChest();
+    }
+  }
+  worldFxEl.addEventListener("pointerdown", onTapLoot);
+  function endIslandLoot() {
+    worldFxEl.classList.remove("on", "exploding", "spinning", "empty");
+    if (worldSpaceEl) worldSpaceEl.classList.remove("loot-active");
+    tapHintEl.classList.remove("hide");
+    lootFillEl.style.width = "0%";
+    casinoEl.classList.remove("on");
+    fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%)";
+    if (slotReelsEl) {
+      slotReelsEl.querySelectorAll("span").forEach((sp) => { sp.style.color = ""; });
+    }
+    if (fxBurstCtx && fxBurstEl) fxBurstCtx.clearRect(0, 0, fxBurstEl.width, fxBurstEl.height);
+    const wasActive = !!islandLoot;
+    islandLoot = null;
+    if (wasActive) {
+      // Chest done → sail back to the MIDDLE before the sail-away beat
+      for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+      sendFleetHome();
+      fleetReturnPending = true;
+    }
+  }
+  function tickIslandLoot(now) {
+    if (!islandLoot) return;
+    if (islandLoot.waitingForSail) {
+      const s = sailState[islandLoot.seat];
+      // Wait until the commit sail mostly arrives (~1.1s), then show the chest
+      const arrived = !s || s.t >= 0.88 || (now - islandLoot.t0 > 1400);
+      if (arrived) {
+        if (islandLoot.empty) beginEmptyChestSpin();
+        else startIslandLootVideo(islandLoot.island);
+      }
+      return;
+    }
+    if (islandLoot.active && islandLoot.stage !== "explode" && !islandLoot._exploded) {
+      islandLoot.spinVel *= 0.988;
+      islandLoot.spin += islandLoot.spinVel;
+      // Auto progress — empty chests a touch slower so tapping still matters
+      islandLoot.progress = Math.min(1, islandLoot.progress + (islandLoot.empty ? 0.0032 : 0.0045));
+      lootFillEl.style.width = Math.round(islandLoot.progress * 100) + "%";
+      const wobble = Math.sin(islandLoot.spin * 0.08) * Math.min(24, islandLoot.spinVel * 1.3);
+      fxChestEl.style.transform = `translate(-50%, -50%) rotate(${wobble}deg) scale(${1 + Math.min(0.16, islandLoot.spinVel * 0.004)})`;
+      if (islandLoot.spinVel > 5 && Math.random() < 0.14) {
+        sfxSlot();
+        tickSlotReels();
+      }
+      if (islandLoot.progress >= 0.3 && islandLoot.progress < 0.65) fxChestEl.src = "./assets/chest-spin.png";
+      else if (islandLoot.progress >= 0.65 && islandLoot.progress < 1) fxChestEl.src = "./assets/chest-crack.png";
+      const forceAt = islandLoot.empty ? 3200 : 2600;
+      if (islandLoot.playT0 && now - islandLoot.playT0 > forceAt) {
+        islandLoot.progress = 1;
+        if (islandLoot.empty) explodeEmptyChest();
+        else explodeChest();
+      } else if (islandLoot.progress >= 1) {
+        if (islandLoot.empty) explodeEmptyChest();
+        else explodeChest();
+      }
+    }
+    drawChestBurst(now);
+  }
+
+  function startEmptyChest(islandIdx, seat) {
+    // Same tap-to-open loop as a full chest — payoff is dust / EMPTY.
+    islandLoot = {
+      island: islandIdx,
+      seat: seat == null ? 0 : seat,
+      t0: performance.now(),
+      waitingForSail: true,
+      active: false,
+      progress: 0,
+      spin: 0,
+      spinVel: 0,
+      stage: "idle",
+      empty: true,
+      _exploded: false,
+    };
+  }
+  function beginEmptyChestSpin() {
+    if (!islandLoot) return;
+    islandLoot.waitingForSail = false;
+    islandLoot.active = true;
+    islandLoot.progress = 0;
+    islandLoot.spin = 0;
+    islandLoot.spinVel = 3.5;
+    islandLoot.stage = "spin";
+    islandLoot.playT0 = performance.now();
+    islandLoot._exploded = false;
+    if (fxLabelEl) fxLabelEl.textContent = "";
+    tapHintEl.classList.remove("hide");
+    tapHintEl.textContent = "TAP!";
+    lootFillEl.style.width = "0%";
+    worldFxEl.classList.remove("exploding", "empty");
+    worldFxEl.classList.add("on", "spinning");
+    if (worldSpaceEl) worldSpaceEl.classList.add("loot-active");
+    // Same closed chest as a full one — no grey filter / empty class until open
+    fxChestEl.src = "./assets/chest-closed.png";
+    fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1)";
+    tickSlotReels();
+    resizeFxBurst();
+    sfxWhoosh();
+    haptic(14);
+  }
+  function explodeEmptyChest() {
+    if (!islandLoot || islandLoot._exploded) return;
+    islandLoot._exploded = true;
+    islandLoot.stage = "explode";
+    islandLoot.spinVel = 0;
+    islandLoot.progress = 1;
+    lootFillEl.style.width = "100%";
+    tapHintEl.classList.add("hide");
+    if (fxLabelEl) fxLabelEl.textContent = "";
+    worldFxEl.classList.remove("spinning");
+    worldFxEl.classList.add("exploding", "empty");
+    fxChestEl.src = "./assets/chest-open-empty.png";
+    fxChestEl.style.filter = "";
+    fxChestEl.style.transform = "translate(-50%, -50%) scale(1.05)";
+    if (slotReelsEl) {
+      const spans = slotReelsEl.querySelectorAll("span");
+      spans.forEach((sp) => { sp.textContent = "·"; sp.style.color = "#8a8a8a"; });
+    }
+    resizeFxBurst();
+    const W = fxBurstEl ? fxBurstEl.width : 200, H = fxBurstEl ? fxBurstEl.height : 200;
+    islandLoot.coins = [];
+    for (let i = 0; i < 40; i++) {
+      islandLoot.coins.push({
+        x: W * 0.5 + (Math.random() - 0.5) * 40,
+        y: H * 0.48,
+        vx: (Math.random() - 0.5) * 5,
+        vy: -1.2 - Math.random() * 4,
+        r: 3 + Math.random() * 6,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.25,
+        life: 800 + Math.random() * 600,
+        gold: false,
+        dust: true,
+      });
+    }
+    sfxSad();
+    haptic([40, 80, 50, 100]);
+    setTimeout(() => {
+      fxChestEl.style.filter = "";
+      fxChestEl.style.transform = "translate(-50%, -50%)";
+      endIslandLoot();
+    }, 2000);
+  }
+
+  function revealVideoReady() {
+    return !!(revealClipEl && revealClipEl.readyState >= 2 && revealClipEl.videoWidth > 0);
+  }
+  function armRevealClip(sceneId, letter) {
+    if (!revealClipEl) return;
+    const src = revealClipPath(sceneId, letter);
+    const abs = new URL(src, location.href).href;
+    revealClipEl.onloadeddata = () => {
+      if (!islandCelebrate) return;
+      islandCelebrate.videoOk = true;
+      // If docks already settled, start as soon as the plate is ready
+      if (islandCelebrate.stage === "wait" && islandCelebrate._docksReady) beginIslandCelebratePlay();
+    };
+    revealClipEl.oncanplay = revealClipEl.onloadeddata;
+    revealClipEl.onerror = () => {
+      if (islandCelebrate) islandCelebrate.videoOk = false;
+    };
+    if (revealClipEl.src !== abs) {
+      revealClipEl.src = src;
+      revealClipEl.load();
+    }
+    if (revealVideoReady()) {
+      if (islandCelebrate) islandCelebrate.videoOk = true;
+    }
+  }
+  function startIslandCelebrate(correctIndex) {
+    const sc = currentScene();
+    const idx = correctIndex == null ? 0 : correctIndex;
+    const letter = LETTERS[idx] || "A";
+    const biomes = sc.biomes || ["palm", "skull", "shipwreck", "lighthouse"];
+    const biome = biomes[idx] || "palm";
+    const animMs = (lastState && lastState.view && lastState.view.islandCutsceneMs) || 2000;
+    islandCelebrate = {
+      sceneId: sc.id || `S${String(activeSceneIdx).padStart(2, "0")}`,
+      correctIndex: idx,
+      letter,
+      biome,
+      t0: performance.now(),
+      animMs,
+      stage: "wait", // wait for local ship dock settle + clip decode
+      videoOk: false,
+      _sfx: false,
+      _docksReady: false,
+      _clipStarted: false,
+    };
+    armRevealClip(islandCelebrate.sceneId, letter);
+  }
+  function beginIslandCelebratePlay() {
+    if (!islandCelebrate || islandCelebrate.stage !== "wait") return;
+    // Prefer waiting briefly for the plate so we don't flash the static sea fallback
+    if (!islandCelebrate.videoOk && !revealVideoReady() && (performance.now() - islandCelebrate.t0) < 2200) {
+      return; // keep waiting — tick will retry
+    }
+    islandCelebrate.stage = "play";
+    islandCelebrate.playT0 = performance.now();
+    islandCelebrate.videoOk = revealVideoReady() || islandCelebrate.videoOk;
+    // Freeze ships on dock edges — keep chosenIsland so they stay parked
+    if (revealClipEl && islandCelebrate.videoOk && !islandCelebrate._clipStarted) {
+      islandCelebrate._clipStarted = true;
+      try {
+        revealClipEl.muted = true;
+        revealClipEl.currentTime = 0;
+        // Source clips are ~4s; play at 2× so the beat lands ~2s
+        revealClipEl.playbackRate = 2;
+        const p = revealClipEl.play();
+        if (p && p.catch) {
+          p.catch(() => {
+            if (islandCelebrate) islandCelebrate.videoOk = false;
+          });
+        }
+      } catch (_) {
+        islandCelebrate.videoOk = false;
+      }
+    }
+    if (!islandCelebrate._sfx) {
+      islandCelebrate._sfx = true;
+      ensureAudio();
+      sfxBiomeWin(islandCelebrate.biome);
+      haptic([18, 40, 24, 50]);
+    }
+  }
+  function endIslandCelebrate() {
+    if (!islandCelebrate) return;
+    islandCelebrate.stage = "done";
+    if (revealClipEl) {
+      try { revealClipEl.pause(); } catch (_) {}
+    }
+    islandCelebrate = null;
+    // Cutscene → ships sail back to middle → (server) sail away → leaderboard
+    for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+    sendFleetHome();
+    fleetReturnPending = true;
+  }
+  function tickIslandCelebrate(now) {
+    if (!islandCelebrate) return;
+    if (islandCelebrate.stage === "wait") {
+      // Wait until most ships are near docks, or timeout (~1.1s sail)
+      const players = (lastState && lastState.view && lastState.view.players) || [];
+      let docksReady = players.length === 0;
+      if (players.length) {
+        docksReady = players.every((_, seat) => {
+          const s = sailState[seat];
+          return !s || s.t >= 0.88 || (now - islandCelebrate.t0 > 1200);
+        });
+      } else if (now - islandCelebrate.t0 > 400) docksReady = true;
+      if (now - islandCelebrate.t0 > 1400) docksReady = true;
+      islandCelebrate._docksReady = docksReady;
+      if (revealVideoReady()) islandCelebrate.videoOk = true;
+      // Start when docks are ready AND (clip ready OR we've waited long enough)
+      if (docksReady && (islandCelebrate.videoOk || now - islandCelebrate.t0 > 2200)) {
+        beginIslandCelebratePlay();
+      }
+      return;
+    }
+    if (islandCelebrate.stage === "play") {
+      // Late decode: kick the clip if it arrived after play stage began
+      if (!islandCelebrate._clipStarted && revealVideoReady()) {
+        islandCelebrate.videoOk = true;
+        islandCelebrate._clipStarted = true;
+        try {
+          revealClipEl.muted = true;
+          revealClipEl.currentTime = 0;
+          revealClipEl.playbackRate = 2;
+          const p = revealClipEl.play();
+          if (p && p.catch) p.catch(() => { if (islandCelebrate) islandCelebrate.videoOk = false; });
+        } catch (_) {
+          islandCelebrate.videoOk = false;
+        }
+      }
+      const u = (now - (islandCelebrate.playT0 || islandCelebrate.t0)) / islandCelebrate.animMs;
+      if (u >= 1) endIslandCelebrate();
+    }
+  }
+
+  function startCutscene(kind, animMs, meta) {
+    if (kind === "poseidon") {
+      playPoseidonVideo(meta);
+      return;
+    }
+    if (kind === "islandCelebrate") {
+      startIslandCelebrate(meta && meta.correctIndex != null ? meta.correctIndex : 0);
+      return;
+    }
+    if (kind === "plunder") {
+      // Archived for quiz reveal — still used by Loot Drop island payoffs
+      const isl = meta && meta.island != null ? meta.island : 0;
+      const seat = meta && meta.seat != null ? meta.seat : 0;
+      if (meta && meta.empty) startEmptyChest(isl, seat);
+      else queueIslandLoot(isl, seat);
+      return;
+    }
+    cutscene = { kind, t0: performance.now(), animMs: animMs || 2000, summaryMs: 0, meta: meta || {}, stage: "world" };
+  }
+  function showCutsceneSummary() {
+    if (!cutscene) return;
+    cutscene.stage = "summary";
+    cutscene.summaryT0 = performance.now();
+    csVideoEl.style.display = "none";
+    stopVideo(csVideoEl);
+    const still = document.getElementById("csStillFallback");
+    if (still) still.remove();
+    const meta = cutscene.meta || {};
+    if (cutscene.kind === "poseidon") {
+      const amt = meta.amount != null ? meta.amount : 0;
+      const spent = meta.spent != null ? meta.spent : amt;
+      csTagEl.textContent = "RESCUE";
+      csTitleEl.textContent = "BACK!";
+      csGoldEl.innerHTML = `<b>+0</b>`;
+      csBodyEl.innerHTML = `<span class="spent-line">spent ${spent}</span>`;
+      // coin rain
+      let rain = document.getElementById("csRain");
+      if (!rain) {
+        rain = document.createElement("div");
+        rain.className = "coin-rain";
+        rain.id = "csRain";
+        csSummaryEl.insertBefore(rain, csSummaryEl.firstChild);
+      }
+      rain.innerHTML = "";
+      for (let i = 0; i < 40; i++) {
+        const d = document.createElement("i");
+        d.textContent = "●";
+        d.style.left = (Math.random() * 100) + "%";
+        d.style.animationDuration = (1.0 + Math.random() * 1.6) + "s";
+        d.style.animationDelay = (Math.random() * 0.6) + "s";
+        d.style.fontSize = (0.9 + Math.random() * 1.1) + "rem";
+        d.style.color = i % 3 === 0 ? "#ff3db8" : (i % 3 === 1 ? "#3dfff0" : "#ffd56a");
+        rain.appendChild(d);
+      }
+      // Count-up + flying score pips (money returning)
+      const startT = performance.now();
+      const dur = 900;
+      const tick = (t) => {
+        const u = Math.min(1, (t - startT) / dur);
+        const eased = 1 - Math.pow(1 - u, 3);
+        const n = Math.round(amt * eased);
+        csGoldEl.innerHTML = `<b>+${n}</b>`;
+        if (u < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          const fly = document.createElement("div");
+          fly.className = "score-fly";
+          fly.textContent = "+" + Math.max(1, Math.round(amt / 6));
+          fly.style.left = (35 + Math.random() * 30) + "%";
+          fly.style.top = "58%";
+          csSummaryEl.appendChild(fly);
+          setTimeout(() => fly.remove(), 1200);
+        }, 120 + i * 110);
+      }
+      cutscene.summaryMs = 3800;
+      sfxJackpot();
+      haptic([20, 40, 25, 50, 30, 40]);
+      { const vs = viewSize(); spawnBurst(vs.W / 2, vs.H * 0.4, 32); }
+      casinoEl.classList.add("on");
+      setTimeout(() => casinoEl.classList.remove("on"), 900);
+    }
+    csSummaryEl.classList.add("on");
+    casinoEl.classList.remove("on");
+  }
+  function endCutscene() {
+    cutscene = null;
+    spectacleEl.classList.remove("on");
+    csSummaryEl.classList.remove("on");
+    csVideoEl.style.display = "block";
+    stopVideo(csVideoEl);
+    const still = document.getElementById("csStillFallback");
+    if (still) still.remove();
+    casinoEl.classList.remove("on");
+  }
+  function tickCutscene(now) {
+    if (!cutscene) return;
+    if (cutscene.stage === "anim") {
+      if (now - cutscene.t0 >= (cutscene.animMs || 4200)) showCutsceneSummary();
+      return;
+    }
+    if (cutscene.stage === "summary") {
+      if (now - (cutscene.summaryT0 || now) >= cutscene.summaryMs) endCutscene();
+    }
+  }
+  function spawnBurst(x, y, n) {
+    for (let i = 0; i < n; i++) {
+      fxParticles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 4.5,
+        vy: -1.5 - Math.random() * 3.5,
+        life: 700 + Math.random() * 500,
+        t0: performance.now(),
+        kind: Math.random() < 0.5 ? "coin" : "spark",
+      });
+    }
+  }
+
+  function connect() {
+    if (!playerId) return;
+    ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      errEl.textContent = "";
+      send({ type: "join", playerId });
+      if (wantBot) later(350, connectBot);
+    };
+    ws.onclose = () => { subtitleEl.textContent = "Reconnecting…"; setTimeout(connect, 1400); };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "error") {
+        errEl.textContent = msg.error || "Rejected";
+        toast(msg.error || "Nope!");
+        shakeUntil = performance.now() + 400;
+        return;
+      }
+      if (msg.type !== "state") return;
+      errEl.textContent = "";
+      const prev = lastState && lastState.view && lastState.view.phase;
+      const prevVi = lastState && lastState.view && lastState.view.lootVentureIndex;
+      lastState = msg;
+      if (msg.view && msg.view.serverNow) clockSkew = msg.view.serverNow - Date.now();
+      if (msg.view && prev !== msg.view.phase) {
+        if (msg.view.phase === "q_reveal") {
+          hitStopUntil = performance.now() + 60;
+          // Everyone watches the SAME correct-island cutscene (ships may sit at wrong edges)
+          const rev = msg.view.reveal;
+          const correct = rev && typeof rev.correctIndex === "number" ? rev.correctIndex : null;
+          if (correct != null) {
+            startCutscene("islandCelebrate", 2000, { correctIndex: correct });
+          }
+        }
+        if (msg.view.phase === "scoreboard") {
+          // Return-to-middle is owned by endIslandCelebrate (or chest archive path)
+          if (!islandCelebrate && !islandLoot && !fleetReturnPending) {
+            for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+            sendFleetHome();
+            fleetReturnPending = true;
+          }
+        }
+        if (msg.view.phase === "scene_travel") {
+          // Stay on current sea while fleet sails off the TOP — no backdrop swap yet.
+          for (let i = 0; i < 4; i++) chosenIsland[i] = null;
+          // Prefer leaving from the middle (after return-home). Exit path builder handles lag.
+          fleetReturnPending = false;
+        }
+        if (msg.view.phase === "question" && (prev === "scoreboard" || prev === "scene_travel" || prev === "lobby")) {
+          const toIdx = (msg.view.sceneIndex != null ? msg.view.sceneIndex : 0) % SCENES.length;
+          if (prev !== "lobby") {
+            travelFx = { t0: performance.now(), fromIdx: activeSceneIdx, toIdx, stage: "out" };
+          }
+          activeSceneIdx = toIdx;
+          // Prefetch the four possible reveal plates for this sea (decode before answer lock)
+          try {
+            const sid = (SCENES[toIdx] && SCENES[toIdx].id) || `S${String(toIdx).padStart(2, "0")}`;
+            LETTERS.forEach((L) => {
+              const v = document.createElement("video");
+              v.preload = "auto";
+              v.muted = true;
+              v.src = revealClipPath(sid, L);
+              v.load();
+            });
+          } catch (_) {}
+          // Start in the MIDDLE of the new sea (no bottom enter)
+          const { W, H } = viewSize();
+          const n = Math.max((msg.view.players || []).length, 2);
+          for (let seat = 0; seat < n; seat++) {
+            const home = fleetPos(seat, n, W, H);
+            sailState[seat] = {
+              path: [home, home],
+              t: 1,
+              key: "home",
+              heading: -Math.PI / 2,
+              outbound: null,
+              squash: 1,
+              commitJuiceUntil: 0,
+            };
+          }
+          fleetReturnPending = false;
+        }
+        if (msg.view.phase === "loot_intro" || msg.view.phase === "loot") {
+          travelFx = null;
+          lootFleet = [];
+          for (let i = 0; i < 4; i++) { chosenIsland[i] = null; sailState[i] = null; }
+        }
+        if (msg.view.phase === "loot_reveal") {
+          hitStopUntil = performance.now() + 50;
+          renderLootReveal._did = false;
+        }
+        if (msg.view.phase === "loot_wildcard") {
+          if (msg.view.reveal && msg.view.reveal.poseidon) {
+            const pid = msg.view.reveal.poseidon.playerId;
+            const who = ((msg.view.players || []).find((p) => p.id === pid) || {}).nick || "A pirate";
+            const po = msg.view.reveal.poseidon;
+            startCutscene("poseidon", 3600, {
+              playerId: pid,
+              amount: po.amount,
+              spent: po.spent != null ? po.spent : po.amount,
+              who,
+            });
+          } else if (msg.view.reveal && msg.view.reveal.shark) {
+            startCutscene("shark", 2400, msg.view.reveal.shark);
+          }
+        }
+      }
+      // Correct-island-only reveal — no per-wrong-island beats
+
+      render(msg);
+      if (wantBot && msg.status === "waiting") connectBot();
+    };
+  }
+
+  function serverNowApprox() { return Date.now() + clockSkew; }
+  function remainingMs(v) {
+    if (!v || !v.deadlineAt) return null;
+    return v.deadlineAt - serverNowApprox();
+  }
+  function tickClock(v) {
+    const rem = remainingMs(v);
+    if (rem == null) { chestSec.textContent = "∞"; chestImg.src = "./assets/chest-full.png"; return; }
+    const sec = Math.max(0, Math.ceil(rem / 1000));
+    chestSec.textContent = String(sec);
+    const total = v.phase === "loot" ? v.lootMs : (v.phase === "question" ? v.qMs : 3000);
+    const t = Math.max(0, Math.min(1, rem / total));
+    chestImg.src = t < 0.35 ? "./assets/chest-low.png" : "./assets/chest-full.png";
+    chestWrap.style.filter = (v.phase === "question" || v.phase === "loot") && t < 0.28
+      ? "drop-shadow(0 0 10px #ff7a6e)" : "drop-shadow(0 3px 8px rgba(0,0,0,.35))";
+    if (rem <= 0 && lastState && lastState.status === "playing") {
+      const key = String(v.deadlineAt) + ":" + v.phase + ":" + (v.lootVentureIndex || 0);
+      if (timeoutSentFor !== key) { timeoutSentFor = key; act({ type: "timeout" }); }
+    }
+  }
+
+  // --- canvas ---
+  const sea = document.getElementById("sea");
+  const sctx = sea.getContext("2d");
+  let bg = null, fogImg = null, cloudsImg = null, reefImg = null;
+  /** shipDirs[seat] = { e, ne, n, nw, w, sw, s, se } */
+  let shipDirs = [{}, {}, {}, {}];
+  let birdFrames = [];
+  let islandImgs = [];
+  let birds = [
+    { x: 0.08, y: 0.06, vx: 0.04, phase: 0 },
+    { x: 0.75, y: 0.04, vx: -0.032, phase: 1.4 },
+  ];
+  let imgCoinBurst = null, imgChestOpen = null, imgSparkle = null, imgImpact = null;
+  let imgSplash = null, imgWake = null, imgCrash = null, imgConfetti = null;
+  let imgCheer = null, imgPlunderCrew = null, sharkImg = null;
+  let imgLootCascade = null, imgLootTrail = null, imgLootHaul = null, imgLootBurst = null;
+  let flyCoins = [];
+  const t0 = performance.now();
+
+  function loadImg(src) {
+    return new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  }
+  const seaBandEl = document.getElementById("seaBand");
+  /** Voyage viewport size — sea band only (Q&A is a separate section below). */
+  function viewSize() {
+    const r = (seaBandEl || sea).getBoundingClientRect();
+    const W = Math.max(1, Math.round(r.width || sea.clientWidth || innerWidth));
+    const H = Math.max(1, Math.round(r.height || sea.clientHeight || innerHeight * 0.58));
+    return { W, H };
+  }
+  function resize() {
+    const dpr = Math.min(devicePixelRatio || 1, 1.75);
+    const { W, H } = viewSize();
+    sea.width = W * dpr; sea.height = H * dpr;
+    sea.style.width = W + "px"; sea.style.height = H + "px";
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize); addEventListener("orientationchange", resize);
+  // Layout may settle after first paint
+  requestAnimationFrame(() => { resize(); requestAnimationFrame(resize); });
+  resize();
+
+  function currentScene() {
+    const v = lastState && lastState.view;
+    if (v && v.sceneKind === "loot_voyage") {
+      return {
+        id: "loot-voyage",
+        waterTop: 0.20,
+        waterBot: 0.55,
+        channel: [0.28, 0.72],
+        islands: [0, 4, 8, 12],
+        layout: [
+          { x: 0.32, y: 0.28 },
+          { x: 0.68, y: 0.30 },
+          { x: 0.34, y: 0.64 },
+          { x: 0.66, y: 0.66 },
+        ],
+      };
+    }
+    return SCENES[activeSceneIdx] || SCENES[0];
+  }
+  function playTop(H) {
+    const s = currentScene();
+    return mapY(s.waterTop != null ? s.waterTop : 0.06, H);
+  }
+  function playBottom(H) {
+    const s = currentScene();
+    const c = plateCrop(s);
+    const bot = Math.min(s.waterBot != null ? s.waterBot : c.y1 - 0.04, c.y1 - 0.02);
+    return mapY(bot, H);
+  }
+  function seaH(H) { return playBottom(H); }
+  function clampChannelX(x, W) {
+    const s = currentScene();
+    const lo = W * (s.channel ? s.channel[0] : 0.30);
+    const hi = W * (s.channel ? s.channel[1] : 0.70);
+    return Math.max(lo, Math.min(hi, x));
+  }
+  /**
+   * Sea band shows a crop of each 9:16 baked sea that fully contains all 4 islands.
+   * Authored lane Y is in full-plate space; map into the sea-band viewport with margin
+   * so island art never clips against the Q&A divider.
+   */
+  function plateCrop(scene) {
+    const s = scene || currentScene();
+    let y0 = 0.04;
+    let y1 = 0.55;
+    const boxes = s.islandBoxes;
+    if (boxes) {
+      LETTERS.forEach((L) => {
+        const b = boxes[L];
+        if (!b) return;
+        y0 = Math.min(y0, b.y);
+        y1 = Math.max(y1, b.y + b.h);
+      });
+    } else if (s.islandCenters) {
+      LETTERS.forEach((L) => {
+        const c = s.islandCenters[L];
+        if (!c) return;
+        y0 = Math.min(y0, c.y - 0.16);
+        y1 = Math.max(y1, c.y + 0.18);
+      });
+    }
+    // Baked island silhouettes extend past authored boxes — pad hard below C/D
+    y0 = Math.max(0, y0 - 0.05);
+    y1 = Math.min(0.92, y1 + 0.16);
+    if (y1 - y0 < 0.5) y1 = Math.min(0.92, y0 + 0.55);
+    return { y0, y1, span: Math.max(0.4, y1 - y0) };
+  }
+  function safeY(normY) {
+    const c = plateCrop();
+    return Math.min(normY == null ? (c.y0 + c.y1) * 0.5 : normY, c.y1 - 0.02);
+  }
+  function mapX(nx, W) { return nx * W; }
+  /** Map plate-normalized Y into sea-band pixels, with inset so islands stay fully on-screen. */
+  function mapY(ny, H) {
+    const c = plateCrop();
+    const inset = 0.04; // keep island toes above the quiz divider
+    const usable = H * (1 - inset * 2);
+    return H * inset + ((safeY(ny) - c.y0) / c.span) * usable;
+  }
+  function islandBox(i) {
+    const s = currentScene();
+    const L = LETTERS[i];
+    if (s.islandBoxes && s.islandBoxes[L]) return s.islandBoxes[L];
+    const c = (s.islandCenters && s.islandCenters[L]) || { x: 0.25, y: 0.3 };
+    return { x: Math.max(0.02, c.x - 0.16), y: Math.max(0.04, c.y - 0.14), w: 0.32, h: 0.28 };
+  }
+  /** Island centres from authored lane JSON (normalized → sea-band pixels). */
+  function islandPos(i, W, H) {
+    const s = currentScene();
+    const L = LETTERS[i];
+    if (s.islandCenters && s.islandCenters[L]) {
+      return { x: mapX(s.islandCenters[L].x, W), y: mapY(s.islandCenters[L].y, H) };
+    }
+    const lay = (s.layout && s.layout[i]) || { x: 0.22 + (i % 2) * 0.56, y: 0.28 + Math.floor(i / 2) * 0.26 };
+    return { x: mapX(lay.x, W), y: mapY(lay.y, H) };
+  }
+  function islandSpriteIndex(i) {
+    const s = currentScene();
+    const idx = s.islands && s.islands[i] != null ? s.islands[i] : i;
+    return idx;
+  }
+  function islandSize(W) { return Math.min(W * 0.36, W * SHIP_SCREEN_FRAC * 4); }
+  function islandRadius(W) { return islandSize(W) * 0.38; }
+  /** Dock berths sit on the island BOX edge — ships never enter the land stage. */
+  function dockPos(i, W, H, seatOffset) {
+    const s = currentScene();
+    const L = LETTERS[i];
+    const spread = ((seatOffset || 0) - 1.5) * Math.min(11, W * 0.014);
+    const box = islandBox(i);
+    if (s.docks && s.docks[L]) {
+      return { x: mapX(s.docks[L].x, W) + spread, y: mapY(s.docks[L].y, H) + spread * 0.25 };
+    }
+    const towardCenter = (i % 2 === 0) ? 1 : -1;
+    const edgeX = towardCenter > 0 ? mapX(box.x + box.w, W) : mapX(box.x, W);
+    return {
+      x: clampChannelX(edgeX + towardCenter * 4 + spread, W),
+      y: Math.max(playTop(H) + 12, Math.min(playBottom(H) - 12, mapY(box.y + box.h * 0.62, H) + spread * 0.4)),
+    };
+  }
+  function fleetPos(seat, n, W, H) {
+    const s = currentScene();
+    if (s.home && s.home[seat]) {
+      return { x: mapX(s.home[seat].x, W), y: mapY(s.home[seat].y, H) };
+    }
+    const bot = playBottom(H);
+    const spread = Math.min(W * 0.22, 28 * n);
+    const cx = W * 0.5;
+    return {
+      x: clampChannelX(cx - spread / 2 + (spread * (seat + 0.5) / Math.max(1, n)), W),
+      y: bot - 18,
+    };
+  }
+  function fogHoldPos(W, H) {
+    return { x: W * 0.5, y: playBottom(H) - 36 };
+  }
+  function offscreenTop(seat, n, W, H) {
+    const f = fleetPos(seat, n, W, H);
+    return { x: f.x, y: -H * 0.12 };
+  }
+  function easeInOut(t) {
+    // Smoothstep — weighty but responsive (Clash Royale travel feel)
+    const u = Math.max(0, Math.min(1, t));
+    return u * u * (3 - 2 * u);
+  }
+  function easeInOutCubic(t) {
+    const u = Math.max(0, Math.min(1, t));
+    return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+  }
+
+  function distPointSeg(px, py, ax, ay, bx, by) {
+    const abx = bx - ax, aby = by - ay;
+    const len2 = abx * abx + aby * aby || 1;
+    let t = ((px - ax) * abx + (py - ay) * aby) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const qx = ax + abx * t, qy = ay + aby * t;
+    return Math.hypot(px - qx, py - qy);
+  }
+  function segmentBlocked(ax, ay, bx, by, W, H, pad) {
+    const clearance = islandRadius(W) + (pad == null ? 16 : pad);
+    for (let i = 0; i < 4; i++) {
+      const p = islandPos(i, W, H);
+      if (distPointSeg(p.x, p.y, ax, ay, bx, by) < clearance) return true;
+    }
+    return false;
+  }
+  function pointInIsland(x, y, W, H, pad) {
+    const clearance = islandRadius(W) + (pad == null ? 10 : pad);
+    for (let i = 0; i < 4; i++) {
+      const p = islandPos(i, W, H);
+      if (Math.hypot(x - p.x, y - p.y) < clearance) return true;
+    }
+    return false;
+  }
+  function normPathToPx(pts, W, H) {
+    return (pts || []).map((p) => ({ x: mapX(p.x, W), y: mapY(p.y, H) }));
+  }
+  /** Draw the island crop into the sea band so all 4 islands are fully on-screen. */
+  function drawVoyagePlate(img, W, H, bobY) {
+    if (!img) return false;
+    const c = plateCrop();
+    const sw = img.width;
+    const sy = img.height * c.y0;
+    const sh = Math.max(1, img.height * c.span);
+    const inset = 0.04;
+    const dx = 0;
+    const dy = (bobY || 0) + H * inset;
+    const dw = W;
+    const dh = H * (1 - inset * 2);
+    sctx.drawImage(img, 0, sy, sw, sh, dx, dy, dw, dh);
+    return true;
+  }
+  /**
+   * Fallback fairway if a scene is missing authored lanes.
+   * Prefer VOYAGE_LANES paths — never sail across baked land.
+   */
+  function middleChannelPath(from, to, W, H) {
+    const CX = W * 0.5;
+    const topBand = playTop(H) + 16;
+    const botBand = playBottom(H) - 16;
+    const mid = (topBand + botBand) * 0.5;
+    const clearBand = (y) => (y < mid ? topBand : botBand);
+    const clampY = (y) => Math.max(topBand, Math.min(botBand, y));
+    const path = [{ x: clampChannelX(from.x, W), y: clampY(from.y) }];
+    const push = (x, y) => {
+      const nx = clampChannelX(x, W);
+      const ny = clampY(y);
+      const last = path[path.length - 1];
+      if (Math.hypot(last.x - nx, last.y - ny) < 3) return;
+      path.push({ x: nx, y: ny });
+    };
+    const fromBand = clearBand(from.y);
+    const toBand = clearBand(to.y);
+    push(from.x, fromBand);
+    push(CX, fromBand);
+    push(CX, toBand);
+    push(to.x, toBand);
+    push(to.x, to.y);
+    return path;
+  }
+  function findSeaPath(from, to, W, H, islandIdx) {
+    const sc = currentScene();
+    const L = islandIdx != null && islandIdx >= 0 ? LETTERS[islandIdx] : null;
+    if (L && sc.paths && sc.paths[L] && sc.paths[L].length > 1) {
+      const authored = normPathToPx(sc.paths[L], W, H);
+      if (Math.hypot(from.x - authored[0].x, from.y - authored[0].y) > 10) {
+        return [{ x: from.x, y: from.y }, ...authored];
+      }
+      return authored;
+    }
+    return middleChannelPath(from, to, W, H);
+  }
+  function reversePath(path) {
+    if (!path || path.length < 2) return path ? path.slice() : [];
+    return path.slice().reverse().map((p) => ({ x: p.x, y: p.y }));
+  }
+
+  function polylinePoint(path, t, easeFn) {
+    if (!path || path.length < 2) return path && path[0] ? path[0] : { x: 0, y: 0 };
+    const ease = easeFn || easeInOutCubic;
+    const e = ease(Math.max(0, Math.min(1, t)));
+    let total = 0;
+    const seglen = [];
+    for (let i = 0; i < path.length - 1; i++) {
+      const L = Math.hypot(path[i + 1].x - path[i].x, path[i + 1].y - path[i].y);
+      seglen.push(L); total += L;
+    }
+    if (total < 1) return path[path.length - 1];
+    let d = e * total;
+    for (let i = 0; i < seglen.length; i++) {
+      if (d <= seglen[i] || i === seglen.length - 1) {
+        const u = seglen[i] < 1 ? 1 : d / seglen[i];
+        const a = path[i], b = path[i + 1];
+        return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u, heading: Math.atan2(b.y - a.y, b.x - a.x) };
+      }
+      d -= seglen[i];
+    }
+    const last = path[path.length - 1];
+    return { x: last.x, y: last.y, heading: 0 };
+  }
+  function targetKey(target) {
+    if (target == null) return "home";
+    if (target === -1) return "fog";
+    return "i" + target;
+  }
+  /** Sail off the TOP shrinking into distance (LOCKED). Prefer leaving from mid-channel. */
+  function exitPath(from, to, W, H) {
+    const sc = currentScene();
+    const mid = { x: W * 0.5, y: (sc.home && sc.home[0] ? sc.home[0].y : 0.62) * H };
+    const nearMid = Math.hypot(from.x - mid.x, from.y - mid.y) < Math.max(36, W * 0.08);
+    const head = nearMid
+      ? [{ x: from.x, y: from.y }]
+      : [{ x: from.x, y: from.y }, { x: mid.x, y: from.y * 0.35 + mid.y * 0.65 }, { x: mid.x, y: mid.y }];
+    if (sc.paths && sc.paths.exitTop && sc.paths.exitTop.length > 1) {
+      const authored = normPathToPx(sc.paths.exitTop, W, H);
+      return [...head, ...authored.slice(1)];
+    }
+    const CX = W * 0.5;
+    return [
+      ...head,
+      { x: CX, y: H * 0.42 },
+      { x: CX, y: H * 0.18 },
+      { x: CX, y: H * 0.02 },
+      { x: to.x != null ? to.x : CX, y: to.y != null ? to.y : -H * 0.12 },
+    ];
+  }
+  function enterPath(from, to, W, H) {
+    const sc = currentScene();
+    if (sc.paths && sc.paths.enter && sc.paths.enter.length > 1) {
+      const authored = normPathToPx(sc.paths.enter, W, H);
+      return [...authored.slice(0, -1), { x: to.x, y: to.y }];
+    }
+    return [
+      { x: W * 0.5, y: H * 0.82 },
+      { x: W * 0.5, y: H * 0.70 },
+      { x: to.x, y: to.y },
+    ];
+  }
+  function travelDuration(key) {
+    if (key === "exit" || key === "exited") return EXIT_TRAVEL_S;
+    if (key === "enter") return ENTER_TRAVEL_S;
+    return COMMIT_TRAVEL_S;
+  }
+  function ensureSail(seat, fromHome, to, key, dt, islandIdx, W, H) {
+    let s = sailState[seat];
+    if (key === "exited") {
+      if (!s || s.key !== "exited") {
+        s = sailState[seat] = {
+          path: [{ x: to.x, y: to.y }, { x: to.x, y: to.y }],
+          t: 1,
+          key: "exited",
+          heading: -Math.PI / 2,
+          outbound: s && s.outbound,
+          squash: 1,
+          commitJuiceUntil: 0,
+        };
+      }
+      return { x: to.x, y: to.y, heading: s.heading || -Math.PI / 2 };
+    }
+    if (!s || s.key !== key) {
+      const cur = s && s.path ? polylinePoint(s.path, s.t) : fromHome;
+      let path;
+      if (key === "home" && s && s.outbound && s.outbound.length > 1) {
+        path = reversePath(s.outbound);
+      } else if (key === "exit") {
+        path = exitPath({ x: cur.x, y: cur.y }, to, W, H);
+      } else if (key === "enter") {
+        path = enterPath(fromHome, to, W, H);
+      } else {
+        path = findSeaPath({ x: cur.x, y: cur.y }, to, W, H, islandIdx);
+      }
+      const outbound = (key !== "home" && key !== "exit" && key !== "enter" && key !== "exited")
+        ? path.slice()
+        : (s && s.outbound) || null;
+      const nowMs = performance.now();
+      s = sailState[seat] = {
+        path,
+        t: 0,
+        key,
+        heading: 0,
+        outbound,
+        squash: 0.82,
+        commitJuiceUntil: nowMs + 100,
+      };
+    }
+    s.t = Math.min(1, s.t + dt / travelDuration(key));
+    if (s.squash < 1) s.squash = Math.min(1, s.squash + dt * 2.4);
+    const pos = polylinePoint(s.path, s.t);
+    s.heading = pos.heading != null ? pos.heading : (s.heading || 0);
+    return pos;
+  }
+  function sendFleetHome() {
+    for (let seat = 0; seat < 4; seat++) {
+      const s = sailState[seat];
+      if (!s || !s.path) continue;
+      if (!s.outbound) s.outbound = s.path.slice();
+      sailState[seat] = {
+        path: reversePath(s.outbound),
+        t: 0,
+        key: "home",
+        heading: 0,
+        outbound: s.outbound,
+      };
+    }
+  }
+  function headingToDir(heading) {
+    // screen atan2: 0=E, PI/2=S — 16 compass slices for smoother turns
+    let i = Math.round(heading / (Math.PI / 8));
+    i = ((i % 16) + 16) % 16;
+    return DIR16[i];
+  }
+  /** Per-seat facing hysteresis — stops 16-dir sheets from flickering every frame. */
+  const shipFace = [null, null, null, null];
+  let shipIdle = [null, null, null, null];
+  let shipCheer = [null, null, null, null];
+  let shipSad = [null, null, null, null];
+  let vfxGlow = [];
+  let vfxFire = [];
+  function stableDir(seat, heading) {
+    const name = headingToDir(heading == null ? 0 : heading);
+    const prev = shipFace[seat];
+    if (!prev) { shipFace[seat] = name; return name; }
+    if (prev === name) return name;
+    // Only change facing when the heading clearly enters a new slice (hysteresis)
+    const prevIdx = DIR16.indexOf(prev);
+    const nextIdx = DIR16.indexOf(name);
+    let delta = Math.abs(nextIdx - prevIdx);
+    if (delta > 8) delta = 16 - delta;
+    if (delta >= 2) shipFace[seat] = name;
+    return shipFace[seat];
+  }
+  function shipSprite(seat, heading, now, emotion) {
+    const i = seat % 4;
+    const dirs = shipDirs[i];
+    if (!dirs) return null;
+    // Prefer travel facings only — idle/cheer/sad sheets were mismatched and caused glitch pops.
+    // Soft emotion tint is handled by a brief squash / outline elsewhere if needed.
+    void emotion; void now; void shipIdle; void shipCheer; void shipSad;
+    const name = stableDir(i, heading);
+    if (dirs[name]) return dirs[name];
+    const map = {
+      ese: "se", sse: "se", ssw: "sw", wsw: "sw",
+      wnw: "nw", nnw: "nw", nne: "ne", ene: "ne",
+    };
+    const alt = map[name];
+    return (alt && dirs[alt]) || dirs.e || dirs.se || null;
+  }
+  function drawHullName(x, y, sz, nick, isYou) {
+    const label = String(nick || "").slice(0, NAME_MAX);
+    if (!label) return;
+    sctx.save();
+    // Name painted onto the hull plaque — no floating tags (polish killer #4)
+    const bw = Math.max(40, Math.min(sz * 0.78, sz * 0.95));
+    const bh = Math.max(12, sz * 0.15);
+    const by = y + sz * 0.10;
+    sctx.fillStyle = "rgba(42,28,16,.9)";
+    roundRect(sctx, x - bw / 2, by - bh / 2, bw, bh, 4);
+    sctx.fill();
+    sctx.strokeStyle = isYou ? "#ffd56a" : "rgba(201,150,58,.7)";
+    sctx.lineWidth = isYou ? 2 : 1.4;
+    sctx.stroke();
+    const fs = label.length > 9
+      ? Math.max(7, Math.round(sz * 0.105))
+      : Math.max(8, Math.round(sz * 0.125));
+    sctx.fillStyle = "#fff6e4";
+    sctx.font = `800 ${fs}px Trebuchet MS,sans-serif`;
+    sctx.textAlign = "center";
+    sctx.textBaseline = "middle";
+    sctx.fillText(label, x, by + 0.5);
+    sctx.restore();
+  }
+  function drawPlaqueLetter(x, y, letter, lit) {
+    sctx.save();
+    // Sit flush on the baked wooden plaque boards (recalibrated per-scene anchors)
+    const rw = Math.max(36, Math.min(52, innerWidth * 0.11));
+    const rh = Math.max(22, rw * 0.55);
+    sctx.fillStyle = lit ? "rgba(255,213,106,.95)" : "rgba(42,28,14,.78)";
+    roundRect(sctx, x - rw / 2, y - rh / 2, rw, rh, 6);
+    sctx.fill();
+    sctx.strokeStyle = lit ? "#fff6c8" : "rgba(201,150,58,.9)";
+    sctx.lineWidth = 2.2;
+    sctx.stroke();
+    sctx.fillStyle = lit ? "#1a1008" : "#ffd56a";
+    sctx.font = `900 ${Math.round(rh * 0.62)}px Trebuchet MS,sans-serif`;
+    sctx.textAlign = "center";
+    sctx.textBaseline = "middle";
+    sctx.fillText(letter, x, y + 0.5);
+    sctx.restore();
+  }
+  function shipDrawSize(W, isYou, travelT, traveling) {
+    const base = W * ((currentScene().shipScale) || SHIP_SCREEN_FRAC);
+    const youBoost = isYou ? 1.05 : 1;
+    const shrink = traveling ? Math.max(0.22, 1 - travelT * 0.78) : 1;
+    return base * youBoost * shrink;
+  }
+  function wagerShipCount(amount, pool) {
+    if (!amount || amount <= 0) return 0;
+    const p = Math.max(pool || amount, 1);
+    const step = Math.max(20, p / 4);
+    return Math.max(1, Math.min(4, Math.ceil(amount / step)));
+  }
+  function syncLootFleet(s, v) {
+    // No ships during below-deck allocation — only on loot voyage reveal
+    if (!v || (v.phase !== "loot_reveal" && v.phase !== "loot_wildcard")) {
+      lootFleet = [];
+      return;
+    }
+    const you = v.you;
+    if (!you) { lootFleet = []; return; }
+    const { W, H } = viewSize();
+    const pool = you.lootPool || 0;
+    const wanted = [];
+    // One ship per DISTINCT island the player funded (not all gold on one)
+    (v.ventures || []).forEach((ven, i) => {
+      const amt = (you.allocation && you.allocation[ven.id]) || 0;
+      if (amt <= 0) return;
+      const island = ven.island != null ? ven.island : i;
+      if (v.phase === "loot_reveal") {
+        const vi = v.lootVentureIndex || 0;
+        const active = v.ventures[vi];
+        if (!active || active.island !== island) return;
+      }
+      wanted.push({ island, amount: amt, k: 0, n: 1 });
+    });
+    const sig = wanted.map((w) => w.island + ":" + w.amount).join("|") + ":" + (v.phase || "");
+    if (lootFleet._sig === sig) return;
+    lootFleet = [];
+    lootFleet._sig = sig;
+    wanted.forEach((w, idx) => {
+      const from = { x: W * (0.40 + (idx + 0.5) * (0.20 / Math.max(1, wanted.length))), y: H * 0.92 };
+      const to = dockPos(w.island, W, H, idx);
+      const path = findSeaPath(from, to, W, H);
+      const size = 48 + Math.min(22, (w.amount / Math.max(pool, 1)) * 28);
+      lootFleet.push({ path, t: 0, island: w.island, size, seat: (s.you ? (v.players || []).findIndex((p) => p.id === s.you) : 0) % 4, heading: 0, outbound: path.slice() });
+    });
+  }
+  function tickLootFleet(dt) {
+    lootFleet.forEach((ship) => {
+      ship.t = Math.min(1, ship.t + dt * 0.18);
+      const pos = polylinePoint(ship.path, ship.t);
+      ship.heading = pos.heading || ship.heading;
+    });
+  }
+
+  function drawImg(im, x, y, sz) {
+    if (!im) return;
+    sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
+  }
+
+  function drawSea(now) {
+    const { W, H } = viewSize();
+    if (now < hitStopUntil) return;
+    const shake = now < shakeUntil ? Math.sin(now * 0.09) * 5 : 0;
+    sctx.save();
+    sctx.translate(shake, 0);
+
+    const v = lastState && lastState.view;
+    const t = (now - t0) / 1000;
+    const sh = seaH(H);
+    const dt = Math.min(0.05, (now - lastFrameAt) / 1000);
+
+    // LOCKED camera — no follow / zoom drift (smoothness > spectacle here)
+    cam.x = 0; cam.y = 0; cam.z = 1; cam.tx = 0; cam.ty = 0; cam.tz = 1;
+
+    sctx.save();
+
+    // Pick backdrop from scene kind (voyage / below-deck / loot voyage)
+    const kind = (v && v.sceneKind) || "voyage";
+    let drawBg = sceneBgs[activeSceneIdx] || bg;
+    if (kind === "below_deck") drawBg = belowDeckBg || drawBg;
+    if (kind === "loot_voyage") drawBg = lootVoyageBg || drawBg;
+    if (travelFx && travelFx.stage === "out" && sceneBgs[travelFx.fromIdx]) {
+      drawBg = sceneBgs[travelFx.fromIdx];
+    }
+    const celebPlaying = islandCelebrate && islandCelebrate.stage === "play";
+    const useRevealVid = celebPlaying && islandCelebrate.videoOk && revealClipEl
+      && revealClipEl.readyState >= 2 && !revealClipEl.paused;
+    const bobY = (kind === "voyage" || kind === "travel") ? Math.cos(t * 0.04) * 1.2 : 0;
+    if (useRevealVid) {
+      // Same island crop as the static sea so the swap stays seamless
+      const c = plateCrop();
+      const vw = revealClipEl.videoWidth || 720;
+      const fullH = revealClipEl.videoHeight || 1280;
+      const sy = fullH * c.y0;
+      const sh = Math.max(1, fullH * c.span);
+      const inset = 0.04;
+      sctx.drawImage(revealClipEl, 0, sy, vw, sh, 0, bobY + H * inset, W, H * (1 - inset * 2));
+    } else if (kind === "voyage" || kind === "travel") {
+      if (!drawVoyagePlate(drawBg, W, H, bobY)) {
+        const g = sctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
+        sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
+      }
+    } else if (drawBg) {
+      const scale = Math.max(W / drawBg.width, H / drawBg.height);
+      const dw = drawBg.width * scale;
+      const dh = drawBg.height * scale;
+      sctx.drawImage(drawBg, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      if (kind === "below_deck") {
+        const vg = sctx.createRadialGradient(W * 0.5, H * 0.42, 40, W * 0.5, H * 0.45, H * 0.7);
+        vg.addColorStop(0, "rgba(0,0,0,0)");
+        vg.addColorStop(1, "rgba(10,4,0,.35)");
+        sctx.fillStyle = vg;
+        sctx.fillRect(0, 0, W, H);
+      }
+    } else {
+      const g = sctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#5ec4d6"); g.addColorStop(0.45, "#1c8a9c"); g.addColorStop(1, "#0a3d4d");
+      sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
+    }
+    // No gold sparkles on the winning island — they hide the authored cutscene.
+    // Fallback only: gentle dim on the three losers when the clip is missing.
+    if (celebPlaying && !useRevealVid && kind === "voyage") {
+      const u = Math.min(1, (now - (islandCelebrate.playT0 || islandCelebrate.t0)) / islandCelebrate.animMs);
+      for (let i = 0; i < 4; i++) {
+        if (i === islandCelebrate.correctIndex) continue;
+        const b = islandBox(i);
+        const c = plateCrop();
+        const bx = mapX(b.x, W);
+        const by = mapY(b.y, H);
+        const bw = b.w * W;
+        const bh = (b.h / c.span) * H * 0.92;
+        sctx.fillStyle = `rgba(12,20,28,${0.32 + 0.14 * u})`;
+        sctx.fillRect(bx, by, bw, bh);
+      }
+    }
+    // Soft scene crossfade when entering a new destination after scoreboard
+    if (travelFx) {
+      const u = Math.min(1, (now - travelFx.t0) / 700);
+      if (travelFx.stage === "out") {
+        sctx.fillStyle = `rgba(4,18,28,${0.12 + u * 0.5})`;
+        sctx.fillRect(0, 0, W, H);
+        if (u >= 1) {
+          activeSceneIdx = travelFx.toIdx;
+          travelFx = { t0: now, fromIdx: travelFx.toIdx, toIdx: travelFx.toIdx, stage: "in" };
+          for (let seat = 0; seat < 4; seat++) sailState[seat] = null;
+        }
+      } else if (travelFx.stage === "in") {
+        sctx.fillStyle = `rgba(4,18,28,${0.5 * (1 - u)})`;
+        sctx.fillRect(0, 0, W, H);
+        if (u >= 1) travelFx = null;
+      }
+    }
+
+    for (const g of glitter) {
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2.2 + g.ph));
+      if (tw < 0.45) continue;
+      const gy = playTop(H) + g.y * (playBottom(H) - playTop(H));
+      sctx.fillStyle = "#fff6c8";
+      sctx.beginPath();
+      sctx.arc(g.x * W, gy, g.s * tw, 0, Math.PI * 2);
+      sctx.fill();
+    }
+
+    // Clouds stay in the SKY only — never over cabin / sailing water
+    if (cloudsImg && kind === "voyage") {
+      const cw = W * 1.3, ch = cw * (cloudsImg.height / cloudsImg.width) * 0.28;
+      const cx = ((t * 5) % (cw + W)) - cw * 0.2;
+      sctx.globalAlpha = 0.45;
+      sctx.drawImage(cloudsImg, cx, playTop(H) - ch * 0.85, cw, ch);
+      sctx.globalAlpha = 1;
+    }
+
+    // No far-island / reef props on the sailing channel — backdrop already has them.
+
+    birds.forEach((b, bi) => {
+      b.x += b.vx * dt * 16;
+      if (b.x > 1.2) { b.x = -0.1; b.vx = Math.abs(b.vx); }
+      if (b.x < -0.2) { b.x = 1.1; b.vx = -Math.abs(b.vx); }
+      const flap = birdFrames.length ? birdFrames[Math.floor(now / 90 + bi * 2) % birdFrames.length] : null;
+      const bx = b.x * W;
+      const by = playTop(H) - 18 + Math.sin(t * 3.2 + b.phase) * 5;
+      if (flap) {
+        sctx.save();
+        sctx.translate(bx, by);
+        sctx.scale(b.vx < 0 ? -1 : 1, 1);
+        sctx.rotate(Math.sin(t * 2.8 + b.phase) * 0.15);
+        sctx.drawImage(flap, -20, -12, 40, 26);
+        sctx.restore();
+      }
+    });
+
+    // Voyage: islands are BAKED into the backdrop. Draw plaque letters + celebration only.
+    // Loot voyage still uses cutout heroes for the fleet wager scene.
+    if (kind === "loot_voyage") {
+      for (let i = 0; i < 4; i++) {
+        const p = islandPos(i, W, H);
+        const bob = Math.sin(t * 1.05 + i) * 2.5;
+        const packIdx = islandSpriteIndex(i);
+        const im = islandPack[packIdx] || islandImgs[i % 4];
+        const sz = islandSize(W);
+        if (im) sctx.drawImage(im, p.x - sz / 2, p.y - sz / 2 + bob, sz, sz);
+      }
+    } else if (kind !== "below_deck") {
+      const rev = v && v.reveal;
+      for (let i = 0; i < 4; i++) {
+        const L = LETTERS[i];
+        const sc = currentScene();
+        const p = islandPos(i, W, H);
+        const pl = sc.plaques && sc.plaques[L]
+          ? { x: mapX(sc.plaques[L].x, W), y: mapY(sc.plaques[L].y, H) }
+          : { x: p.x, y: p.y - 18 };
+        const highlight = pathPreview === i || (islandLoot && islandLoot.island === i);
+        // No gold sparkles over the winning island during cutscene — they hide the animation
+        const celebrating = !!(islandCelebrate && (islandCelebrate.stage === "wait" || islandCelebrate.stage === "play"));
+        const isCorrect = !celebrating && rev && rev.correctIndex === i && v.phase === "scene_travel";
+        const isWrong = rev && pathPreview === i && rev.correctIndex !== i && v.phase === "q_reveal";
+        if (highlight && !celebrating) {
+          sctx.fillStyle = "rgba(255,213,106,.18)";
+          sctx.beginPath();
+          sctx.ellipse(p.x, p.y, islandSize(W) * 0.42, islandSize(W) * 0.30, 0, 0, Math.PI * 2);
+          sctx.fill();
+        }
+        drawPlaqueLetter(pl.x, pl.y, L, (highlight || isCorrect) && !celebrating);
+        if (isWrong) {
+          sctx.fillStyle = "rgba(20,10,10,.25)";
+          sctx.beginPath();
+          sctx.ellipse(p.x, p.y, islandSize(W) * 0.4, islandSize(W) * 0.28, 0, 0, Math.PI * 2);
+          sctx.fill();
+        }
+      }
+    }
+
+    // Debug: authored lanes + docks
+    if (params.get("sailDebug") === "1") {
+      const sc = currentScene();
+      sctx.save();
+      sctx.strokeStyle = "rgba(255,61,184,.85)";
+      sctx.lineWidth = 2;
+      sctx.setLineDash([6, 5]);
+      sctx.strokeRect(W * 0.30, playTop(H), W * 0.40, playBottom(H) - playTop(H));
+      sctx.setLineDash([]);
+      ["A", "B", "C", "D", "exitTop"].forEach((k) => {
+        const pts = sc.paths && sc.paths[k];
+        if (!pts) return;
+        sctx.strokeStyle = k === "exitTop" ? "rgba(61,255,240,.9)" : "rgba(255,213,106,.9)";
+        sctx.beginPath();
+        pts.forEach((pt, idx) => {
+          const x = pt.x * W, y = pt.y * H;
+          if (idx === 0) sctx.moveTo(x, y); else sctx.lineTo(x, y);
+        });
+        sctx.stroke();
+      });
+      sctx.restore();
+    }
+
+    if (pathPreview != null) {
+      const mySeat = (v && v.players || []).findIndex((p) => p.id === (lastState && lastState.you));
+      if (mySeat >= 0) {
+        const from = fleetPos(mySeat, Math.max(2, (v.players || []).length), W, H);
+        const to = dockPos(pathPreview, W, H, 0);
+        const path = findSeaPath(from, to, W, H, pathPreview);
+        sctx.strokeStyle = "rgba(255,213,106,.85)";
+        sctx.setLineDash([7, 7]); sctx.lineWidth = 3;
+        sctx.beginPath();
+        for (let k = 0; k <= 28; k++) {
+          const pt = polylinePoint(path, k / 28);
+          if (k === 0) sctx.moveTo(pt.x, pt.y); else sctx.lineTo(pt.x, pt.y);
+        }
+        sctx.stroke();
+        sctx.setLineDash([]);
+      }
+    }
+
+    wakeDots = wakeDots.filter((w) => {
+      const age = now - w.t0;
+      if (age > w.life) return false;
+      const a = 1 - age / w.life;
+      sctx.fillStyle = "#cfeef6";
+      sctx.beginPath();
+      sctx.ellipse(w.x, w.y, 7 * a, 3.5 * a, w.rot || 0, 0, Math.PI * 2);
+      sctx.fill();
+      return true;
+    });
+
+    const players = (v && v.players) || [];
+    const n = Math.max(players.length, 2);
+    const belowDeck = kind === "below_deck";
+    const lootVoyage = kind === "loot_voyage";
+    const traveling = v && v.phase === "scene_travel";
+    const onBoard = v && v.phase === "scoreboard";
+    // No fleet on below-deck allocation screen
+    if (!belowDeck) {
+      players.forEach((pl, seat) => {
+        if (lootVoyage) return; // wager ships drawn via lootFleet only
+        const isYou = pl.id === (lastState && lastState.you);
+        let target = chosenIsland[seat];
+        const from = fleetPos(seat, n, W, H);
+        let to = from;
+        let key = targetKey(target);
+        let isl = typeof target === "number" && target >= 0 ? target : -1;
+        if (traveling) {
+          // Middle → (if needed) → sail off the TOP (~2s). exitPath routes via mid-channel.
+          to = offscreenTop(seat, n, W, H);
+          key = "exit";
+          isl = -2;
+        } else if (onBoard) {
+          to = offscreenTop(seat, n, W, H);
+          key = "exited";
+          isl = -2;
+        } else if (target === -1) to = fogHoldPos(W, H);
+        else if (target != null) to = dockPos(target, W, H, seat);
+        // After cutscene: keep returning / holding in the middle until sail-away
+        if (!traveling && !onBoard && fleetReturnPending && target == null) {
+          key = "home";
+          to = from;
+          isl = -1;
+        }
+        let fromHome = from;
+        const s = sailState[seat];
+        // During synced cutscene: freeze on box-edge docks (no glitch into land)
+        const freezeDock = islandCelebrate && (islandCelebrate.stage === "wait" || islandCelebrate.stage === "play")
+          && target != null && target >= 0;
+        // Clear return flag once everyone is roughly home
+        if (fleetReturnPending && !traveling && s && s.key === "home" && s.t >= 0.95) {
+          const allHome = players.every((_, si) => {
+            const ss = sailState[si];
+            return !ss || ss.key === "home" || ss.t >= 0.95;
+          });
+          if (allHome) fleetReturnPending = false;
+        }
+        const pos = freezeDock
+          ? (() => {
+              // Snap / hold at dock; do not advance sail into the island box
+              if (s) { s.t = 1; s.key = key; }
+              return { x: to.x, y: to.y, heading: (s && s.heading) != null ? s.heading : 0 };
+            })()
+          : ensureSail(seat, fromHome, to, key, dt, isl, W, H);
+        if (onBoard && (!s || s.t >= 1)) return; // fully off-screen during leaderboard
+        const x = pos.x;
+        const idleBob = (!traveling && !(s && s.t > 0.02 && s.t < 0.98)) ? Math.sin(t * 2.4 + seat) * 2.4 : Math.sin(t * 3.2 + seat) * 1.2;
+        const y = pos.y + idleBob;
+        const sailing = s && s.t > 0.02 && s.t < 0.98;
+        if (sailing) {
+          wakeDots.push({
+            x: x - Math.cos(s.heading || 0) * 8,
+            y: y + 12,
+            t0: now,
+            life: 520 + Math.random() * 280,
+            rot: s.heading || 0,
+          });
+        }
+        // Commit juice ≤100ms: wake burst + squash
+        if (s && s.commitJuiceUntil && now < s.commitJuiceUntil) {
+          for (let k = 0; k < 3; k++) {
+            wakeDots.push({
+              x: x + (Math.random() - 0.5) * 16,
+              y: y + 10 + Math.random() * 8,
+              t0: now,
+              life: 280,
+              rot: Math.random() * Math.PI,
+            });
+          }
+        }
+        const heading = (s && s.heading != null) ? s.heading : (pos.heading || 0);
+        let emotion = null;
+        if (v && v.phase === "q_reveal" && v.reveal && v.reveal.results) {
+          const r = v.reveal.results[pl.id];
+          if (r) emotion = r.correct ? "cheer" : "sad";
+        }
+        const im = shipSprite(seat, heading, now, emotion);
+        const sz = shipDrawSize(W, isYou, s ? s.t : 0, traveling || onBoard);
+        const squash = (s && s.squash != null) ? s.squash : 1;
+        const drawW = sz;
+        const drawH = sz * (2 - squash); // squash vertically on commit
+        sctx.fillStyle = "rgba(8,30,40,.22)";
+        sctx.beginPath(); sctx.ellipse(x, y + drawH * 0.22, drawW * 0.26, drawH * 0.06, 0, 0, Math.PI * 2); sctx.fill();
+        if (isYou) {
+          sctx.strokeStyle = "rgba(255,213,106,.75)";
+          sctx.lineWidth = 2.5;
+          sctx.beginPath();
+          sctx.ellipse(x, y, drawW * 0.46, drawH * 0.40, 0, 0, Math.PI * 2);
+          sctx.stroke();
+        }
+        if (target === -1 && fogImg && s && s.t > 0.45) drawImg(fogImg, x, y - 6, Math.max(70, drawW * 1.15));
+        if (im) sctx.drawImage(im, x - drawW / 2, y - drawH / 2, drawW, drawH);
+        if (!traveling && !onBoard) drawHullName(x, y, drawW, pl.nick, isYou);
+      });
+    }
+
+    if (lootVoyage) {
+      tickLootFleet(dt);
+      lootFleet.forEach((ship, i) => {
+        const pos = polylinePoint(ship.path, ship.t);
+        ship.heading = pos.heading != null ? pos.heading : ship.heading;
+        const x = pos.x, y = pos.y + Math.sin(t * 2 + i) * 2;
+        const im = shipSprite(ship.seat, ship.heading || 0, now);
+        const sz = ship.size;
+        sctx.fillStyle = "rgba(8,30,40,.2)";
+        sctx.beginPath(); sctx.ellipse(x, y + sz * 0.2, sz * 0.24, sz * 0.055, 0, 0, Math.PI * 2); sctx.fill();
+        if (im) sctx.drawImage(im, x - sz / 2, y - sz / 2, sz, sz);
+      });
+    }
+
+    // Camera stays locked (Coin Master clarity / Clash Royale readability)
+
+    sctx.restore();
+
+    fxParticles = fxParticles.filter((p) => {
+      const age = now - p.t0;
+      if (age > p.life) return false;
+      p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+      const a = 1 - age / p.life;
+      if (a < 0.12) return true;
+      const im = p.kind === "coin" ? (imgLootTrail || imgCoinBurst) : imgSparkle;
+      drawImg(im, p.x, p.y, 26 + 14 * a);
+      return true;
+    });
+
+    flyCoins = flyCoins.filter((c) => {
+      const age = (now - c.t0) / c.dur;
+      if (age >= 1 || age < 0) return age < 1;
+      const e = 1 - Math.pow(1 - age, 2.4);
+      const x = c.x0 + (c.x1 - c.x0) * e;
+      const y = c.y0 + (c.y1 - c.y0) * e - Math.sin(age * Math.PI) * 40;
+      drawImg(imgLootTrail || imgCoinBurst, x, y, 34);
+      return true;
+    });
+
+    if (cutscene && cutscene.stage === "world") {
+      const u = (now - cutscene.t0) / cutscene.animMs;
+      if (u >= 1) endCutscene();
+      else drawWorldCutscene(now, u, W, H);
+    }
+
+    sctx.restore();
+  }
+
+  function launchLootFlies(islandIdx) {
+    const { W, H } = viewSize();
+    const from = islandPos(islandIdx, W, H);
+    const players = (lastState && lastState.view && lastState.view.players) || [];
+    const mySeat = players.findIndex((p) => p.id === (lastState && lastState.you));
+    const to = fleetPos(mySeat >= 0 ? mySeat : 0, Math.max(2, players.length), W, H);
+    for (let i = 0; i < 10; i++) {
+      flyCoins.push({
+        x0: from.x + (Math.random() - 0.5) * 30,
+        y0: from.y + (Math.random() - 0.5) * 20,
+        x1: to.x + (Math.random() - 0.5) * 24,
+        y1: to.y,
+        t0: performance.now() + i * 55,
+        dur: 700 + Math.random() * 280,
+      });
+    }
+  }
+
+  function drawWorldCutscene(now, u, W, H) {
+    const sh = seaH(H);
+    if (cutscene.kind === "crash") {
+      const isl = cutscene.meta.island ?? 0;
+      const p = islandPos(isl, W, H);
+      drawImg(imgCrash, p.x + 30, p.y + 20, 110);
+      if (u < 0.85) drawImg(imgImpact, p.x + 30, p.y + 10, 90);
+      shakeUntil = now + 80;
+    } else if (cutscene.kind === "shark") {
+      const x = W * (0.1 + 0.8 * u);
+      drawImg(sharkImg, x, sh * 0.72, 110);
+      drawImg(imgSplash, x, sh * 0.8, 90);
+    }
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    tickCutscene(now);
+    tickIslandCelebrate(now);
+    tickIslandLoot(now);
+    drawSea(now);
+    lastFrameAt = now;
+    if (lastState && lastState.view) tickClock(lastState.view);
+    else tickClock(null);
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+  }
+
+  function renderRibbon(v, you) {
+    if (!v) { ribbonEl.innerHTML = ""; return; }
+    ribbonEl.innerHTML = v.players.map((p, i) => {
+      const isYou = p.id === you;
+      return `<div class="chip${isYou ? " you" : ""}"><img src="${PORTRAIT[i % 4]}" alt=""><span>${esc(p.nick)} · ${p.score}</span></div>`;
+    }).join("");
+  }
+
+  function syncShips(s, v) {
+    const players = v.players || [];
+    const iAnswered = !!(v.you && v.you.answered);
+    // Keep scene index in sync (except mid travel fade)
+    if (v.sceneKind === "voyage" && v.phase !== "scene_travel" && v.sceneIndex != null) {
+      if (!travelFx) activeSceneIdx = v.sceneIndex % SCENES.length;
+    }
+    players.forEach((p, seat) => {
+      if (v.phase === "question") {
+        if (p.id === s.you) chosenIsland[seat] = v.you.answerIndex;
+        else if (iAnswered && p.answered) chosenIsland[seat] = -1;
+        else chosenIsland[seat] = null;
+      } else if (v.phase === "q_reveal" && v.reveal && v.reveal.results) {
+        // After cutscene, fleetReturnPending owns the middle-return — don't re-dock from reveal
+        if (fleetReturnPending) {
+          chosenIsland[seat] = null;
+        } else {
+          const r = v.reveal.results[p.id];
+          chosenIsland[seat] = r && r.index != null ? r.index : null;
+        }
+      } else if (v.phase === "loot" || v.phase === "loot_intro" || v.phase === "loot_reveal" || v.phase === "loot_wildcard" || v.phase === "scene_travel") {
+        chosenIsland[seat] = null;
+      } else if (v.phase === "scoreboard") {
+        chosenIsland[seat] = null;
+      } else {
+        chosenIsland[seat] = null;
+      }
+    });
+    syncLootFleet(s, v);
+  }
+
+  function renderWaiting(s) {
+    pathPreview = null;
+    subtitleEl.textContent = wantBot ? "Calling deckhand…" : "Gathering crew…";
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">Waiting room</div>
+      <h2 class="display">${wantBot ? "Practice duel" : "Invite rivals"}</h2>
+      <p class="muted">${wantBot ? "Bot boarding…" : "Share link — 2–4 captains."}</p>
+      ${wantBot ? "" : `<div class="invite" style="margin-top:8px"><input readonly id="link" value="${esc(location.href)}"><button class="ghost" id="copyBtn" style="width:auto">COPY</button></div>`}
+      ${wantBot ? "" : `<button class="big pulse" id="waitBot" style="margin-top:8px">PLAY VS BOT</button>`}
+    </div>`;
+    const c = document.getElementById("copyBtn");
+    if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(location.href); toast("Copied!"); } catch { toast("Copy link"); } };
+    const b = document.getElementById("waitBot");
+    if (b) b.onclick = () => { enableBotMode(); toast("Bot incoming!"); connectBot(); };
+  }
+
+  function renderLobby(s, v) {
+    pathPreview = null;
+    subtitleEl.textContent = "Lobby";
+    const you = v.you;
+    const readyCount = v.players.filter((p) => p.ready).length;
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">Cast off</div>
+      <h2 class="display">Crew of ${v.players.length}</h2>
+      <p class="muted">${readyCount}/${v.players.length} ready</p>
+      <button class="big${!you.ready ? " pulse" : ""}" id="readyBtn">${you.ready ? "READY!" : "READY UP"}</button>
+      ${you.isHost ? `<button class="big pulse" id="startBtn" style="margin-top:6px" ${readyCount < v.players.length ? "disabled" : ""}>CAST OFF</button>` : `<p class="muted">Waiting on host…</p>`}
+    </div>`;
+    document.getElementById("readyBtn").onclick = () => act({ type: "ready" });
+    const st = document.getElementById("startBtn");
+    if (st) st.onclick = () => act({ type: "start" });
+  }
+
+  function renderQuestion(s, v) {
+    const q = v.question, you = v.you;
+    const can = s.status === "playing" && s.seats.includes(s.you) && v.phase === "question" && !you.answered;
+    subtitleEl.textContent = `Q ${v.questionIndex + 1}/${v.questionTotal}`;
+    syncShips(s, v);
+    pathPreview = you.answerIndex;
+    mainEl.innerHTML = `<div class="banner pop">
+      <div class="tag">Sail banner</div>
+      <h2 class="display">${esc(q.text)}</h2>
+      <p class="muted">${you.answered ? "Waiting for rivals…" : "Pick an island — ships dock beside it."}</p>
+    </div>
+    <div class="choices" id="choices"></div>
+    ${!seenOnboard && can ? '<div class="hand"></div>' : ""}`;
+    const root = document.getElementById("choices");
+    q.answers.forEach((label, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice" + (you.answerIndex === i ? " picked" : "");
+      btn.disabled = !can;
+      btn.innerHTML = `<img src="${islandChoiceSrc(i)}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>`;
+      btn.onclick = () => {
+        if (!can) return;
+        pathPreview = i;
+        seenOnboard = true; sessionStorage.setItem("tt-onboard", "1");
+        const my = v.players.findIndex((p) => p.id === s.you);
+        if (my >= 0) {
+          chosenIsland[my] = i;
+          // ≤100ms commit juice: squash + wake + SFX + haptic
+          const st = sailState[my] || (sailState[my] = { path: null, t: 0, key: "", heading: 0 });
+          st.squash = 0.78;
+          st.commitJuiceUntil = performance.now() + 100;
+        }
+        hitStopUntil = performance.now() + 55;
+        try { if (navigator.vibrate) navigator.vibrate(12); } catch (_) {}
+        haptic(12);
+        act({ type: "answer", index: i });
+      };
+      root.appendChild(btn);
+    });
+  }
+
+  function renderQReveal(s, v) {
+    syncShips(s, v);
+    pathPreview = null;
+    const q = v.question, rev = v.reveal;
+    const my = rev && rev.results ? rev.results[s.you] : null;
+    subtitleEl.textContent = "Reveal!";
+    mainEl.innerHTML = `<div class="banner pop">
+      <div class="tag">Island reveal</div>
+      <h2 class="display">${my && my.correct ? `Spot on! +${my.delta}` : "Wrong cove — watch the seas"}</h2>
+      <p class="muted">Fleet holds the docks while the islands settle…</p>
+    </div>
+    <div class="choices" id="choices"></div>`;
+    const root = document.getElementById("choices");
+    q.answers.forEach((label, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button"; btn.disabled = true;
+      btn.className = "choice";
+      if (i === rev.correctIndex) btn.classList.add("correct");
+      else btn.classList.add("dim");
+      if (my && my.index === i && !my.correct) btn.classList.add("wrong");
+      btn.innerHTML = `<img src="${islandChoiceSrc(i)}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>`;
+      root.appendChild(btn);
+    });
+  }
+
+  function setPhaseClass(phase) {
+    document.body.classList.toggle("phase-scoreboard", phase === "scoreboard");
+  }
+  function renderScoreboard(s, v) {
+    syncShips(s, v);
+    pathPreview = null;
+    setPhaseClass("scoreboard");
+    subtitleEl.textContent = "Standings";
+    const ranking = v.ranking || (v.players || []).map((p) => p.id);
+    const results = v.reveal && v.reveal.results ? v.reveal.results : {};
+    const rows = ranking.map((id, rank) => {
+      const p = (v.players || []).find((x) => x.id === id) || { nick: "?", score: 0 };
+      const seat = (v.players || []).findIndex((x) => x.id === id);
+      const delta = results[id] ? (results[id].delta || 0) : 0;
+      const prev = prevRankOrder.indexOf(id);
+      const overtake = prev >= 0 && prev > rank;
+      const isYou = id === s.you;
+      return `<div class="score-row${isYou ? " you" : ""}${overtake ? " overtake" : ""}">
+        <div class="rank">${rank + 1}</div>
+        <img src="${PORTRAIT[(seat >= 0 ? seat : rank) % 4]}" alt="">
+        <div><strong>${esc(p.nick)}</strong>${delta ? `<div class="delta${delta < 0 ? " neg" : ""}">${delta > 0 ? "+" : ""}${delta}</div>` : ""}</div>
+        <div class="pts">${p.score}</div>
+      </div>`;
+    }).join("");
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">Leaderboard</div>
+      <h2 class="display">Standings</h2>
+    </div>
+    <div class="scoreboard pop">${rows}</div>`;
+    prevRankOrder = ranking.slice();
+  }
+
+  function renderLootIntro() {
+    pathPreview = null;
+    lootFleet = [];
+    subtitleEl.textContent = "Below deck";
+    casinoEl.classList.add("on");
+    setTimeout(() => casinoEl.classList.remove("on"), 900);
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">Loot Drop</div>
+      <h2 class="display">Charts & gold</h2>
+      <p class="muted">Below deck — split your gold. Fleet sails after lock.</p>
+    </div>`;
+  }
+
+  function renderSceneTravel(s, v) {
+    syncShips(s, v);
+    pathPreview = null;
+    subtitleEl.textContent = "Underway…";
+    const next = (v.sceneIndex != null ? v.sceneIndex : 0) + 1;
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">New waters</div>
+      <h2 class="display">Sailing on…</h2>
+      <p class="muted">Sea ${next} ahead</p>
+    </div>`;
+  }
+
+  function renderLoot(s, v) {
+    pathPreview = null;
+    lootFleet = [];
+    syncShips(s, v);
+    subtitleEl.textContent = `Below deck · ${youPoolLabel(v)}`;
+    const you = v.you;
+    const can = s.status === "playing" && s.seats.includes(s.you) && !you.locked;
+    const q = v.question;
+    const step = v.step || 10;
+    const left = you.lootLeft != null ? you.lootLeft : Math.max(0, (you.lootPool || 0) - Object.values(you.allocation || {}).reduce((a, b) => a + b, 0));
+    const spent = (you.lootPool || 0) - left;
+    mainEl.innerHTML = `<div class="banner pop">
+      <div class="tag">Captain’s table</div>
+      <h2 class="display">${esc((q && q.text) || "Split your gold")}</h2>
+      <p class="muted">${you.locked ? "Locked — waiting…" : `Left <b>${left}</b> · Staked <b>${spent}</b>`}</p>
+    </div>
+    <div class="choices" id="choices"></div>
+    <button class="big${can && spent > 0 ? " pulse" : ""}" id="lockBtn" ${can && spent > 0 ? "" : "disabled"}>
+      <img src="./assets/wheel.png" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:6px">${you.locked ? "LOCKED!" : "TURN THE WHEEL"}
+    </button>`;
+    const root = document.getElementById("choices");
+    (q && q.answers ? q.answers : ["A","B","C","D"]).forEach((label, i) => {
+      const ven = v.ventures[i];
+      const amt = you.allocation[ven.id] || 0;
+      const el = document.createElement("div");
+      el.className = "choice" + (amt > 0 ? " picked" : "");
+      el.style.cursor = "default";
+      el.innerHTML = `<img src="${islandChoiceSrc(i)}" alt=""><div><strong>${LETTERS[i]}</strong><span>${esc(label)}</span></div>
+        <div class="alloc-btns">
+          <button type="button" class="alloc-btn" data-d="-1" ${!can || amt <= 0 ? "disabled" : ""}>−</button>
+          <div class="amt">${amt}</div>
+          <button type="button" class="alloc-btn" data-d="1" ${!can || left < step ? "disabled" : ""}>+</button>
+        </div>`;
+      el.querySelectorAll(".alloc-btn").forEach((btn) => {
+        btn.onclick = (ev) => {
+          ev.stopPropagation();
+          if (!can) return;
+          const d = Number(btn.getAttribute("data-d"));
+          const next = Math.max(0, amt + d * step);
+          const others = Object.entries(you.allocation || {}).reduce((a, [k, val]) => a + (k === ven.id ? 0 : (val || 0)), 0);
+          if (others + next > (you.lootPool || 0)) { toast("No loot left!"); haptic([40, 30, 40]); return; }
+          act({ type: "alloc", venture: ven.id, amount: next });
+          if (v.you) {
+            v.you.allocation = { ...(v.you.allocation || {}), [ven.id]: next };
+            v.you.lootLeft = (v.you.lootPool || 0) - Object.values(v.you.allocation).reduce((a, b) => a + (b || 0), 0);
+          }
+          syncLootFleet(s, v);
+          haptic(10);
+          renderLoot(s, v);
+        };
+      });
+      root.appendChild(el);
+    });
+    document.getElementById("lockBtn").onclick = () => {
+      if (!can || spent <= 0) return;
+      hitStopUntil = performance.now() + 70;
+      casinoEl.classList.add("on");
+      setTimeout(() => casinoEl.classList.remove("on"), 600);
+      act({ type: "lock" });
+    };
+  }
+
+  function youPoolLabel(v) {
+    return v && v.you ? `${v.you.lootPool} gold` : "";
+  }
+
+  function renderLootReveal(s, v) {
+    syncShips(s, v);
+    const vi = v.lootVentureIndex || 0;
+    const ven = v.ventures[vi];
+    const rev = v.reveal;
+    const mine = rev && rev.outcomes ? rev.outcomes[s.you] : null;
+    const cell = mine && mine.byVenture ? mine.byVenture[ven.id] : null;
+    const got = cell ? cell.got : 0;
+    const spent = mine ? mine.wagered : 0;
+    subtitleEl.textContent = "Pay day";
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">Correct island</div>
+      <h2 class="display">${esc(LETTERS[ven.island] || ven.name)}</h2>
+      <p class="muted"><b>+${got}</b> back · staked ${spent}</p>
+    </div>`;
+    // Chest juice on correct island only
+    if (!renderLootReveal._did) {
+      renderLootReveal._did = true;
+      const mySeat = (v.players || []).findIndex((p) => p.id === s.you);
+      startCutscene("plunder", 4200, { island: ven.island, seat: Math.max(0, mySeat), empty: got <= 0 });
+    }
+  }
+
+  function renderWildcard(s, v) {
+    const rev = v.reveal || {};
+    subtitleEl.textContent = "Wild seas";
+    // Poseidon summary lives on the full-screen spectacle; keep HUD quiet while it plays.
+    if (rev.poseidon && cutscene && cutscene.kind === "poseidon") {
+      mainEl.innerHTML = `<div class="banner center"><div class="tag">Wildcard</div>
+        <h2 class="display">Poseidon rises…</h2>
+        <p class="muted">Full-screen rescue underway.</p></div>`;
+      return;
+    }
+    let body = `<h2 class="display">Seas settle</h2>`;
+    if (rev.poseidon) {
+      const amt = rev.poseidon.amount;
+      const spent = rev.poseidon.spent != null ? rev.poseidon.spent : amt;
+      body = `<h2 class="display">+${amt}</h2>
+        <p class="muted">spent ${spent}</p>`;
+    } else if (rev.shark) {
+      body = `<h2 class="display">Funny sharks!</h2><p class="muted">Success first… then a cheeky bite.</p>`;
+    }
+    mainEl.innerHTML = `<div class="banner center pop"><div class="tag">Wildcard</div>${body}</div>`;
+  }
+
+  function renderWinner(s, v) {
+    pathPreview = null;
+    subtitleEl.textContent = "Champion";
+    const winnerId = s.result && s.result.winner;
+    const win = (v.players || []).find((p) => p.id === winnerId);
+    const youWin = winnerId === s.you;
+    mainEl.innerHTML = `<div class="banner center pop">
+      <div class="tag">Voyage complete</div>
+      <img class="hero-art" src="./assets/chest-full.png" alt="">
+      <h2 class="display">${youWin ? "You rule these waters!" : esc((win && win.nick) || "Rival") + " wins"}</h2>
+      <button class="big pulse" id="resetBtn" style="margin-top:8px">PLAY AGAIN</button>
+    </div>`;
+    document.getElementById("resetBtn").onclick = () => {
+      botBusyKey = ""; clearBotTimers(); endCutscene(); endIslandLoot(); islandCelebrate = null;
+      if (revealClipEl) { try { revealClipEl.pause(); } catch (_) {} }
+      send({ type: "reset" });
+      if (wantBot) later(300, connectBot);
+    };
+  }
+
+  function render(s) {
+    const v = s.view;
+    renderRibbon(v, s.you);
+    if (s.status === "waiting" || !v) { setPhaseClass(""); renderWaiting(s); return; }
+    if (s.status === "over" || v.phase === "winner") { setPhaseClass(""); renderWinner(s, v); return; }
+    if (v.phase !== "scoreboard") setPhaseClass(v.phase);
+    if (v.phase === "lobby") renderLobby(s, v);
+    else if (v.phase === "question") renderQuestion(s, v);
+    else if (v.phase === "q_reveal") renderQReveal(s, v);
+    else if (v.phase === "scoreboard") renderScoreboard(s, v);
+    else if (v.phase === "scene_travel") renderSceneTravel(s, v);
+    else if (v.phase === "loot_intro") renderLootIntro();
+    else if (v.phase === "loot") renderLoot(s, v);
+    else if (v.phase === "loot_reveal") renderLootReveal(s, v);
+    else if (v.phase === "loot_wildcard") renderWildcard(s, v);
+    else renderWaiting(s);
+  }
+
+  async function boot() {
+    bg = await loadImg("./assets/voyage-v2/bg-S00.jpg") || await loadImg("./assets/bg-sea.jpg");
+    cloudsImg = await loadImg("./assets/clouds.png");
+    reefImg = await loadImg("./assets/reef-rocks.png");
+    fogImg = await loadImg("./assets/fog.png");
+    sharkImg = await loadImg("./assets/shark.png");
+    // 10 baked voyage seas (voyage-v2) + loot rooms
+    sceneBgs = await Promise.all(SCENES.map((sc) => loadImg(sc.bg)));
+    belowDeckBg = await loadImg(BELOW_DECK_BG);
+    lootVoyageBg = await loadImg(LOOT_VOYAGE_BG);
+    if (!sceneBgs[0]) sceneBgs[0] = bg;
+    // Prefer voyage-v2 16-dir sheets; fall back to legacy ship sprites
+    shipDirs = await Promise.all([0,1,2,3].map(async (i) => {
+      const o = {};
+      await Promise.all(DIR16.map(async (d) => {
+        o[d] = await loadImg(`./assets/voyage-v2/ships/p${i}/${d}.png`)
+          || await loadImg(`./assets/ship-${i}-${d}.png`);
+      }));
+      const legacy = ["e","ne","n","nw","w","sw","s","se"];
+      await Promise.all(legacy.map(async (d) => {
+        if (!o[d]) o[d] = await loadImg(`./assets/ship-${i}-${d}.png`);
+      }));
+      if (!o.e) o.e = await loadImg(SHIP[i]);
+      // Fill any missing dirs from nearest available so facing never pops blank
+      for (let di = 0; di < DIR16.length; di++) {
+        if (o[DIR16[di]]) continue;
+        for (let k = 1; k < 16; k++) {
+          const a = o[DIR16[(di + k) % 16]] || o[DIR16[(di - k + 16) % 16]];
+          if (a) { o[DIR16[di]] = a; break; }
+        }
+      }
+      return o;
+    }));
+    shipIdle = await Promise.all([0,1,2,3].map(async (i) => (
+      (await Promise.all([0,1,2,3,4,5].map((f) => loadImg(`./assets/voyage-v2/ships/p${i}/idle/idle-${f}.png`)))).filter(Boolean)
+    )));
+    shipCheer = await Promise.all([0,1,2,3].map(async (i) => (
+      (await Promise.all([0,1,2,3].map((f) => loadImg(`./assets/voyage-v2/ships/p${i}/cheer/cheer-${f}.png`)))).filter(Boolean)
+    )));
+    shipSad = await Promise.all([0,1,2,3].map(async (i) => (
+      (await Promise.all([0,1,2,3].map((f) => loadImg(`./assets/voyage-v2/ships/p${i}/sad/sad-${f}.png`)))).filter(Boolean)
+    )));
+    vfxGlow = (await Promise.all([0,1,2,3].map((i) => loadImg(`./assets/voyage-v2/vfx/glow/glow-${i}.png`)))).filter(Boolean);
+    vfxFire = (await Promise.all([0,1,2,3].map((i) => loadImg(`./assets/voyage-v2/vfx/fireworks/fireworks-${i}.png`)))).filter(Boolean);
+    birdFrames = (await Promise.all([0,1,2].map((i) => loadImg(`./assets/bird-f${i}.png`)))).filter(Boolean);
+    const birdV2 = (await Promise.all([0,1,2,3,4,5].map((i) => loadImg(`./assets/voyage-v2/ambient/birds/birds-${i}.png`)))).filter(Boolean);
+    if (birdV2.length) birdFrames = birdV2;
+    islandImgs = await Promise.all(ISLAND_FALLBACK.map(loadImg));
+    islandPack = await Promise.all(
+      Array.from({ length: 16 }, (_, i) => loadImg(`./assets/islands-pack/isl-${String(i).padStart(2, "0")}.png`))
+    );
+    // Fill gaps with fallbacks so every scene island resolves
+    for (let i = 0; i < 16; i++) {
+      if (!islandPack[i]) islandPack[i] = islandImgs[i % 4];
+    }
+    await loadImg("./assets/chest-closed.png");
+    await loadImg("./assets/chest-spin.png");
+    await loadImg("./assets/chest-crack.png");
+    await loadImg("./assets/chest-open-gold.png");
+    await loadImg("./assets/chest-open-empty.png");
+    // Preload videos so arrival loot starts instantly
+    LOOT_VID.forEach((src) => { const v = document.createElement("video"); v.preload = "auto"; v.muted = true; v.src = src; });
+    { const v = document.createElement("video"); v.preload = "auto"; v.muted = true; v.src = POSEIDON_VID; }
+    imgCoinBurst = await loadImg("./assets/vfx-coin-burst.png");
+    imgChestOpen = await loadImg("./assets/vfx-chest-open.png");
+    imgSparkle = await loadImg("./assets/vfx-sparkle.png");
+    imgImpact = await loadImg("./assets/vfx-impact.png");
+    imgSplash = await loadImg("./assets/vfx-splash.png");
+    imgWake = await loadImg("./assets/vfx-wake.png");
+    imgCrash = await loadImg("./assets/vfx-reef-crash.png");
+    imgConfetti = await loadImg("./assets/vfx-confetti.png");
+    imgCheer = await loadImg("./assets/ship-cheer.png");
+    imgPlunderCrew = await loadImg("./assets/plunder-crew.png");
+    imgLootCascade = await loadImg("./assets/loot-cascade.png");
+    imgLootTrail = await loadImg("./assets/loot-trail.png");
+    imgLootHaul = await loadImg("./assets/loot-haul.png");
+    imgLootBurst = await loadImg("./assets/loot-burst.png");
+    void imgCheer;
+    requestAnimationFrame(frame);
+
+    // Local harness: ?chestTest=1 opens the slot chest immediately
+    if (params.get("chestTest") === "1") {
+      nickModal.classList.add("hidden");
+      setTimeout(() => startIslandLootVideo(0), 350);
+    }
+
+    function start(vsBot) {
+      const n = nickInput.value.trim() || nick;
+      if (!n) { toast("Pick a nickname!"); return; }
+      setIdentity(n);
+      if (vsBot) enableBotMode();
+      else {
+        wantBot = false;
+        sessionStorage.removeItem("tt-vs-bot");
+        params.delete("bot");
+        history.replaceState(null, "", location.pathname + "?" + params);
+      }
+      nickModal.classList.add("hidden");
+      connect();
+    }
+
+    if (nick && playerId) {
+      nickModal.classList.add("hidden");
+      connect();
+    } else {
+      nickInput.value = nick || "";
+      nickInput.focus();
+      document.getElementById("nickBot").onclick = () => start(true);
+      document.getElementById("nickGo").onclick = () => start(false);
+      nickInput.addEventListener("keydown", (e) => { if (e.code === "Enter") start(true); });
+    }
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

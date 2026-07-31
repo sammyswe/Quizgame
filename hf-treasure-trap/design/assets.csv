@@ -1,0 +1,23 @@
+id,role,type,description,size/ratio,style line ref,source
+bg-sea,background,image,three-quarter diorama archipelago golden hour,9:16,STYLE_FORMULA,higgsfield
+island-a,sprite,image,palm cove biome A,1:1,STYLE_FORMULA,higgsfield
+island-b,sprite,image,volcanic biome B,1:1,STYLE_FORMULA,higgsfield
+island-c,sprite,image,jungle ruin biome C,1:1,STYLE_FORMULA,higgsfield
+island-d,sprite,image,cartoon skull-rock biome D,1:1,STYLE_FORMULA,higgsfield
+ship-0,sprite,image,timber ship red sail flag,1:1,STYLE_FORMULA,higgsfield
+ship-1,sprite,image,timber ship blue sail flag,1:1,STYLE_FORMULA,higgsfield
+ship-2,sprite,image,timber ship green sail flag,1:1,STYLE_FORMULA,higgsfield
+ship-3,sprite,image,timber ship gold sail flag,1:1,STYLE_FORMULA,higgsfield
+coin,sprite,image,glossy gold coin,1:1,STYLE_FORMULA,higgsfield
+chest-full,sprite,image,overflowing treasure chest,1:1,STYLE_FORMULA,higgsfield
+chest-low,sprite,image,nearly empty treasure chest,1:1,STYLE_FORMULA,higgsfield
+wheel,sprite,image,brass wood ship wheel,1:1,STYLE_FORMULA,higgsfield
+crew-token,sprite,image,tiny pirate crew token,1:1,STYLE_FORMULA,higgsfield
+fog,sprite,image,soft fog bank,1:1,STYLE_FORMULA,higgsfield
+portrait-0,sprite,image,captain bust red bandana,1:1,STYLE_FORMULA,higgsfield
+portrait-1,sprite,image,captain bust blue bandana,1:1,STYLE_FORMULA,higgsfield
+poseidon,sprite,image,cartoon Poseidon rescue,1:1,STYLE_FORMULA,higgsfield
+shark,sprite,image,funny cartoon shark,1:1,STYLE_FORMULA,higgsfield
+map-cabin,background,image,cabin treasure map table,9:16,STYLE_FORMULA,higgsfield
+thumb,marketing,image,16:9 cover fleet archipelago,16:9,STYLE_FORMULA,higgsfield
+favicon,marketing,image,chest app icon,1:1,STYLE_FORMULA,higgsfield

@@ -3,59 +3,40 @@ id: HAND-001
 title: Current agent handoff
 status: PILOT
 scope: active branch
-updated: 2026-07-14
+updated: 2026-07-20
 ---
 
 # Current handoff
 
-## Current truth
+## Current truth (owner LOCKED 2026-07-20)
 
-- Root `pnpm dev` runs a React shell + active Phaser in-round client + Socket.IO server.
-- Active gameplay: `client/src/game/`; `experiments/loot-drop/` remains archived reference.
-- Product direction is cartoon pirate excursion first; casino spectacle is concentrated in
-  loot-box/jackpot rewards and selected high-stakes peaks.
-- Confirmed match design is 10 regular questions followed by a special round.
-- Loot Drop is the only special round to polish now.
+- **Primary product direction is Path B:** build Treasure Trap natively in the
+  **Higgsfield Game Generator** (`hf-treasure-trap/`), not Phaser polish.
+- Live game: https://lazy-crane-142.higgsfield.gg/ (update in place with `--game-id`).
+- Mobile-first multiplayer party quiz; beauty bar Brawl Stars readability + Jackbox
+  accessibility + Coin Master reward spectacle (rewards only).
+- Beauty milestone: **3 polished questions + full LOCKED Loot Drop** (correct venture
+  pays / wrong lost — not multiplier mini-game). Players **2–4** (bot demo OK first).
+- Art bible + shot list: `hf-treasure-trap/design/ART_BIBLE.md`, `SHOT_LIST.md`.
+- STYLE FORMULA: `hf-treasure-trap/design/STYLE_FORMULA.txt` (byte-identical prompts).
 
-## Current implementation status
+## Legacy root app
 
-1. Match lengths now count regular questions; each 10-question block is followed by a special.
-2. Every player receives the onboarding item ceremony after question 5.
-3. Mutiny begins after question 5, forfeits the answer and follows the confirmed count outcomes.
-4. Maroon skips defer across specials to the next regular question.
-5. Loot Drop wagers each player's positive earnings from the preceding block in 10-point steps.
-6. Poseidon rescues eligible Loot Drop wagers and never targets the leader.
-7. Shark Attack is implemented; last place currently receives an underdog chest while the
-   unique shark item remains an explicit IDEA requiring redesign.
-8. Barnacle items are not implemented.
-9. Streak bonuses remain a playable but unconfirmed pilot.
+- Root `pnpm dev` (React + Phaser + Socket.IO) remains in the repo as historical /
+  reference multiplayer implementation. It is **not** the target architecture going
+  forward. Do not invest polish effort there unless the owner explicitly reopens Path A.
 
-## Asset status
+## Mechanics still LOCKED (product)
 
-- **Visual quality gate is open.** Current Phaser scenes use procedural/fallback art; this is
-  why the game feels unfinished. Stack is not the root cause — see
-  [POLISH_PRODUCTION_PLAN.md](POLISH_PRODUCTION_PLAN.md).
-- Higgsfield is the preferred art pipeline. Cloud-agent `balance`/generate may still fail;
-  owner Apps UI / handed concept art is the reliable path.
-- `design/assets.csv` is the locked generation queue (STYLE-001).
-- Drop owner-approved Phase-0 locks into `design/concept/approved/` before bulk regen.
-- Existing Higgsfield binaries and Phaser-drawn art are explicit fallbacks, not final art.
+- Pirate excursion first; casino only for reward / high-stakes peaks.
+- Full match fantasy remains 10Q blocks → specials; Loot Drop is first special to polish.
+- Knowledge should usually win; authoritative server; ages 9+.
+- Poseidon + Shark wildcards; unique shark item remains IDEA (ignore for beauty pass).
 
 ## Next implementation slice
 
-1. **Voyage art is wired into live Phaser + lobby** (`client/src/assets/higgsfield/voyage/`).
-   Still sheets + motion packs integrated; owner may request redo packs next.
-2. Polish remaining gaps: audio banks, per-player ship colour matching idle anims,
-   chest private ceremony UI, reduced-motion paths for new bursts.
-3. Owner playtest: list animations that still feel weak / missing.
-4. Do **not** migrate off Phaser unless 3D/native becomes a product requirement.
-
-## Do not regress
-
-- Create/join/rejoin and host migration.
-- Secret state and authoritative server outcomes.
-- Reveal queue and non-negative scores.
-- Dev playtest panel absent from production.
-- Mobile readability and reduced-motion behaviour.
-
-Update this file whenever implementation truth or the immediate next slice changes.
+1. Generate / cut in P0 Higgsfield heroes per shot list.
+2. Ship polished `logic.js` + mobile diorama client with rivalry fog, wheel lock,
+   venture-by-venture Loot Drop reveal.
+3. Redeploy Path B; bot-only demo acceptable for first 8/10 gate.
+4. Owner playtest physical commitment / rivalry / reward spectacle.

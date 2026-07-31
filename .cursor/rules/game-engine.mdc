@@ -3,17 +3,17 @@ description: Active engine and client/server authority boundary
 alwaysApply: true
 ---
 
-- The active in-round gameplay engine is **Phaser 3 + TypeScript** under `client/src/game/`.
-  React owns landing, lobby, intros, leaderboard, winner and modal/accessibility overlays.
-- `client/src/game/GameEventBridge.ts` is the only React/network ↔ Phaser boundary. Phaser
-  consumes snapshots and emits intents; scenes never import sockets or Zustand.
-- Phaser code in `experiments/loot-drop/` remains archived reference. Do not import its stale
-  socket contract or standalone server.
-- The server (`server/src/engine.ts`) is authoritative. Phaser/React render public/private
-  state and send intents; neither computes correct answers, random outcomes or score mutations.
-- Shared pure logic belongs in `shared/src/game/`; named values belong in `shared/src/config/`;
-  socket/state types belong in `shared/src/types/index.ts`.
-- Animation timelines must tolerate late/out-of-order state, cancel on phase/question changes
-  and reconstruct from current state after reconnect.
-- `PhaserGame.tsx` owns canvas lifecycle only; game state lives in the bridge/server.
-- Canonical architecture: `docs/context/ARCHITECTURE.md`.
+- **Primary forward architecture (owner LOCKED 2026-07-20): Path B — Higgsfield Game
+  Generator** under `hf-treasure-trap/` (`logic.js` + canvas `index.html` + Higgsfield art).
+  Mobile-first multiplayer; live deploy is the beauty milestone target.
+- The root React + Phaser 3 app under `client/src/game/` is **legacy reference**, not the
+  polish target. Do not invest Path A polish unless the owner explicitly reopens it.
+- Phaser code in `experiments/loot-drop/` remains archived reference.
+- On Path B, `logic.js` is authoritative inside the Higgsfield room kernel; the client sends
+  intents and renders `viewFor` only. Soft timers use client `timeout` actions validated by
+  server timestamps (no `setTimeout` in `logic.js`).
+- Legacy root still uses `server/src/engine.ts` + `shared/` if touched; prefer Path B for new
+  gameplay/visual work.
+- Animation timelines must tolerate late/out-of-order state and reconstruct after reconnect.
+- Canonical product vision: `hf-treasure-trap/design/ART_BIBLE.md` + `docs/context/HANDOFF.md`.
+  Compact router: `docs/context/INDEX.md`.
